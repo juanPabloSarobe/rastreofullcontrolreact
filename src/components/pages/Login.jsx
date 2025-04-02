@@ -74,6 +74,8 @@ const Login = () => {
           document.cookie = `sesion=${result.cookie}`;
           document.cookie = `usuario=${username}`;
           dispatch({ type: "SET_ACCESS_GRANTED", payload: true });
+          dispatch({ type: "SET_ROLE", payload: result.rol });
+          dispatch({ type: "SET_USER", payload: username });
         } else {
           toggleOnLoginError();
         }

@@ -4,13 +4,19 @@ const Context = createContext();
 
 export const ContextProvider = ({ children }) => {
   const initialState = {
-    accessGranted: false, // Nuevo estado
-    user: null, // Nuevo estado
+    accessGranted: false, // Estado para el acceso
+    user: null, // Estado para el usuario
+    role: null, // Nuevo estado para el rol del usuario
   };
+
   const reducer = (state, action) => {
     switch (action.type) {
       case "SET_ACCESS_GRANTED":
         return { ...state, accessGranted: action.payload };
+      case "SET_USER":
+        return { ...state, user: action.payload }; // Maneja el usuario
+      case "SET_ROLE":
+        return { ...state, role: action.payload }; // Maneja el rol
       default:
         return state;
     }
