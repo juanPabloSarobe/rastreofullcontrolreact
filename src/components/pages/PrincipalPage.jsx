@@ -40,11 +40,14 @@ const PrincipalPage = () => {
           {/* Botón flotante en la esquina superior derecha */}
           <Box
             position="absolute"
-            top="16px"
-            right="16px"
             zIndex={1000} // Asegura que el botón esté por encima del mapa
+            sx={{
+              top: { xs: "unset", md: "16px" }, // En móviles, no se aplica top
+              bottom: { xs: "16px", md: "unset" }, // En móviles, se aplica bottom
+              right: "16px", // Siempre a la derecha
+            }}
           >
-            <MenuButton />
+            <MenuButton menuPosition="up" />
           </Box>
 
           <MapContainer

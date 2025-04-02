@@ -11,7 +11,7 @@ import SsidChartIcon from "@mui/icons-material/SsidChart";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useContextValue } from "../../context/Context"; // Importa el contexto
 
-const MenuButton = () => {
+const MenuButton = ({ menuPosition = "down" }) => {
   const { dispatch } = useContextValue(); // Accede al dispatch del contexto
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -110,11 +110,11 @@ const MenuButton = () => {
         open={open}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: "bottom",
+          vertical: menuPosition === "up" ? "top" : "bottom",
           horizontal: "center",
         }}
         transformOrigin={{
-          vertical: "top",
+          vertical: menuPosition === "up" ? "bottom" : "top",
           horizontal: "center",
         }}
       >
