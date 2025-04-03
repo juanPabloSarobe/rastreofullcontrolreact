@@ -50,9 +50,15 @@ const MenuButton = ({ menuPosition = "down" }) => {
     {
       icon: <BarChartIcon fontSize="small" />,
       label: "Informes",
-      link: "/informes",
+      link: "https://plataforma.fullcontrolgps.com.ar/informes/",
       show: role === "Administrador" || role === "usuarioNormal", // Solo para administradores
-      onClick: handleClose,
+      onClick: () => {
+        handleClose(); // Cierra el menú
+        window.open(
+          "https://plataforma.fullcontrolgps.com.ar/informes/",
+          "_blank"
+        ); // Abre la URL en una nueva pestaña
+      },
     },
     {
       icon: <SsidChartIcon fontSize="small" />,
