@@ -9,17 +9,18 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import LogoutIcon from "@mui/icons-material/Logout";
-import { useContextValue } from "../../context/Context"; // Importa el contexto
+import { useContextValue } from "../../context/Context";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 
-const MenuButton = ({ menuPosition = "down" }) => {
-  const { dispatch } = useContextValue(); // Accede al dispatch del contexto
+const MenuButton = () => {
+  const { dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  // Obtén las variables del contexto
-  const {
-    state: { role, user },
-  } = useContextValue();
+  // Detecta si la pantalla es móvil o escritorio
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget); // Establece el elemento de anclaje para el menú
@@ -28,6 +29,7 @@ const MenuButton = ({ menuPosition = "down" }) => {
   const handleClose = () => {
     setAnchorEl(null); // Cierra el menú
   };
+
   const Logout = () => {
     document.cookie = "rol=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "sesion=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -38,55 +40,54 @@ const MenuButton = ({ menuPosition = "down" }) => {
     dispatch({ type: "SET_USER", payload: null });
   };
 
-  // Array de opciones del menú
   const menuItems = [
     {
       icon: <EventIcon fontSize="small" />,
       label: "Histórico Avanzado",
       link: "/historico",
-      show: role === "Administrador" || role === "usuarioNormal", // Mostrar según el rol
+      show: true,
       onClick: handleClose,
     },
     {
       icon: <BarChartIcon fontSize="small" />,
       label: "Informes",
       link: "https://plataforma.fullcontrolgps.com.ar/informes/",
-      show: role === "Administrador" || role === "usuarioNormal", // Solo para administradores
+      show: true,
       onClick: () => {
-        handleClose(); // Cierra el menú
+        handleClose();
         window.open(
           "https://plataforma.fullcontrolgps.com.ar/informes/",
           "_blank"
-        ); // Abre la URL en una nueva pestaña
+        );
       },
     },
     {
       icon: <SsidChartIcon fontSize="small" />,
       label: "Parciales",
       link: "/parciales",
-      show: role === "Administrador" || role === "usuarioNormal", // Solo para usuarios
+      show: true,
       onClick: handleClose,
     },
     {
       icon: <SettingsIcon fontSize="small" />,
       label: "Administración",
       link: "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
-      show: role === "Administrador" || role === "Proveedor", // Siempre visible
+      show: true,
       onClick: () => {
-        handleClose(); // Cierra el menú
+        handleClose();
         window.open(
           "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
           "_blank"
-        ); // Abre la URL en una nueva pestaña
+        );
       },
     },
     {
       icon: <LogoutIcon fontSize="small" />,
-      label: `Cerrar Sesión`, // Muestra el nombre del usuario o "Invitado"
+      label: "Cerrar Sesión",
       link: "/logout",
       show: true,
       onClick: () => {
-        handleClose(); // Cierra el menú
+        handleClose();
         Logout();
       },
     },
@@ -98,12 +99,12 @@ const MenuButton = ({ menuPosition = "down" }) => {
         color="black"
         aria-label="menu"
         size="large"
-        onClick={handleClick} // Abre el menú al hacer clic
+        onClick={handleClick}
         sx={{
           backgroundColor: "white",
           boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
           "&:hover": {
-            backgroundColor: "lightgray", // Cambia el color a gris al hacer hover
+            backgroundColor: "lightgray",
           },
         }}
       >
@@ -116,23 +117,18 @@ const MenuButton = ({ menuPosition = "down" }) => {
         open={open}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: menuPosition === "up" ? "top" : "bottom",
+          vertical: isMobile ? "top" : "bottom", // En móviles, el menú se abre hacia arriba
           horizontal: "center",
         }}
         transformOrigin={{
-          vertical: menuPosition === "up" ? "bottom" : "top",
+          vertical: isMobile ? "bottom" : "top", // En móviles, el menú aparece desde abajo
           horizontal: "center",
         }}
       >
-        {/* Generar opciones del menú dinámicamente */}
         {menuItems
-          .filter((item) => item.show) // Filtrar los ítems que deben mostrarse
+          .filter((item) => item.show)
           .map((item, index) => (
-            <MenuItem
-              key={index}
-              onClick={item.onClick} // Ejecuta la acción específica del ítem
-              sx={{ paddingY: 1.5 }}
-            >
+            <MenuItem key={index} onClick={item.onClick} sx={{ paddingY: 1.5 }}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               {item.label}
             </MenuItem>

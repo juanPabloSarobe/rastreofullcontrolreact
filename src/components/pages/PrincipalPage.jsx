@@ -47,7 +47,7 @@ const PrincipalPage = () => {
               right: "16px", // Siempre a la derecha
             }}
           >
-            <MenuButton menuPosition="up" />
+            <MenuButton />
           </Box>
 
           <MapContainer
