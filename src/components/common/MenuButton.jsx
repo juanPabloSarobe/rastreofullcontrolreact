@@ -9,18 +9,13 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import LogoutIcon from "@mui/icons-material/Logout";
+import Box from "@mui/material/Box"; // Importamos Box para el contenedor
 import { useContextValue } from "../../context/Context";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
 
 const MenuButton = () => {
   const { dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
-  // Detecta si la pantalla es móvil o escritorio
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget); // Establece el elemento de anclaje para el menú
@@ -94,7 +89,14 @@ const MenuButton = () => {
   ];
 
   return (
-    <>
+    <Box
+      position="absolute"
+      zIndex={1000} // Asegura que el botón esté por encima del mapa
+      sx={{
+        top: "16px", // Siempre en la parte superior
+        right: "16px", // Siempre en la parte derecha
+      }}
+    >
       <IconButton
         color="black"
         aria-label="menu"
@@ -117,11 +119,11 @@ const MenuButton = () => {
         open={open}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: isMobile ? "top" : "bottom", // En móviles, el menú se abre hacia arriba
+          vertical: "bottom", // El menú se abre hacia abajo
           horizontal: "center",
         }}
         transformOrigin={{
-          vertical: isMobile ? "bottom" : "top", // En móviles, el menú aparece desde abajo
+          vertical: "top", // El menú aparece desde arriba
           horizontal: "center",
         }}
       >
@@ -134,7 +136,7 @@ const MenuButton = () => {
             </MenuItem>
           ))}
       </Menu>
-    </>
+    </Box>
   );
 };
 
