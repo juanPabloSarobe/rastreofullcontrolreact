@@ -7,6 +7,7 @@ import MapsLayers from "../common/MapsLayers"; // Importa el componente MapsLaye
 import AddZoomControl from "../common/AddZoomControl"; // Importa el nuevo componente AddZoomControl
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
+import usePrefFetch from "../../hooks/usePrefFetch"; // Importa el custom hook
 
 const PrincipalPage = () => {
   const center = [-38.95622, -68.081845]; // Coordenadas iniciales (Neuquen)
@@ -14,6 +15,13 @@ const PrincipalPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // Usa el custom hook para realizar la consulta
+  const { data, loading, error } = usePrefFetch(
+    "/api/servicio/equipos.php/pref"
+  );
+  console.log("Data:", data);
+  console.log("Loading:", loading);
+  console.log("Error:", error);
   return (
     <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
       <Box
@@ -49,11 +57,32 @@ const PrincipalPage = () => {
                 A pretty CSS3 popup. <br /> Easily customizable.
               </Popup>
             </Marker>
-            {/* Usa el nuevo componente MapsLayers */}
+
             <MapsLayers />
-            {/* Usa el nuevo componente AddZoomControl */}
+
             {isMobile || <AddZoomControl />}
           </MapContainer>
+
+          {/* Renderiza los datos obtenidos */}
+          <Box
+            position="absolute"
+            bottom="16px"
+            left="16px"
+            bgcolor="white"
+            padding="8px"
+            borderRadius="8px"
+            boxShadow="0px 4px 6px rgba(0, 0, 0, 0.1)"
+            zIndex={1000}
+          >
+            {loading && <p>Cargando datos...</p>}
+            {error && <p>Error: {error}</p>}
+            {data && (
+              <div>
+                <h4>Datos recibidos:</h4>
+                <pre>{JSON.stringify(data, null, 2)}</pre>
+              </div>
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>
