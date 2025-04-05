@@ -87,9 +87,9 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
           icon={createCustomArrow(
             iconPaths.arrowCircleUpTwoTone,
             "white",
-            15,
+            15.5,
             rotationAngle,
-            -4.5
+            -4.0
           )}
         >
           <MarkerPopup popupContent={popupContent} />
@@ -97,7 +97,7 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
       ) : color === "red" ? (
         <Marker
           position={position}
-          icon={createCustomArrow(iconPaths.stopCircle, "white", 15, 0, -4.5)}
+          icon={createCustomArrow(iconPaths.stopCircle, "white", 15.5, 0, -4.5)}
         >
           {" "}
           <MarkerPopup popupContent={popupContent} />
@@ -105,7 +105,7 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
       ) : (
         <Marker
           position={position}
-          icon={createCustomArrow(iconPaths.error, "white", 15, 0, -4.5)}
+          icon={createCustomArrow(iconPaths.error, "white", 15.5, 0, -4.5)}
         >
           {" "}
           <MarkerPopup popupContent={popupContent} />
