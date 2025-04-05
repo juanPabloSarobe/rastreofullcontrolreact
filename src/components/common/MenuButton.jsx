@@ -9,7 +9,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import LogoutIcon from "@mui/icons-material/Logout";
-import Box from "@mui/material/Box"; // Importamos Box para el contenedor
+import Box from "@mui/material/Box";
 import { useContextValue } from "../../context/Context";
 
 const MenuButton = () => {
@@ -25,6 +25,11 @@ const MenuButton = () => {
     setAnchorEl(null); // Cierra el menú
   };
 
+  const changeToHistorico = () => {
+    dispatch({ type: "SET_VIEW_MODE", payload: "historico" }); // Cambia la vista a "historico"
+    handleClose();
+  };
+
   const Logout = () => {
     document.cookie = "rol=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "sesion=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -38,10 +43,9 @@ const MenuButton = () => {
   const menuItems = [
     {
       icon: <EventIcon fontSize="small" />,
-      label: "Histórico Avanzado",
-      link: "/historico",
+      label: "Histórico",
       show: true,
-      onClick: handleClose,
+      onClick: changeToHistorico, // Cambia la vista al hacer clic
     },
     {
       icon: <BarChartIcon fontSize="small" />,
@@ -91,10 +95,10 @@ const MenuButton = () => {
   return (
     <Box
       position="absolute"
-      zIndex={1000} // Asegura que el botón esté por encima del mapa
+      zIndex={1000}
       sx={{
-        top: "16px", // Siempre en la parte superior
-        right: "16px", // Siempre en la parte derecha
+        top: "16px",
+        right: "16px",
       }}
     >
       <IconButton
@@ -113,17 +117,16 @@ const MenuButton = () => {
         <MenuIcon />
       </IconButton>
 
-      {/* Menú desplegable */}
       <Menu
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: "bottom", // El menú se abre hacia abajo
+          vertical: "bottom",
           horizontal: "center",
         }}
         transformOrigin={{
-          vertical: "top", // El menú aparece desde arriba
+          vertical: "top",
           horizontal: "center",
         }}
       >
