@@ -1,5 +1,5 @@
 import React from "react";
-import { Marker, Popup, Tooltip } from "react-leaflet";
+import { Marker, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import MarkerPopup from "./MarkerPopup";
 

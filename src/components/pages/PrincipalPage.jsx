@@ -262,27 +262,6 @@ const PrincipalPage = () => {
 
             {isMobile || <AddZoomControl />}
           </MapContainer>
-
-          {/* Renderiza los datos obtenidos */}
-          {/* <Box
-            position="absolute"
-            bottom="16px"
-            left="16px"
-            bgcolor="white"
-            padding="8px"
-            borderRadius="8px"
-            boxShadow="0px 4px 6px rgba(0, 0, 0, 0.1)"
-            zIndex={1000}
-          >
-            {loading && <p>Cargando datos...</p>}
-            {error && <p>Error: {error}</p>}
-            {data && (
-              <div>
-                <h4>Datos recibidos:</h4>
-                <pre>{JSON.stringify(data, null, 2)}</pre>
-              </div>
-            )}
-          </Box> */}
         </Box>
       </Box>
     </Box>

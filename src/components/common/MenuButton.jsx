@@ -13,6 +13,7 @@ import Box from "@mui/material/Box";
 import { useContextValue } from "../../context/Context";
 
 const MenuButton = () => {
+  const { state } = useContextValue(); // Accede al estado del contexto
   const { dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -71,7 +72,7 @@ const MenuButton = () => {
       icon: <SettingsIcon fontSize="small" />,
       label: "Administración",
       link: "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
-      show: true,
+      show: state.role === "Administrador" || state.role === "Proveedor", // Verifica si el rol es "Administrador" o "Proveedor"
       onClick: () => {
         handleClose();
         window.open(
