@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 
-const usePrefFetch = (url, interval = 30000) => {
+const usePrefFetch = (url, interval = 30000, enabled = true) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!enabled) return; // Si no está habilitado, no ejecuta el fetch
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -40,7 +42,7 @@ const usePrefFetch = (url, interval = 30000) => {
     const intervalId = setInterval(fetchData, interval); // Ejecuta cada 30 segundos
 
     return () => clearInterval(intervalId); // Limpia el intervalo al desmontar
-  }, [url, interval]);
+  }, [url, interval, enabled]); // Agrega `enabled` como dependencia
 
   return { data, loading, error };
 };
