@@ -3,7 +3,13 @@ import { Marker, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import MarkerPopup from "./MarkerPopup";
 
-const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
+const CustomMarker = ({
+  position,
+  popupContent,
+  color,
+  rotationAngle = 0,
+  onClick,
+}) => {
   const iconPaths = {
     position: `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>`,
     roomTwoTone: `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="2.5"/>`, // Path del ícono RoomTwoTone
@@ -72,6 +78,9 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
         icon={createCustomIcon(iconPaths.roomTwoTone, color, 50, 0, 1)}
       ></Marker>
       <Marker
+        eventHandlers={{
+          click: onClick, // Maneja el evento de clic
+        }}
         position={position}
         icon={createCustomIcon(iconPaths.position, color, 50, 0, 1)}
       >
@@ -83,6 +92,9 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
       </Marker>
       {color === "green" ? (
         <Marker
+          eventHandlers={{
+            click: onClick, // Maneja el evento de clic
+          }}
           position={position}
           icon={createCustomArrow(
             iconPaths.arrowCircleUpTwoTone,
@@ -96,6 +108,9 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
         </Marker>
       ) : color === "red" ? (
         <Marker
+          eventHandlers={{
+            click: onClick, // Maneja el evento de clic
+          }}
           position={position}
           icon={createCustomArrow(iconPaths.stopCircle, "white", 15.5, 0, -4.5)}
         >
@@ -104,6 +119,9 @@ const CustomMarker = ({ position, popupContent, color, rotationAngle = 0 }) => {
         </Marker>
       ) : (
         <Marker
+          eventHandlers={{
+            click: onClick, // Maneja el evento de clic
+          }}
           position={position}
           icon={createCustomArrow(iconPaths.error, "white", 15.5, 0, -4.5)}
         >

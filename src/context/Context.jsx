@@ -8,6 +8,7 @@ export const ContextProvider = ({ children }) => {
     user: null, // Estado para el usuario
     role: null, // Estado para el rol del usuario
     viewMode: "rastreo", // Nuevo estado para controlar la vista actual
+    unitData: null,
   };
 
   const reducer = (state, action) => {
@@ -20,6 +21,8 @@ export const ContextProvider = ({ children }) => {
         return { ...state, role: action.payload };
       case "SET_VIEW_MODE":
         return { ...state, viewMode: action.payload }; // Actualiza la vista actual
+      case "SET_HISTORY_UNIT":
+        return { ...state, unitData: action.payload }; // Actualiza la vista actual
       default:
         return state;
     }

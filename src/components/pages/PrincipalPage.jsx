@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from "react"; // Importa useRef
-import { MapContainer, Marker, Popup, useMap } from "react-leaflet"; // Asegúrate de importar useMap
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Box from "@mui/material/Box";
 import MenuButton from "../common/MenuButton";
@@ -12,17 +12,18 @@ import { useContextValue } from "../../context/Context";
 import CustomMarker from "../common/CustomMarker";
 import { reportando } from "../../utils/reportando";
 import UnitSelector from "../common/UnitSelector";
+import UnitDetails from "../common/UnitDetails";
 
 const PrincipalPage = () => {
   const { state } = useContextValue();
-  const center = [-38.95622, -68.081845]; // Coordenadas iniciales
+  const center = [-38.95622, -68.081845];
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [markersData, setMarkersData] = useState([]);
   const [liteData, setLiteData] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [selectedUnits, setSelectedUnits] = useState([]);
-  const mapRef = useRef(null); // Crea un ref para el mapa
+  const mapRef = useRef(null);
 
   const { data: prefData } = usePrefFetch(
     "/api/servicio/equipos.php/pref",
@@ -51,18 +52,21 @@ const PrincipalPage = () => {
   const handleUnitSelect = (units) => {
     setSelectedUnits(units);
 
-    // Mueve el foco del mapa a la última unidad seleccionada
     if (units.length > 0) {
-      const lastSelectedUnit = units[units.length - 1]; // Obtén la última unidad seleccionada
+      const lastSelectedUnit = units[units.length - 1];
       const selectedMarker = markersData.find(
         (marker) => marker.Movil_ID === lastSelectedUnit
       );
+      setSelectedUnit(selectedMarker);
+
       if (selectedMarker && mapRef.current) {
         mapRef.current.setView(
           [selectedMarker.latitud, selectedMarker.longitud],
-          13 // Nivel de zoom
+          13
         );
       }
+    } else {
+      setSelectedUnit(null);
     }
   };
 
@@ -72,6 +76,12 @@ const PrincipalPage = () => {
       selectedUnits.includes(marker.Movil_ID)
     );
   }, [selectedUnits, markersData]);
+
+  const handleViewHistory = () => {
+    if (selectedUnit) {
+      console.log("Ver histórico de la unidad:", selectedUnit);
+    }
+  };
 
   return (
     <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
@@ -93,10 +103,17 @@ const PrincipalPage = () => {
           {state.viewMode === "rastreo" &&
             liteData?.GPS &&
             Object.keys(liteData.GPS).length > 0 && (
-              <UnitSelector
-                liteData={liteData}
-                onUnitSelect={handleUnitSelect}
-              />
+              <>
+                <UnitSelector
+                  liteData={liteData}
+                  onUnitSelect={handleUnitSelect}
+                />
+                {/* Muestra los detalles de la unidad seleccionada */}
+                <UnitDetails
+                  unitData={selectedUnit}
+                  onViewHistory={handleViewHistory}
+                />
+              </>
             )}
           <MapContainer
             center={center}
@@ -107,7 +124,7 @@ const PrincipalPage = () => {
               borderRadius: "12px",
             }}
             zoomControl={false}
-            ref={mapRef} // Asigna el ref al MapContainer
+            ref={mapRef}
           >
             {state.viewMode === "rastreo" &&
               filteredMarkersData &&
@@ -129,6 +146,7 @@ const PrincipalPage = () => {
                           : "red"
                       }
                       rotationAngle={marker.grados}
+                      onClick={() => setSelectedUnit(marker)} // Actualiza el estado al hacer clic
                     />
                   ))}
                 </>

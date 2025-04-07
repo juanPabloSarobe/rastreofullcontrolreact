@@ -30,6 +30,10 @@ const MenuButton = () => {
     dispatch({ type: "SET_VIEW_MODE", payload: "historico" }); // Cambia la vista a "historico"
     handleClose();
   };
+  const changeToRastreo = () => {
+    dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" }); // Cambia la vista a "historico"
+    handleClose();
+  };
 
   const Logout = () => {
     document.cookie = "rol=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -42,6 +46,12 @@ const MenuButton = () => {
   };
 
   const menuItems = [
+    {
+      icon: <EventIcon fontSize="small" />,
+      label: "Rastreo",
+      show: true,
+      onClick: changeToRastreo, // Cambia la vista al hacer clic
+    },
     {
       icon: <EventIcon fontSize="small" />,
       label: "Histórico",
