@@ -1,37 +1,77 @@
-import React, { useEffect, useState } from "react";
-import { MapContainer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css"; // Asegúrate de importar los estilos de Leaflet
-import Box from "@mui/material/Box"; // Importa el componente Box de MUI
+import React, { useEffect, useState, useMemo, useRef } from "react"; // Importa useRef
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet"; // Asegúrate de importar useMap
+import "leaflet/dist/leaflet.css";
+import Box from "@mui/material/Box";
 import MenuButton from "../common/MenuButton";
-import MapsLayers from "../common/MapsLayers"; // Importa el componente MapsLayers
-import AddZoomControl from "../common/AddZoomControl"; // Importa el nuevo componente AddZoomControl
+import MapsLayers from "../common/MapsLayers";
+import AddZoomControl from "../common/AddZoomControl";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
-import usePrefFetch from "../../hooks/usePrefFetch"; // Importa el custom hook
-import { useContextValue } from "../../context/Context"; // Importa el contexto
+import usePrefFetch from "../../hooks/usePrefFetch";
+import { useContextValue } from "../../context/Context";
 import CustomMarker from "../common/CustomMarker";
 import { reportando } from "../../utils/reportando";
+import UnitSelector from "../common/UnitSelector";
 
 const PrincipalPage = () => {
-  const { state } = useContextValue(); // Accede al estado del contexto
-  const center = [-38.95622, -68.081845]; // Coordenadas iniciales (Neuquen)
+  const { state } = useContextValue();
+  const center = [-38.95622, -68.081845]; // Coordenadas iniciales
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [markersData, setMarkersData] = useState([]);
+  const [liteData, setLiteData] = useState([]);
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [selectedUnits, setSelectedUnits] = useState([]);
+  const mapRef = useRef(null); // Crea un ref para el mapa
 
-  // Usa el custom hook para realizar la consulta
-  const { data, loading, error } = usePrefFetch(
+  const { data: prefData } = usePrefFetch(
     "/api/servicio/equipos.php/pref",
     30000,
-    state.viewMode === "rastreo" // Solo habilita el hook en la vista "rastreo"
+    state.viewMode === "rastreo"
+  );
+
+  const { data: liteResponse } = usePrefFetch(
+    "/api/servicio/equipos.php/lite",
+    30000,
+    true
   );
 
   useEffect(() => {
-    if (data) {
-      console.log("Datos obtenidos:", data.GPS);
-      setMarkersData(data?.GPS); // Actualiza el estado con los datos obtenidos
+    if (prefData) {
+      setMarkersData(prefData?.GPS || []);
     }
-  }, [data]);
+  }, [prefData]);
+
+  useEffect(() => {
+    if (liteResponse) {
+      setLiteData(liteResponse || []);
+    }
+  }, [liteResponse]);
+
+  const handleUnitSelect = (units) => {
+    setSelectedUnits(units);
+
+    // Mueve el foco del mapa a la última unidad seleccionada
+    if (units.length > 0) {
+      const lastSelectedUnit = units[units.length - 1]; // Obtén la última unidad seleccionada
+      const selectedMarker = markersData.find(
+        (marker) => marker.Movil_ID === lastSelectedUnit
+      );
+      if (selectedMarker && mapRef.current) {
+        mapRef.current.setView(
+          [selectedMarker.latitud, selectedMarker.longitud],
+          13 // Nivel de zoom
+        );
+      }
+    }
+  };
+
+  const filteredMarkersData = useMemo(() => {
+    if (!selectedUnits.length || !markersData) return [];
+    return markersData.filter((marker) =>
+      selectedUnits.includes(marker.Movil_ID)
+    );
+  }, [selectedUnits, markersData]);
 
   return (
     <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
@@ -50,6 +90,14 @@ const PrincipalPage = () => {
           position="relative"
         >
           <MenuButton />
+          {state.viewMode === "rastreo" &&
+            liteData?.GPS &&
+            Object.keys(liteData.GPS).length > 0 && (
+              <UnitSelector
+                liteData={liteData}
+                onUnitSelect={handleUnitSelect}
+              />
+            )}
           <MapContainer
             center={center}
             zoom={13}
@@ -59,12 +107,13 @@ const PrincipalPage = () => {
               borderRadius: "12px",
             }}
             zoomControl={false}
+            ref={mapRef} // Asigna el ref al MapContainer
           >
             {state.viewMode === "rastreo" &&
-              markersData &&
-              markersData.length > 0 && (
+              filteredMarkersData &&
+              filteredMarkersData.length > 0 && (
                 <>
-                  {markersData.map((marker) => (
+                  {filteredMarkersData.map((marker) => (
                     <CustomMarker
                       key={Number(marker.Movil_ID)}
                       position={[
@@ -84,26 +133,6 @@ const PrincipalPage = () => {
                   ))}
                 </>
               )}
-
-            {state.viewMode === "historico" && (
-              <>
-                <Marker
-                  position={center}
-                  icon={L.icon({
-                    iconUrl:
-                      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-red.png",
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                  })}
-                >
-                  <Popup>
-                    Vista de Rastreo: Aquí puedes ver la ubicación en tiempo
-                    real.
-                  </Popup>
-                </Marker>
-              </>
-            )}
 
             <MapsLayers />
             {isMobile || <AddZoomControl />}
