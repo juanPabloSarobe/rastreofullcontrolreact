@@ -146,13 +146,15 @@ const PrincipalPage = () => {
                           : "red"
                       }
                       rotationAngle={marker.grados}
-                      onClick={() => setSelectedUnit(marker)} // Actualiza el estado al hacer clic
+                      onClick={() => setSelectedUnit(marker)}
+                      velocidad={marker.velocidad}
                     />
                   ))}
                 </>
               )}
 
-            <MapsLayers />
+            <MapsLayers isMobile={isMobile} />
+
             {isMobile || <AddZoomControl />}
           </MapContainer>
         </Box>

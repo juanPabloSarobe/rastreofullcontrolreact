@@ -39,14 +39,15 @@ const UnitDetails = ({ unitData }) => {
   return (
     <Box
       sx={{
-        position: "absolute", // Flotante
-        top: "80px", // Debajo del UnitSelector
-        left: "16px", // Alineado con el UnitSelector
-        width: { xs: "75%", sm: "400px" }, // Mismo ancho que UnitSelector
-        maxWidth: "400px",
+        position: "absolute",
+        top: { xs: "auto", sm: "80px" }, // En móviles, se posiciona en la parte inferior
+        bottom: { xs: 0, sm: "auto" }, // En móviles, se fija al fondo
+        left: { xs: 0, sm: "16px" }, // Alineado a la izquierda
+        width: { xs: "100%", sm: "400px" }, // En móviles, ocupa todo el ancho
+        maxWidth: { sm: "400px" }, // En pantallas más grandes, tiene un ancho máximo
         zIndex: 1000,
         bgcolor: "white",
-        borderRadius: "24px",
+        borderRadius: { xs: "24px 24px 0 0", sm: "24px" }, // Bordes redondeados en móviles
         boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
         overflow: "hidden", // Asegura que el contenido no se desborde
       }}
@@ -82,7 +83,7 @@ const UnitDetails = ({ unitData }) => {
           }}
         >
           <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Ult Conexión: {fechaHora.slice(0, -3)}
+            Ult Reporte: {fechaHora.slice(0, -3)}
           </Typography>
           <Typography variant="body2" sx={{ fontSize: "12px" }}>
             Estado: {estadoDeMotor}

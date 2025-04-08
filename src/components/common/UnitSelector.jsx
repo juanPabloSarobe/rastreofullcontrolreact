@@ -7,6 +7,12 @@ import ListSubheader from "@mui/material/ListSubheader";
 import TextField from "@mui/material/TextField";
 import Switch from "@mui/material/Switch"; // Importa el componente Switch
 import SearchIcon from "@mui/icons-material/Search"; // Importa el ícono de lupa
+import ListItemIcon from "@mui/material/ListItemIcon"; // Importa ListItemIcon
+import InputAdornment from "@mui/material/InputAdornment"; // Importa InputAdornment
+import IconButton from "@mui/material/IconButton"; // Importa IconButton
+import ClearIcon from "@mui/icons-material/Clear"; // Importa el ícono de borrar
+
+import StatusIcon from "./StatusIcon"; // Importa el componente personalizado
 
 const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -147,6 +153,22 @@ const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
             onKeyDown={(event) => {
               event.stopPropagation(); // Detiene la propagación del evento
             }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {searchText && ( // Muestra el ícono solo si hay texto
+                      <IconButton
+                        onClick={() => setSearchText("")} // Limpia el campo de búsqueda
+                        size="small"
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
         </Box>
         {/* Lista de unidades filtradas */}
@@ -164,6 +186,13 @@ const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
                   justifyContent="space-between"
                   width="100%"
                 >
+                  {/* Ícono a la izquierda */}
+                  <ListItemIcon>
+                    <StatusIcon
+                      mot={unit.mot} // Pasa el valor de `mot`
+                      fec={unit.fec} // Pasa el valor de `fec`
+                    />
+                  </ListItemIcon>
                   <span>{unit.patente}</span>
                   <Switch
                     checked={selectedUnits.includes(unit.Movil_ID)} // Marca si está seleccionado

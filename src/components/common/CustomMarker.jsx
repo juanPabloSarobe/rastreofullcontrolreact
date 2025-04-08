@@ -9,6 +9,7 @@ const CustomMarker = ({
   color,
   rotationAngle = 0,
   onClick,
+  velocidad,
 }) => {
   const iconPaths = {
     position: `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>`,
@@ -16,6 +17,7 @@ const CustomMarker = ({
     arrowCircleUpTwoTone: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 8l-4 4h3v4h2v-4h3l-4-4z"/>`, // Path del ícono ArrowCircleUpTwoTone
     stopCircle: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M9 9h6v6H9z"/>`, // Path del ícono StopCircle
     error: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.83 0-1.5-.67-1.5-1.5S11.17 14 12 14s1.5.67 1.5 1.5S12.83 17 12 17zm1-4h-2V7h2v6z"/>`, // Path del ícono Error
+    removeCircleOutlineOutlined: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-4-9h8v2H8z"/>`, // Nuevo ícono
   };
   const createMuiIconAsImage = (
     path,
@@ -96,13 +98,23 @@ const CustomMarker = ({
             click: onClick, // Maneja el evento de clic
           }}
           position={position}
-          icon={createCustomArrow(
-            iconPaths.arrowCircleUpTwoTone,
-            "white",
-            15.5,
-            rotationAngle,
-            -4.0
-          )}
+          icon={
+            velocidad != 0
+              ? createCustomArrow(
+                  iconPaths.arrowCircleUpTwoTone,
+                  "white",
+                  15.5,
+                  rotationAngle,
+                  -4.0
+                )
+              : createCustomArrow(
+                  iconPaths.removeCircleOutlineOutlined,
+                  "white",
+                  15.5,
+                  0,
+                  -4.0
+                )
+          }
         >
           <MarkerPopup popupContent={popupContent} />
         </Marker>
