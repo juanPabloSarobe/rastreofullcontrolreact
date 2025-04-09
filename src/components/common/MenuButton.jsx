@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import Menu from "@mui/material/Menu";
@@ -10,13 +10,23 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import LogoutIcon from "@mui/icons-material/Logout";
 import Box from "@mui/material/Box";
+import Switch from "@mui/material/Switch"; // Importa el componente Switch
 import { useContextValue } from "../../context/Context";
 
 const MenuButton = () => {
-  const { state } = useContextValue(); // Accede al estado del contexto
-  const { dispatch } = useContextValue();
+  const { state, dispatch } = useContextValue(); // Accede al estado y dispatch del contexto
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+
+  // Estado local para manejar "ocultaUnidadesDeBaja"
+  const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
+
+  useEffect(() => {
+    // Inicializa el estado local con el valor del estado global
+    if (state.ocultaUnidadesDeBaja !== undefined) {
+      setOcultaUnidadesDeBaja(state.ocultaUnidadesDeBaja);
+    }
+  }, [state.ocultaUnidadesDeBaja]);
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget); // Establece el elemento de anclaje para el menú
@@ -30,8 +40,9 @@ const MenuButton = () => {
     dispatch({ type: "SET_VIEW_MODE", payload: "historico" }); // Cambia la vista a "historico"
     handleClose();
   };
+
   const changeToRastreo = () => {
-    dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" }); // Cambia la vista a "historico"
+    dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" }); // Cambia la vista a "rastreo"
     handleClose();
   };
 
@@ -43,6 +54,15 @@ const MenuButton = () => {
     dispatch({ type: "SET_ACCESS_GRANTED", payload: false });
     dispatch({ type: "SET_ROLE", payload: null });
     dispatch({ type: "SET_USER", payload: null });
+  };
+
+  const toggleOcultarBajas = () => {
+    const newValue = !ocultaUnidadesDeBaja;
+    setOcultaUnidadesDeBaja(newValue); // Actualiza el estado local
+    dispatch({
+      type: "SET_HIDE_LOW_UNITS",
+      payload: newValue, // Actualiza el estado global
+    });
   };
 
   const menuItems = [
@@ -64,11 +84,11 @@ const MenuButton = () => {
       link: "https://plataforma.fullcontrolgps.com.ar/informes/",
       show: true,
       onClick: () => {
-        handleClose();
         window.open(
           "https://plataforma.fullcontrolgps.com.ar/informes/",
           "_blank"
         );
+        handleClose();
       },
     },
     {
@@ -84,11 +104,14 @@ const MenuButton = () => {
       link: "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
       show: state.role === "Administrador" || state.role === "Proveedor", // Verifica si el rol es "Administrador" o "Proveedor"
       onClick: () => {
+        // Abre la nueva página y asegura que las cookies se envíen automáticamente
+        const url = "https://plataforma.fullcontrolgps.com.ar/fulladm/#/";
+        const options = "noopener,noreferrer";
+
+        // Abre la página en una nueva ventana
+        window.open(url, "_blank", options);
+
         handleClose();
-        window.open(
-          "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
-          "_blank"
-        );
       },
     },
     {
@@ -100,6 +123,19 @@ const MenuButton = () => {
         handleClose();
         Logout();
       },
+    },
+    {
+      icon: null, // No necesita ícono
+      label: "Ocultar Bajas",
+      show: state.role === "Administrador", // Solo visible para el administrador
+      onClick: null, // No necesita acción al hacer clic
+      renderRight: (
+        <Switch
+          checked={ocultaUnidadesDeBaja} // Usa el estado local
+          onChange={toggleOcultarBajas} // Alterna el estado
+          color="primary"
+        />
+      ),
     },
   ];
 
@@ -144,9 +180,17 @@ const MenuButton = () => {
         {menuItems
           .filter((item) => item.show)
           .map((item, index) => (
-            <MenuItem key={index} onClick={item.onClick} sx={{ paddingY: 1.5 }}>
+            <MenuItem
+              key={index}
+              onClick={item.onClick}
+              sx={{ paddingY: 1.5 }}
+              disableRipple={!item.onClick} // Desactiva el efecto de clic si no hay acción
+            >
               <ListItemIcon>{item.icon}</ListItemIcon>
               {item.label}
+              {item.renderRight && (
+                <Box sx={{ marginLeft: "auto" }}>{item.renderRight}</Box>
+              )}
             </MenuItem>
           ))}
       </Menu>

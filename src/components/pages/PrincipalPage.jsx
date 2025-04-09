@@ -15,6 +15,7 @@ import UnitSelector from "../common/UnitSelector";
 import UnitDetails from "../common/UnitDetails";
 import LoadingModal from "../common/LoadingModal";
 import LinearLoading from "../common/LinearLoading";
+import empresasAExcluir from "../../data/empresasAExcluir.json"; // Asegúrate de que esta ruta sea correcta
 
 const PrincipalPage = () => {
   const { state } = useContextValue();
@@ -37,7 +38,7 @@ const PrincipalPage = () => {
   const { data: liteResponse, loading: liteLoading } = usePrefFetch(
     "/api/servicio/equipos.php/lite",
     30000,
-    true
+    state.viewMode === "rastreo"
   );
 
   useEffect(() => {
@@ -48,9 +49,49 @@ const PrincipalPage = () => {
 
   useEffect(() => {
     if (liteResponse) {
-      setLiteData(liteResponse || []);
+      let filteredData = liteResponse?.GPS || {};
+      console.log("HideLowUnits: ", state.hideLowUnits);
+
+      // Aplica los filtros solo si el usuario es administrador y `hideLowUnits` es true
+      if (state.role === "Administrador" && state.hideLowUnits) {
+        console.log(
+          "Aplicando filtros para administrador con hideLowUnits activado"
+        );
+
+        // Filtra únicamente el objeto cuya clave sea ""
+        if (filteredData[""]) {
+          filteredData[""] = filteredData[""].filter((unit) => {
+            // Verifica que `unit.fec` no sea null o undefined antes de usar `.split()`
+            if (!unit.fec) return false;
+
+            const fecha = new Date(
+              unit.fec.split(" ")[0] +
+                "T" +
+                unit.fec.split(" ")[1].replace("-03", "")
+            );
+            const fechaCorte = new Date("2025-01-01");
+
+            return (
+              unit.id !== null && // ID no debe ser null
+              unit.patente !== null && // Patente no debe ser null
+              fecha >= fechaCorte // Fecha debe ser mayor o igual al 1 de enero de 2024
+            );
+          });
+        }
+
+        // Itera sobre las claves y elimina las empresas a excluir
+        empresasAExcluir.forEach((empresa) => {
+          if (filteredData[empresa]) {
+            delete filteredData[empresa];
+          }
+        });
+      }
+
+      console.log(Object.keys(filteredData).length);
+      console.log("filteredData", filteredData);
+      setLiteData({ GPS: filteredData }); // Actualiza `liteData` con los datos filtrados
     }
-  }, [liteResponse]);
+  }, [liteResponse, state.role, state.hideLowUnits]);
 
   // Controla el estado de carga
   useEffect(() => {
