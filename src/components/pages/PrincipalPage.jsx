@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  Popup,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Box from "@mui/material/Box";
 import MenuButton from "../common/MenuButton";
@@ -16,6 +22,8 @@ import UnitDetails from "../common/UnitDetails";
 import LoadingModal from "../common/LoadingModal";
 import LinearLoading from "../common/LinearLoading";
 import empresasAExcluir from "../../data/empresasAExcluir.json"; // Asegúrate de que esta ruta sea correcta
+import HistoricalView from "./HistoricalView";
+import { Typography } from "@mui/material";
 
 const PrincipalPage = () => {
   const { state } = useContextValue();
@@ -27,6 +35,7 @@ const PrincipalPage = () => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [selectedUnits, setSelectedUnits] = useState([]);
   const [isLoading, setIsLoading] = useState(true); // Estado para controlar el modal de carga
+  const [historicalData, setHistoricalData] = useState(null); // Estado para los datos históricos
   const mapRef = useRef(null);
 
   const { data: prefData, loading: prefLoading } = usePrefFetch(
@@ -187,6 +196,12 @@ const PrincipalPage = () => {
                   />
                 </>
               )}
+            {state.viewMode === "historico" && selectedUnit && (
+              <HistoricalView
+                selectedUnit={selectedUnit}
+                onHistoricalDataFetched={setHistoricalData}
+              />
+            )}
             <MapContainer
               center={center}
               zoom={13}
@@ -198,32 +213,58 @@ const PrincipalPage = () => {
               zoomControl={false}
               ref={mapRef}
             >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+
+              {/* Renderizar marcadores de rastreo */}
               {state.viewMode === "rastreo" &&
-                filteredMarkersData &&
-                filteredMarkersData.length > 0 && (
-                  <>
-                    {filteredMarkersData.map((marker) => (
-                      <CustomMarker
-                        key={Number(marker.Movil_ID)}
-                        position={[
-                          Number(marker.latitud),
-                          Number(marker.longitud),
-                        ]}
-                        popupContent={marker.patente}
-                        color={
-                          !reportando(marker.fechaHora)
-                            ? "gray"
-                            : marker.estadoDeMotor === "Motor Encendido"
-                            ? "green"
-                            : "red"
-                        }
-                        rotationAngle={marker.grados}
-                        onClick={() => setSelectedUnit(marker)}
-                        velocidad={marker.velocidad}
-                      />
+                filteredMarkersData.map((marker) => (
+                  <CustomMarker
+                    key={Number(marker.Movil_ID)}
+                    position={[Number(marker.latitud), Number(marker.longitud)]}
+                    popupContent={marker.patente}
+                    color={
+                      !reportando(marker.fechaHora)
+                        ? "gray"
+                        : marker.estadoDeMotor === "Motor Encendido"
+                        ? "green"
+                        : "red"
+                    }
+                    rotationAngle={marker.grados}
+                  />
+                ))}
+
+              {/* Renderizar datos históricos */}
+              {state.viewMode === "historico" && historicalData && (
+                <>
+                  {Array.isArray(historicalData.Markers) &&
+                    historicalData.Markers.map((marker, index) => (
+                      <Marker
+                        key={index}
+                        position={[marker.lat, marker.lng]} // Asegúrate de usar las claves correctas
+                      >
+                        <Popup>
+                          <Typography variant="body2">
+                            {marker.message.replace(/<\/?br>/g, "\n")}
+                          </Typography>
+                        </Popup>
+                      </Marker>
                     ))}
-                  </>
-                )}
+
+                  {Array.isArray(historicalData.paths) && (
+                    <Polyline
+                      positions={historicalData.paths.map((path) => [
+                        path.lat, // Asegúrate de usar las claves correctas
+                        path.lng,
+                      ])}
+                      color="blue"
+                      weight={3}
+                    />
+                  )}
+                </>
+              )}
 
               <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
 
