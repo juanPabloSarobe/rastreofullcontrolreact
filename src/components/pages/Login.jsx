@@ -14,7 +14,7 @@ import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
 import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
-import logoFullControlLargo from "../../assets/logoFullControlLargo.png";
+import logoFullControlLargo from "../../assets/logoFullControlLargo.webp";
 import { useContextValue } from "../../context/Context";
 import { FormHelperText } from "@mui/joy";
 import { InfoOutlined } from "@mui/icons-material";

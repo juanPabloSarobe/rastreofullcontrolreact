@@ -13,6 +13,8 @@ import CustomMarker from "../common/CustomMarker";
 import { reportando } from "../../utils/reportando";
 import UnitSelector from "../common/UnitSelector";
 import UnitDetails from "../common/UnitDetails";
+import LoadingModal from "../common/LoadingModal";
+import LinearLoading from "../common/LinearLoading";
 
 const PrincipalPage = () => {
   const { state } = useContextValue();
@@ -23,15 +25,16 @@ const PrincipalPage = () => {
   const [liteData, setLiteData] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [selectedUnits, setSelectedUnits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true); // Estado para controlar el modal de carga
   const mapRef = useRef(null);
 
-  const { data: prefData } = usePrefFetch(
+  const { data: prefData, loading: prefLoading } = usePrefFetch(
     "/api/servicio/equipos.php/pref",
     30000,
     state.viewMode === "rastreo"
   );
 
-  const { data: liteResponse } = usePrefFetch(
+  const { data: liteResponse, loading: liteLoading } = usePrefFetch(
     "/api/servicio/equipos.php/lite",
     30000,
     true
@@ -48,6 +51,15 @@ const PrincipalPage = () => {
       setLiteData(liteResponse || []);
     }
   }, [liteResponse]);
+
+  // Controla el estado de carga
+  useEffect(() => {
+    if (!prefLoading && !liteLoading) {
+      setIsLoading(false); // Oculta el modal cuando ambos fetchs han terminado
+    } else {
+      setIsLoading(true); // Muestra el modal mientras los fetchs están cargando
+    }
+  }, [prefLoading, liteLoading]);
 
   const handleUnitSelect = (units) => {
     setSelectedUnits(units);
@@ -84,82 +96,92 @@ const PrincipalPage = () => {
   };
 
   return (
-    <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
-      <Box
-        display="flex"
-        height="100vh"
-        padding="4px"
-        width="100vw"
-        flexDirection="row"
-        justifyContent="center"
-      >
+    <>
+      {/* Modal de carga */}
+      {markersData.length === 0 && <LoadingModal isLoading={isLoading} />}
+
+      {/* Indicador de carga lineal */}
+      {markersData.length > 0 && (prefLoading || liteLoading) && (
+        <LinearLoading />
+      )}
+
+      <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
         <Box
-          width="100%"
-          height="100%"
-          sx={{ borderRadius: "12px" }}
-          position="relative"
+          display="flex"
+          height="100vh"
+          padding="4px"
+          width="100vw"
+          flexDirection="row"
+          justifyContent="center"
         >
-          <MenuButton />
-          {state.viewMode === "rastreo" &&
-            liteData?.GPS &&
-            Object.keys(liteData.GPS).length > 0 && (
-              <>
-                <UnitSelector
-                  liteData={liteData}
-                  onUnitSelect={handleUnitSelect}
-                />
-                {/* Muestra los detalles de la unidad seleccionada */}
-                <UnitDetails
-                  unitData={selectedUnit}
-                  onViewHistory={handleViewHistory}
-                />
-              </>
-            )}
-          <MapContainer
-            center={center}
-            zoom={13}
-            style={{
-              height: "100%",
-              width: "100%",
-              borderRadius: "12px",
-            }}
-            zoomControl={false}
-            ref={mapRef}
+          <Box
+            width="100%"
+            height="100%"
+            sx={{ borderRadius: "12px" }}
+            position="relative"
           >
+            <MenuButton />
             {state.viewMode === "rastreo" &&
-              filteredMarkersData &&
-              filteredMarkersData.length > 0 && (
+              liteData?.GPS &&
+              Object.keys(liteData.GPS).length > 0 && (
                 <>
-                  {filteredMarkersData.map((marker) => (
-                    <CustomMarker
-                      key={Number(marker.Movil_ID)}
-                      position={[
-                        Number(marker.latitud),
-                        Number(marker.longitud),
-                      ]}
-                      popupContent={marker.patente}
-                      color={
-                        !reportando(marker.fechaHora)
-                          ? "gray"
-                          : marker.estadoDeMotor === "Motor Encendido"
-                          ? "green"
-                          : "red"
-                      }
-                      rotationAngle={marker.grados}
-                      onClick={() => setSelectedUnit(marker)}
-                      velocidad={marker.velocidad}
-                    />
-                  ))}
+                  <UnitSelector
+                    liteData={liteData}
+                    onUnitSelect={handleUnitSelect}
+                  />
+                  {/* Muestra los detalles de la unidad seleccionada */}
+                  <UnitDetails
+                    unitData={selectedUnit}
+                    onViewHistory={handleViewHistory}
+                  />
                 </>
               )}
+            <MapContainer
+              center={center}
+              zoom={13}
+              style={{
+                height: "100%",
+                width: "100%",
+                borderRadius: "12px",
+              }}
+              zoomControl={false}
+              ref={mapRef}
+            >
+              {state.viewMode === "rastreo" &&
+                filteredMarkersData &&
+                filteredMarkersData.length > 0 && (
+                  <>
+                    {filteredMarkersData.map((marker) => (
+                      <CustomMarker
+                        key={Number(marker.Movil_ID)}
+                        position={[
+                          Number(marker.latitud),
+                          Number(marker.longitud),
+                        ]}
+                        popupContent={marker.patente}
+                        color={
+                          !reportando(marker.fechaHora)
+                            ? "gray"
+                            : marker.estadoDeMotor === "Motor Encendido"
+                            ? "green"
+                            : "red"
+                        }
+                        rotationAngle={marker.grados}
+                        onClick={() => setSelectedUnit(marker)}
+                        velocidad={marker.velocidad}
+                      />
+                    ))}
+                  </>
+                )}
 
-            <MapsLayers isMobile={isMobile} />
+              <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
 
-            {isMobile || <AddZoomControl />}
-          </MapContainer>
+              {isMobile || <AddZoomControl />}
+            </MapContainer>
+          </Box>
         </Box>
       </Box>
-    </Box>
+    </>
   );
 };
 

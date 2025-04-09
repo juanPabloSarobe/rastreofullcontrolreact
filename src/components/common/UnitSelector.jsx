@@ -13,6 +13,7 @@ import IconButton from "@mui/material/IconButton"; // Importa IconButton
 import ClearIcon from "@mui/icons-material/Clear"; // Importa el ícono de borrar
 
 import StatusIcon from "./StatusIcon"; // Importa el componente personalizado
+import logoFullControl from "../../assets/LogoFullcontrolSoloGota.webp"; // Importa el logo
 
 const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -101,12 +102,25 @@ const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
           "&:hover": {
             backgroundColor: "lightgray",
           },
-          paddingLeft: "28px",
+          paddingLeft: "8px", // Ajusta el padding para dar espacio al logo
         }}
       >
+        {/* Logo de la empresa */}
+        <Box
+          component="img"
+          src={logoFullControl}
+          alt="Logo FullControl"
+          sx={{
+            height: "32px", // Ajusta el tamaño del logo
+            width: "20px",
+            marginRight: "8px", // Espacio entre el logo y el texto
+            marginLeft: "12px", // Espacio entre el logo y el texto
+          }}
+        />
         Seleccionar Unidades
         <SearchIcon sx={{ marginLeft: "8px" }} />
       </Button>
+
       <Menu
         anchorEl={anchorEl}
         open={open}
