@@ -14,6 +14,7 @@ import ClearIcon from "@mui/icons-material/Clear"; // Importa el ícono de borra
 
 import StatusIcon from "./StatusIcon"; // Importa el componente personalizado
 import logoFullControl from "../../assets/LogoFullcontrolSoloGota.webp"; // Importa el logo
+import { Typography } from "@mui/material";
 
 const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -113,11 +114,19 @@ const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
           sx={{
             height: "32px", // Ajusta el tamaño del logo
             width: "20px",
-            marginRight: "8px", // Espacio entre el logo y el texto
             marginLeft: "12px", // Espacio entre el logo y el texto
           }}
         />
-        Seleccionar Unidades
+        <Typography
+          variant="body1"
+          sx={{
+            flexGrow: 1,
+            textAlign: "center",
+            fontSize: { xs: "12px", sm: "16px" },
+          }}
+        >
+          Seleccionar Unidades
+        </Typography>
         <SearchIcon sx={{ marginLeft: "8px" }} />
       </Button>
 

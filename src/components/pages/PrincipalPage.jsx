@@ -44,8 +44,16 @@ const PrincipalPage = () => {
   useEffect(() => {
     if (prefData) {
       setMarkersData(prefData?.GPS || []);
+
+      // Actualiza los datos de la unidad seleccionada en UnitDetails
+      if (selectedUnit) {
+        const updatedSelectedUnit = prefData?.GPS?.find(
+          (marker) => marker.Movil_ID === selectedUnit.Movil_ID
+        );
+        setSelectedUnit(updatedSelectedUnit || null); // Actualiza solo si la unidad actual existe en los nuevos datos
+      }
     }
-  }, [prefData]);
+  }, [prefData, selectedUnit]);
 
   useEffect(() => {
     if (liteResponse) {
@@ -139,12 +147,14 @@ const PrincipalPage = () => {
   return (
     <>
       {/* Modal de carga */}
-      {markersData.length === 0 && <LoadingModal isLoading={isLoading} />}
+      {state.viewMode === "rastreo" && markersData.length === 0 && (
+        <LoadingModal isLoading={isLoading} />
+      )}
 
       {/* Indicador de carga lineal */}
-      {markersData.length > 0 && (prefLoading || liteLoading) && (
-        <LinearLoading />
-      )}
+      {state.viewMode === "rastreo" &&
+        markersData.length > 0 &&
+        (prefLoading || liteLoading) && <LinearLoading />}
 
       <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
         <Box
