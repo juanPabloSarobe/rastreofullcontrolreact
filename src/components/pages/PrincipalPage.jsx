@@ -221,6 +221,11 @@ const PrincipalPage = () => {
                         : "red"
                     }
                     rotationAngle={marker.grados}
+                    onClick={() => {
+                      // Actualizar la unidad seleccionada
+                      setSelectedUnit(marker);
+                    }}
+                    velocidad={marker.velocidad}
                   />
                 ))}
               {state.viewMode === "historico" && selectedUnit && (

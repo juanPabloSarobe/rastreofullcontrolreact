@@ -8,6 +8,7 @@ import EventIcon from "@mui/icons-material/Event";
 import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
+import ReportIcon from "@mui/icons-material/Report";
 import LogoutIcon from "@mui/icons-material/Logout";
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch"; // Importa el componente Switch
@@ -115,6 +116,19 @@ const MenuButton = () => {
       },
     },
     {
+      icon: <ReportIcon fontSize="small" />, // No necesita ícono
+      label: "Ocultar Bajas",
+      show: state.role === "Administrador", // Solo visible para el administrador
+      onClick: toggleOcultarBajas, // No necesita acción al hacer clic
+      renderRight: (
+        <Switch
+          checked={ocultaUnidadesDeBaja} // Usa el estado local
+          onChange={toggleOcultarBajas} // Alterna el estado
+          color="primary"
+        />
+      ),
+    },
+    {
       icon: <LogoutIcon fontSize="small" />,
       label: "Cerrar Sesión",
       link: "/logout",
@@ -123,19 +137,6 @@ const MenuButton = () => {
         handleClose();
         Logout();
       },
-    },
-    {
-      icon: null, // No necesita ícono
-      label: "Ocultar Bajas",
-      show: state.role === "Administrador", // Solo visible para el administrador
-      onClick: null, // No necesita acción al hacer clic
-      renderRight: (
-        <Switch
-          checked={ocultaUnidadesDeBaja} // Usa el estado local
-          onChange={toggleOcultarBajas} // Alterna el estado
-          color="primary"
-        />
-      ),
     },
   ];
 
