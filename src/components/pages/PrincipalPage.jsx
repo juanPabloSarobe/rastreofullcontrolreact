@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Polyline,
-  Popup,
-} from "react-leaflet";
+import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Box from "@mui/material/Box";
 import MenuButton from "../common/MenuButton";
@@ -23,7 +17,7 @@ import LoadingModal from "../common/LoadingModal";
 import LinearLoading from "../common/LinearLoading";
 import empresasAExcluir from "../../data/empresasAExcluir.json"; // Asegúrate de que esta ruta sea correcta
 import HistoricalView from "./HistoricalView";
-import { Typography } from "@mui/material";
+import HistoricalMarkers from "../common/HistoricalMarkers";
 
 const PrincipalPage = () => {
   const { state } = useContextValue();
@@ -196,12 +190,6 @@ const PrincipalPage = () => {
                   />
                 </>
               )}
-            {state.viewMode === "historico" && selectedUnit && (
-              <HistoricalView
-                selectedUnit={selectedUnit}
-                onHistoricalDataFetched={setHistoricalData}
-              />
-            )}
             <MapContainer
               center={center}
               zoom={13}
@@ -235,35 +223,16 @@ const PrincipalPage = () => {
                     rotationAngle={marker.grados}
                   />
                 ))}
+              {state.viewMode === "historico" && selectedUnit && (
+                <HistoricalView
+                  selectedUnit={selectedUnit}
+                  onHistoricalDataFetched={setHistoricalData}
+                />
+              )}
 
               {/* Renderizar datos históricos */}
               {state.viewMode === "historico" && historicalData && (
-                <>
-                  {Array.isArray(historicalData.Markers) &&
-                    historicalData.Markers.map((marker, index) => (
-                      <Marker
-                        key={index}
-                        position={[marker.lat, marker.lng]} // Asegúrate de usar las claves correctas
-                      >
-                        <Popup>
-                          <Typography variant="body2">
-                            {marker.message.replace(/<\/?br>/g, "\n")}
-                          </Typography>
-                        </Popup>
-                      </Marker>
-                    ))}
-
-                  {Array.isArray(historicalData.paths) && (
-                    <Polyline
-                      positions={historicalData.paths.map((path) => [
-                        path.lat, // Asegúrate de usar las claves correctas
-                        path.lng,
-                      ])}
-                      color="blue"
-                      weight={3}
-                    />
-                  )}
-                </>
+                <HistoricalMarkers historicalData={historicalData} />
               )}
 
               <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
