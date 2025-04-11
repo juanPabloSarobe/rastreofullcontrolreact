@@ -15,11 +15,12 @@ import ClearIcon from "@mui/icons-material/Clear"; // Importa el ícono de borra
 import StatusIcon from "./StatusIcon"; // Importa el componente personalizado
 import logoFullControl from "../../assets/LogoFullcontrolSoloGota.webp"; // Importa el logo
 import { Typography } from "@mui/material";
+import { useContextValue } from "../../context/Context"; // Importa el contexto
 
 const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
+  const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchText, setSearchText] = useState(""); // Estado para el texto de búsqueda
-  const [selectedUnits, setSelectedUnits] = useState([]); // Estado para los elementos seleccionados
   const open = Boolean(anchorEl);
 
   const handleClick = (event) => {
@@ -31,19 +32,12 @@ const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
   };
 
   const handleSwitchToggle = (unitId) => {
-    setSelectedUnits(
-      (prevSelected) =>
-        prevSelected.includes(unitId)
-          ? prevSelected.filter((id) => id !== unitId) // Deselecciona si ya está seleccionado
-          : [...prevSelected, unitId] // Selecciona si no está seleccionado
-    );
+    const updatedUnits = state.selectedUnits.includes(unitId)
+      ? state.selectedUnits.filter((id) => id !== unitId)
+      : [...state.selectedUnits, unitId];
 
-    // Envía la lista actualizada de unidades seleccionadas al componente padre
-    onUnitSelect(
-      selectedUnits.includes(unitId)
-        ? selectedUnits.filter((id) => id !== unitId)
-        : [...selectedUnits, unitId]
-    );
+    dispatch({ type: "SET_SELECTED_UNITS", payload: updatedUnits });
+    onUnitSelect(updatedUnits); // Mantener la compatibilidad con PrincipalPage
 
     // Cierra el menú después de 1 segundo
     setTimeout(() => {
@@ -218,7 +212,7 @@ const UnitSelector = ({ liteData = {}, onUnitSelect }) => {
                   </ListItemIcon>
                   <span>{unit.patente}</span>
                   <Switch
-                    checked={selectedUnits.includes(unit.Movil_ID)} // Marca si está seleccionado
+                    checked={state.selectedUnits.includes(unit.Movil_ID)} // Marca si está seleccionado
                     onClick={(e) => {
                       e.stopPropagation(); // Evita que el evento se propague al `MenuItem`
                     }}

@@ -20,14 +20,13 @@ import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 
 const PrincipalPage = () => {
-  const { state } = useContextValue();
+  const { state, dispatch } = useContextValue();
   const center = [-38.95622, -68.081845];
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [markersData, setMarkersData] = useState([]);
   const [liteData, setLiteData] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
-  const [selectedUnits, setSelectedUnits] = useState([]);
   const [isLoading, setIsLoading] = useState(true); // Estado para controlar el modal de carga
   const [historicalData, setHistoricalData] = useState(null); // Estado para los datos históricos
   const mapRef = useRef(null);
@@ -114,7 +113,7 @@ const PrincipalPage = () => {
   }, [prefLoading, liteLoading]);
 
   const handleUnitSelect = (units) => {
-    setSelectedUnits(units);
+    dispatch({ type: "SET_SELECTED_UNITS", payload: units });
 
     if (units.length > 0) {
       const lastSelectedUnit = units[units.length - 1];
@@ -135,11 +134,11 @@ const PrincipalPage = () => {
   };
 
   const filteredMarkersData = useMemo(() => {
-    if (!selectedUnits.length || !markersData) return [];
+    if (!state.selectedUnits.length || !markersData) return [];
     return markersData.filter((marker) =>
-      selectedUnits.includes(marker.Movil_ID)
+      state.selectedUnits.includes(marker.Movil_ID)
     );
-  }, [selectedUnits, markersData]);
+  }, [state.selectedUnits, markersData]);
 
   const handleViewHistory = () => {
     if (selectedUnit) {

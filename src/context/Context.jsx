@@ -10,6 +10,7 @@ export const ContextProvider = ({ children }) => {
     viewMode: "rastreo", // Nuevo estado para controlar la vista actual
     unitData: null,
     hideLowUnits: true, // Valor por defecto
+    selectedUnits: [], // Estado para las unidades seleccionadas
   };
 
   const reducer = (state, action) => {
@@ -26,6 +27,8 @@ export const ContextProvider = ({ children }) => {
         return { ...state, unitData: action.payload }; // Actualiza la vista actual
       case "SET_HIDE_LOW_UNITS":
         return { ...state, hideLowUnits: action.payload }; // Actualiza el estado de ocultar bajas
+      case "SET_SELECTED_UNITS":
+        return { ...state, selectedUnits: action.payload }; // Actualiza las unidades seleccionadas
       default:
         return state;
     }
