@@ -1,0 +1,10 @@
+.custom-historical-marker-icon {
+  background: none;
+  border: none;
+}
+
+.custom-historical-marker-icon div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
