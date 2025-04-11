@@ -55,6 +55,7 @@ const MenuButton = () => {
     dispatch({ type: "SET_ACCESS_GRANTED", payload: false });
     dispatch({ type: "SET_ROLE", payload: null });
     dispatch({ type: "SET_USER", payload: null });
+    dispatch({ type: "SET_SELECTED_UNITS", payload: [] });
   };
 
   const toggleOcultarBajas = () => {

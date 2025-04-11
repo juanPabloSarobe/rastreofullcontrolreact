@@ -213,7 +213,7 @@ const PrincipalPage = () => {
                     position={[Number(marker.latitud), Number(marker.longitud)]}
                     popupContent={marker.patente}
                     color={
-                      !reportando(marker.fechaHora)
+                      !reportando(marker.fechaHora, false)
                         ? "gray"
                         : marker.estadoDeMotor === "Motor Encendido"
                         ? "green"

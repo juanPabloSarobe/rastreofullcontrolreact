@@ -56,8 +56,8 @@ const HistoricalView = ({
   };
 
   const handleBackClick = () => {
+    onHistoricalDataFetched(null); // Limpiar los datos históricos
     dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" }); // Cambiar la vista a "rastreo"
-    //onHistoricalDataFetched(null); // Limpiar los datos históricos
   };
 
   return (
