@@ -24,7 +24,7 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
   const [detailData, setDetailData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const containerRef = useRef(null);
+  const tableContainerRef = useRef(null);
   const lastFetchRef = useRef({ unitId: null, date: null });
 
   // Función para cargar los datos históricos detallados
@@ -54,6 +54,7 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
       const data = await response.json();
       console.log("Datos históricos detallados:", data);
 
+      // Accedemos al arreglo Historico dentro de la respuesta JSON
       const historicoData = data.Historico || [];
       setDetailData(historicoData);
       setFilteredData(historicoData);
@@ -84,12 +85,15 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
     setExpanded(!expanded);
   };
 
+  // Efecto para actualizar los datos cuando cambia la fecha o la unidad seleccionada
   useEffect(() => {
     if (
       expanded &&
       (lastFetchRef.current.unitId !== selectedUnit?.Movil_ID ||
         lastFetchRef.current.date !== selectedDate?.format("YYYY-MM-DD"))
     ) {
+      // Limpiamos el texto del filtro cuando cambia la fecha o unidad
+      setSearchQuery("");
       fetchHistoricalDetail();
     }
   }, [selectedUnit, selectedDate, expanded]);
@@ -113,34 +117,80 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
     setFilteredData(filtered);
   };
 
+  // Técnica más agresiva para detener la propagación del scroll
+  const handleWheel = (e) => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+
+    // Calculamos si podemos hacer scroll más
+    const isScrollingUp = e.deltaY < 0;
+    const isScrollingDown = e.deltaY > 0;
+
+    const isAtTop = container.scrollTop === 0;
+    const isAtBottom =
+      container.scrollHeight - container.clientHeight - container.scrollTop <=
+      1;
+
+    // Solo detenemos la propagación si no estamos en los límites o si estamos en un límite
+    // pero intentando hacer scroll "más allá" de ese límite
+    if (!(isScrollingUp && isAtTop) && !(isScrollingDown && isAtBottom)) {
+      e.stopPropagation();
+      // Este es el truco clave - también prevenimos el comportamiento predeterminado
+      e.preventDefault();
+    }
+  };
+
+  // Nuevo enfoque para manejar el scroll
   useEffect(() => {
-    const handleWheel = (e) => {
-      if (
-        expanded &&
-        containerRef.current &&
-        containerRef.current.contains(e.target)
-      ) {
-        e.stopPropagation();
-        e.preventDefault();
+    if (!expanded) return;
+
+    // Función que se conectará directamente al documento para capturar eventos wheel
+    const handleDocumentWheel = (e) => {
+      const container = tableContainerRef.current;
+      if (!container) return;
+
+      // Verificamos si el evento ocurre dentro del contenedor de la tabla
+      if (container.contains(e.target)) {
+        // Usamos el algoritmo anterior para determinar si debemos intervenir
+        const isScrollingUp = e.deltaY < 0;
+        const isScrollingDown = e.deltaY > 0;
+        const isAtTop = container.scrollTop === 0;
+        const isAtBottom =
+          container.scrollHeight -
+            container.clientHeight -
+            container.scrollTop <=
+          1;
+
+        // Solo manejamos y prevenimos si no estamos en un límite o intentando scrollear más allá
+        if (!(isScrollingUp && isAtTop) && !(isScrollingDown && isAtBottom)) {
+          // Importante: Usamos preventDefault y stopPropagation
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Aplicamos el scroll manualmente para asegurar que funcione
+          container.scrollTop += e.deltaY;
+        }
       }
     };
 
-    document.addEventListener("wheel", handleWheel, {
-      passive: false,
+    // Añadimos el listener al document, en fase de captura y no pasivo
+    // para poder llamar a preventDefault()
+    document.addEventListener("wheel", handleDocumentWheel, {
       capture: true,
+      passive: false,
     });
 
     return () => {
-      document.removeEventListener("wheel", handleWheel, {
-        passive: false,
+      // Limpieza al desmontar
+      document.removeEventListener("wheel", handleDocumentWheel, {
         capture: true,
+        passive: false,
       });
     };
   }, [expanded]);
 
   return (
     <Box
-      ref={containerRef}
       sx={{
         position: "absolute",
         bottom: 0,
@@ -152,10 +202,11 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
         transition: "height 0.3s ease",
         height: expanded ? "35vh" : "40px",
         overflow: "hidden",
-        zIndex: expanded ? 1200 : 900,
-        pointerEvents: "auto",
+        zIndex: 900, // Valor menor para no interferir con los marcadores (que suelen estar en 1000)
+        pointerEvents: "auto", // Asegura que captamos eventos de puntero
       }}
     >
+      {/* Barra de título */}
       <Box
         sx={{
           display: "flex",
@@ -210,19 +261,18 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
                 "&.Mui-focused fieldset": { borderColor: "white" },
               },
             }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "green", fontSize: "1rem" }} />
-                  </InputAdornment>
-                ),
-              },
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: "green", fontSize: "1rem" }} />
+                </InputAdornment>
+              ),
             }}
           />
         )}
       </Box>
 
+      {/* Contenido expandido */}
       {expanded && (
         <Box
           sx={{
@@ -246,6 +296,7 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
           ) : (
             <TableContainer
               component={Paper}
+              ref={tableContainerRef}
               sx={{
                 flexGrow: 1,
                 overflowY: "auto",
@@ -256,9 +307,15 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
                   backgroundColor: "rgba(0,128,0,0.3)",
                   borderRadius: "4px",
                 },
-                isolation: "isolate",
+                position: "relative",
+                zIndex: 901,
                 pointerEvents: "auto",
+                // Aislamos este componente para que capture sus propios eventos
+                isolation: "isolate",
+                touchAction: "pan-y", // Permitimos scroll táctil pero solo vertical
               }}
+              // Dejamos el onWheel también como respaldo
+              onWheel={handleWheel}
             >
               <Table stickyHeader size="small">
                 <TableHead>
