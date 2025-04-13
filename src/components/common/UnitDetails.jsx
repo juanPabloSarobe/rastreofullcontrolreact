@@ -73,7 +73,14 @@ const UnitDetails = ({ unitData }) => {
       </Box>
 
       {/* Contenido dividido en mitades */}
-      <Box sx={{ display: "flex", flexDirection: "row", marginTop: "48px" }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          marginTop: "48px",
+          paddingBottom: { xs: "16px", sm: "0" }, // Espacio inferior en móviles
+        }}
+      >
         {/* Mitad izquierda */}
         <Box
           sx={{
@@ -92,6 +99,12 @@ const UnitDetails = ({ unitData }) => {
             Evento: {estado}
           </Typography>
           <Typography variant="body2" sx={{ fontSize: "12px" }}>
+            Velocidad: {velocidad} km/h
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: "12px" }}>
+            Área: {area}
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: "12px" }}>
             <a
               href={`https://www.google.com/maps?q=${latitud},${longitud}`}
               target="_blank"
@@ -104,12 +117,6 @@ const UnitDetails = ({ unitData }) => {
             >
               Cómo llegar
             </a>
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Área: {area}
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Velocidad: {velocidad} km/h
           </Typography>
         </Box>
 
