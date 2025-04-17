@@ -142,9 +142,29 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
               .replace(/>/g, "&gt;")
           : "Sin datos";
 
+        // Extraer fecha/hora y velocidad del mensaje para usarlos en el nombre
+        let placemarkName = `Punto ${index + 1}`;
+
+        if (marker.message) {
+          // Extraer fecha/hora
+          const fechaHoraMatch = marker.message.match(
+            /Fecha\/Hora: ([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2})/
+          );
+          const fechaHora = fechaHoraMatch ? fechaHoraMatch[1] : "";
+
+          // Extraer velocidad
+          const velocidadMatch = marker.message.match(/Velocidad: ([0-9]+)/);
+          const velocidad = velocidadMatch ? velocidadMatch[1] : "0";
+
+          // Formar el nuevo nombre
+          if (fechaHora) {
+            placemarkName = `${fechaHora} vel: ${velocidad} km/h`;
+          }
+        }
+
         kml += `
     <Placemark>
-      <name>Punto ${index + 1}</name>
+      <name>${placemarkName}</name>
       <description><![CDATA[${description}]]></description>
       <styleUrl>#markerIconStyle</styleUrl>
       <Point>
