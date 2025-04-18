@@ -174,10 +174,10 @@ const PrincipalPage = () => {
             sx={{ borderRadius: "12px" }}
             position="relative"
           >
-            <MenuButton />
+            <MenuButton selectedUnit={selectedUnit} />{" "}
+            {/* Pasar selectedUnit como prop */}
             {/* Chip de usuario (solo visible en vista rastreo y desktop) */}
             {state.viewMode === "rastreo" && <UserChip />}
-
             {state.viewMode === "rastreo" &&
               liteData?.GPS &&
               Object.keys(liteData.GPS).length > 0 && (

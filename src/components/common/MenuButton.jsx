@@ -5,45 +5,42 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import EventIcon from "@mui/icons-material/Event";
+import HistoryIcon from "@mui/icons-material/History"; // Nuevo ícono para Histórico Avanzado
 import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import ReportIcon from "@mui/icons-material/Report";
 import LogoutIcon from "@mui/icons-material/Logout";
 import Box from "@mui/material/Box";
-import Switch from "@mui/material/Switch"; // Importa el componente Switch
+import Switch from "@mui/material/Switch";
 import { useContextValue } from "../../context/Context";
+import AdvancedHistoryModal from "./AdvancedHistoryModal"; // Importamos el nuevo componente
 
-const MenuButton = () => {
-  const { state, dispatch } = useContextValue(); // Accede al estado y dispatch del contexto
+const MenuButton = ({ selectedUnit }) => {
+  // Recibir selectedUnit como prop
+  const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
+  const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false); // Estado para el modal
   const open = Boolean(anchorEl);
 
-  // Estado local para manejar "ocultaUnidadesDeBaja"
-  const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
-
   useEffect(() => {
-    // Inicializa el estado local con el valor del estado global
     if (state.ocultaUnidadesDeBaja !== undefined) {
       setOcultaUnidadesDeBaja(state.ocultaUnidadesDeBaja);
     }
   }, [state.ocultaUnidadesDeBaja]);
 
   const handleClick = (event) => {
-    setAnchorEl(event.currentTarget); // Establece el elemento de anclaje para el menú
+    setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
-    setAnchorEl(null); // Cierra el menú
+    setAnchorEl(null);
   };
 
-  const changeToHistorico = () => {
-    dispatch({ type: "SET_VIEW_MODE", payload: "historico" }); // Cambia la vista a "historico"
-    handleClose();
-  };
-
-  const changeToRastreo = () => {
-    dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" }); // Cambia la vista a "rastreo"
+  // Nuevo manejador para abrir el modal de histórico avanzado
+  const openAdvancedHistory = () => {
+    setAdvancedHistoryOpen(true);
     handleClose();
   };
 
@@ -60,25 +57,19 @@ const MenuButton = () => {
 
   const toggleOcultarBajas = () => {
     const newValue = !ocultaUnidadesDeBaja;
-    setOcultaUnidadesDeBaja(newValue); // Actualiza el estado local
+    setOcultaUnidadesDeBaja(newValue);
     dispatch({
       type: "SET_HIDE_LOW_UNITS",
-      payload: newValue, // Actualiza el estado global
+      payload: newValue,
     });
   };
 
   const menuItems = [
     {
-      icon: <EventIcon fontSize="small" />,
-      label: "Rastreo",
+      icon: <HistoryIcon fontSize="small" />, // Nuevo ítem para Histórico Avanzado
+      label: "Histórico Avanzado",
       show: true,
-      onClick: changeToRastreo, // Cambia la vista al hacer clic
-    },
-    {
-      icon: <EventIcon fontSize="small" />,
-      label: "Histórico",
-      show: true,
-      onClick: changeToHistorico, // Cambia la vista al hacer clic
+      onClick: openAdvancedHistory, // Usamos el nuevo manejador
     },
     {
       icon: <BarChartIcon fontSize="small" />,
@@ -104,27 +95,23 @@ const MenuButton = () => {
       icon: <SettingsIcon fontSize="small" />,
       label: "Administración",
       link: "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
-      show: state.role === "Administrador" || state.role === "Proveedor", // Verifica si el rol es "Administrador" o "Proveedor"
+      show: state.role === "Administrador" || state.role === "Proveedor",
       onClick: () => {
-        // Abre la nueva página y asegura que las cookies se envíen automáticamente
         const url = "https://plataforma.fullcontrolgps.com.ar/fulladm/#/";
         const options = "noopener,noreferrer";
-
-        // Abre la página en una nueva ventana
         window.open(url, "_blank", options);
-
         handleClose();
       },
     },
     {
-      icon: <ReportIcon fontSize="small" />, // No necesita ícono
+      icon: <ReportIcon fontSize="small" />,
       label: "Ocultar Bajas",
-      show: state.role === "Administrador", // Solo visible para el administrador
-      onClick: toggleOcultarBajas, // No necesita acción al hacer clic
+      show: state.role === "Administrador",
+      onClick: toggleOcultarBajas,
       renderRight: (
         <Switch
-          checked={ocultaUnidadesDeBaja} // Usa el estado local
-          onChange={toggleOcultarBajas} // Alterna el estado
+          checked={ocultaUnidadesDeBaja}
+          onChange={toggleOcultarBajas}
           color="primary"
         />
       ),
@@ -186,7 +173,7 @@ const MenuButton = () => {
               key={index}
               onClick={item.onClick}
               sx={{ paddingY: 1.5 }}
-              disableRipple={!item.onClick} // Desactiva el efecto de clic si no hay acción
+              disableRipple={!item.onClick}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               {item.label}
@@ -196,6 +183,13 @@ const MenuButton = () => {
             </MenuItem>
           ))}
       </Menu>
+
+      {/* Modal de Histórico Avanzado */}
+      <AdvancedHistoryModal
+        open={advancedHistoryOpen}
+        onClose={() => setAdvancedHistoryOpen(false)}
+        selectedUnit={selectedUnit}
+      />
     </Box>
   );
 };
