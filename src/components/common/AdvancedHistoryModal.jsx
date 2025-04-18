@@ -6,19 +6,23 @@ import {
   Button,
   Paper,
   CircularProgress,
-  Backdrop,
   Stack,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 
-import { DateCalendar } from "@mui/x-date-pickers";
+import { MobileDatePicker, DateCalendar } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import "dayjs/locale/es";
+import dayjs from "dayjs";
 
 const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState([null, null]);
   const hasUnitSelected = Boolean(selectedUnit);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Restablecer las fechas cuando se cierra el modal
   useEffect(() => {
@@ -85,7 +89,6 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
     } catch (error) {
       console.error("Error al exportar a Excel:", error);
     } finally {
-      // Esperar un momento antes de quitar el indicador de carga
       setTimeout(() => {
         setLoading(false);
       }, 1000);
@@ -106,7 +109,7 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 400,
+            width: { xs: "90%", sm: 400 },
             bgcolor: "background.paper",
             borderRadius: "12px",
             boxShadow: 24,
@@ -137,30 +140,11 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
     );
   }
 
-  // Modal principal con DateRangePicker
   return (
     <>
-      <Backdrop
-        sx={{
-          color: "#fff",
-          zIndex: 9999,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        open={loading}
-      >
-        <CircularProgress color="inherit" size={60} />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Descargando Datos...
-        </Typography>
-      </Backdrop>
-
       <Modal
         open={open}
         onClose={(e, reason) => {
-          // No permitir cerrar al hacer clic fuera
           if (reason !== "backdropClick") {
             onClose();
           }
@@ -175,16 +159,16 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "60%",
-            height: "80%",
-            maxHeight: "500px",
+            width: { xs: "90%", sm: "80%", md: "60%" },
+            height: "auto",
+            maxHeight: "90vh",
             bgcolor: "background.paper",
             borderRadius: "12px",
             boxShadow: 24,
             display: "flex",
             flexDirection: "column",
             p: 0,
-            overflow: "hidden",
+            overflow: "auto",
           }}
         >
           {/* Título con fondo verde */}
@@ -201,75 +185,168 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
               id="advanced-history-title"
               variant="h6"
               component="h2"
+              textAlign="center"
+              fontSize={isMobile ? "1.2rem" : "1.5rem"}
               sx={{
                 fontWeight: "bold",
               }}
             >
-              Histórico Avanzado - {selectedUnit?.patente}
+              Histórico Avanzado {isMobile ? <br /> : " - "}
+              {selectedUnit?.patente}
             </Typography>
           </Box>
 
           {/* Contenido principal */}
           <Box
             sx={{
-              p: 4,
-              flexGrow: 1,
+              p: { xs: 2, sm: 4 },
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
+              overflow: "visible",
             }}
           >
             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    textAlign="center"
-                    fontWeight="bold"
-                    mb={1}
-                  >
-                    Fecha inicial
-                  </Typography>
-                  <DateCalendar
-                    value={dateRange[0]}
-                    onChange={(newDate) =>
-                      setDateRange([newDate, dateRange[1]])
-                    }
-                    disableFuture
-                    sx={{
-                      maxWidth: "100%",
-                      "& .MuiPickersDay-root.Mui-selected": {
-                        backgroundColor: "green !important",
-                      },
-                    }}
-                  />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    textAlign="center"
-                    fontWeight="bold"
-                    mb={1}
-                  >
-                    Fecha final
-                  </Typography>
-                  <DateCalendar
-                    value={dateRange[1]}
-                    onChange={(newDate) =>
-                      setDateRange([dateRange[0], newDate])
-                    }
-                    disableFuture
-                    minDate={dateRange[0] || undefined}
-                    sx={{
-                      maxWidth: "100%",
-                      "& .MuiPickersDay-root.Mui-selected": {
-                        backgroundColor: "green !important",
-                      },
-                    }}
-                  />
-                </Box>
-              </Stack>
+              {isMobile ? (
+                // Versión móvil con MobileDatePicker
+                <Stack
+                  direction="column"
+                  spacing={3}
+                  width="100%"
+                  alignItems="center"
+                >
+                  <Box sx={{ width: "100%" }}>
+                    <Typography
+                      variant="subtitle1"
+                      textAlign="center"
+                      fontWeight="bold"
+                      mb={1}
+                    >
+                      Fecha inicial
+                    </Typography>
+                    <MobileDatePicker
+                      value={dateRange[0]}
+                      onChange={(newDate) =>
+                        setDateRange([newDate, dateRange[1]])
+                      }
+                      disableFuture
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          variant: "outlined",
+                          InputProps: {
+                            sx: {
+                              "& .MuiOutlinedInput-root.Mui-focused": {
+                                "& > fieldset": { borderColor: "green" },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                      sx={{
+                        width: "100%",
+                        "& .MuiPickersDay-root.Mui-selected": {
+                          backgroundColor: "green !important",
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ width: "100%" }}>
+                    <Typography
+                      variant="subtitle1"
+                      textAlign="center"
+                      fontWeight="bold"
+                      mb={1}
+                    >
+                      Fecha final
+                    </Typography>
+                    <MobileDatePicker
+                      value={dateRange[1]}
+                      onChange={(newDate) =>
+                        setDateRange([dateRange[0], newDate])
+                      }
+                      disableFuture
+                      minDate={dateRange[0] || dayjs()}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          variant: "outlined",
+                          InputProps: {
+                            sx: {
+                              "& .MuiOutlinedInput-root.Mui-focused": {
+                                "& > fieldset": { borderColor: "green" },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                      sx={{
+                        width: "100%",
+                        "& .MuiPickersDay-root.Mui-selected": {
+                          backgroundColor: "green !important",
+                        },
+                      }}
+                    />
+                  </Box>
+                </Stack>
+              ) : (
+                // Versión desktop con DateCalendar
+                <Stack
+                  direction="row"
+                  spacing={3}
+                  width="100%"
+                  alignItems="flex-start"
+                  justifyContent="center"
+                >
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      textAlign="center"
+                      fontWeight="bold"
+                      mb={1}
+                    >
+                      Fecha inicial
+                    </Typography>
+                    <DateCalendar
+                      value={dateRange[0]}
+                      onChange={(newDate) =>
+                        setDateRange([newDate, dateRange[1]])
+                      }
+                      disableFuture
+                      sx={{
+                        "& .MuiPickersDay-root.Mui-selected": {
+                          backgroundColor: "green !important",
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      textAlign="center"
+                      fontWeight="bold"
+                      mb={1}
+                    >
+                      Fecha final
+                    </Typography>
+                    <DateCalendar
+                      value={dateRange[1]}
+                      onChange={(newDate) =>
+                        setDateRange([dateRange[0], newDate])
+                      }
+                      disableFuture
+                      minDate={dateRange[0] || dayjs()}
+                      sx={{
+                        "& .MuiPickersDay-root.Mui-selected": {
+                          backgroundColor: "green !important",
+                        },
+                      }}
+                    />
+                  </Box>
+                </Stack>
+              )}
             </LocalizationProvider>
           </Box>
 
@@ -299,18 +376,30 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
             </Button>
             <Button
               variant="contained"
-              disabled={!dateRange[0] || !dateRange[1]}
+              disabled={
+                !dateRange[0] ||
+                !dateRange[1] ||
+                loading ||
+                dateRange[1] < dateRange[0]
+              }
               onClick={handleDownload}
               sx={{
                 bgcolor: "green",
                 "&:hover": { bgcolor: "darkgreen" },
                 "&.Mui-disabled": {
-                  backgroundColor: "rgba(0, 128, 0, 0.12)",
-                  color: "rgba(0, 0, 0, 0.26)",
+                  backgroundColor: loading ? "green" : "rgba(0, 128, 0, 0.12)",
+                  color: loading ? "white" : "rgba(0, 0, 0, 0.26)",
                 },
               }}
             >
-              Descargar
+              {loading ? (
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                  Descargando...
+                </Box>
+              ) : (
+                "Descargar"
+              )}
             </Button>
           </Box>
         </Paper>
