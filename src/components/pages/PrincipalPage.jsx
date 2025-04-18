@@ -15,9 +15,10 @@ import UnitSelector from "../common/UnitSelector";
 import UnitDetails from "../common/UnitDetails";
 import LoadingModal from "../common/LoadingModal";
 import LinearLoading from "../common/LinearLoading";
-import empresasAExcluir from "../../data/empresasAExcluir.json"; // Asegúrate de que esta ruta sea correcta
+import empresasAExcluir from "../../data/empresasAExcluir.json";
 import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
+import UserChip from "../common/UserChip"; // Importamos el nuevo componente
 
 const PrincipalPage = () => {
   const { state, dispatch } = useContextValue();
@@ -174,6 +175,9 @@ const PrincipalPage = () => {
             position="relative"
           >
             <MenuButton />
+            {/* Chip de usuario (solo visible en vista rastreo y desktop) */}
+            {state.viewMode === "rastreo" && <UserChip />}
+
             {state.viewMode === "rastreo" &&
               liteData?.GPS &&
               Object.keys(liteData.GPS).length > 0 && (

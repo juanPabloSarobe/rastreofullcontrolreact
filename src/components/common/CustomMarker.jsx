@@ -13,6 +13,7 @@ const CustomMarker = ({
 }) => {
   const iconPaths = {
     position: `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>`,
+    positionSolid: `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>`,
     roomTwoTone: `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="2.5"/>`, // Path del ícono RoomTwoTone
     arrowCircleUpTwoTone: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 8l-4 4h3v4h2v-4h3l-4-4z"/>`, // Path del ícono ArrowCircleUpTwoTone
     stopCircle: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M9 9h6v6H9z"/>`, // Path del ícono StopCircle
@@ -76,15 +77,11 @@ const CustomMarker = ({
     <>
       {" "}
       <Marker
-        position={position}
-        icon={createCustomIcon(iconPaths.roomTwoTone, color, 50, 0, 1)}
-      ></Marker>
-      <Marker
         eventHandlers={{
           click: onClick, // Maneja el evento de clic
         }}
         position={position}
-        icon={createCustomIcon(iconPaths.position, color, 50, 0, 1)}
+        icon={createCustomIcon(iconPaths.positionSolid, color, 50, 0, 1)}
       >
         <Tooltip direction="top" offset={[0, -45]} opacity={1} permanent>
           <strong>{popupContent}</strong>
