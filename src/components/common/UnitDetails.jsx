@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip"; // Añadimos esta importación
 import HistoryIcon from "@mui/icons-material/History";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Nuevo ícono
 import { useContextValue } from "../../context/Context";
@@ -91,18 +92,20 @@ const UnitDetails = ({ unitData }) => {
           >
             {empresa} - {patente}
           </Typography>
-          <IconButton
-            onClick={handleViewWorks}
-            sx={{
-              color: "white",
-              padding: "4px",
-              position: "absolute",
-              right: "8px",
-            }}
-            size="small"
-          >
-            <OpenInNewIcon sx={{ fontSize: "16px" }} />
-          </IconButton>
+          <Tooltip title="Ver contratos">
+            <IconButton
+              onClick={handleViewWorks}
+              sx={{
+                color: "white",
+                padding: "4px",
+                position: "absolute",
+                right: "8px",
+              }}
+              size="small"
+            >
+              <OpenInNewIcon sx={{ fontSize: "16px" }} />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {/* Resto del contenido sin cambios */}
