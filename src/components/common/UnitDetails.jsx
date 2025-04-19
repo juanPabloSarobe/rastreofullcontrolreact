@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import HistoryIcon from "@mui/icons-material/History";
-import { useContextValue } from "../../context/Context"; // Importa el contexto
+import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Nuevo ícono
+import { useContextValue } from "../../context/Context";
+import UnitWorksModal from "./UnitWorksModal"; // Importamos el nuevo componente que crearemos
 
 const UnitDetails = ({ unitData }) => {
+  const [worksModalOpen, setWorksModalOpen] = useState(false); // Estado para controlar la apertura del modal
+
   if (!unitData) return null; // Si no hay datos, no renderiza nada
 
   const {
@@ -23,6 +27,7 @@ const UnitDetails = ({ unitData }) => {
     nombre, // Nombre del conductor
     llave, // Llave
     equipo_id_OID, // ID del equipo
+    Movil_ID, // ID del móvil
   } = unitData;
 
   const { dispatch } = useContextValue();
@@ -36,179 +41,214 @@ const UnitDetails = ({ unitData }) => {
     dispatch({ type: "SET_VIEW_MODE", payload: "historico" });
   };
 
+  const handleViewWorks = () => {
+    setWorksModalOpen(true);
+  };
+
   return (
-    <Box
-      sx={{
-        position: "absolute",
-        top: { xs: "auto", sm: "80px" }, // En móviles, se posiciona en la parte inferior
-        bottom: { xs: 0, sm: "auto" }, // En móviles, se fija al fondo
-        left: { xs: 0, sm: "16px" }, // Alineado a la izquierda
-        width: { xs: "100%", sm: "400px" }, // En móviles, ocupa todo el ancho
-        maxWidth: { sm: "400px" }, // En pantallas más grandes, tiene un ancho máximo
-        zIndex: 1000,
-        bgcolor: "white",
-        borderRadius: { xs: "24px 24px 0 0", sm: "24px" }, // Bordes redondeados en móviles
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-        overflow: "hidden", // Asegura que el contenido no se desborde
-      }}
-    >
-      {/* Título fuera del padding */}
+    <>
       <Box
         sx={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "48px", // Altura fija para el título
-          bgcolor: "green", // Fondo verde
-          color: "white", // Texto blanco
-          textAlign: "center", // Centrar el texto
-          lineHeight: "48px", // Centrar verticalmente el texto
-          fontWeight: "bold",
-          fontSize: "16px", // Ajustar el tamaño de la fuente
-          borderRadius: "24px 24px 0 0", // Bordes redondeados en la parte superior
+          top: { xs: "auto", sm: "80px" }, // En móviles, se posiciona en la parte inferior
+          bottom: { xs: 0, sm: "auto" }, // En móviles, se fija al fondo
+          left: { xs: 0, sm: "16px" }, // Alineado a la izquierda
+          width: { xs: "100%", sm: "400px" }, // En móviles, ocupa todo el ancho
+          maxWidth: { sm: "400px" }, // En pantallas más grandes, tiene un ancho máximo
+          zIndex: 1000,
+          bgcolor: "white",
+          borderRadius: { xs: "24px 24px 0 0", sm: "24px" }, // Bordes redondeados en móviles
+          boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          overflow: "hidden", // Asegura que el contenido no se desborde
         }}
       >
-        {empresa} - {patente}
-      </Box>
-
-      {/* Contenido dividido en mitades */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          marginTop: "48px",
-          paddingBottom: { xs: "16px", sm: "0" }, // Espacio inferior en móviles
-        }}
-      >
-        {/* Mitad izquierda */}
+        {/* Título fuera del padding */}
         <Box
           sx={{
-            flex: 1,
-            padding: "10px",
-            bgcolor: "#f9f9f9", // Fondo gris muy claro
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "48px", // Altura fija para el título
+            bgcolor: "green", // Fondo verde
+            color: "white", // Texto blanco
+            display: "flex", // Usar flexbox para alinear título e ícono
+            alignItems: "center", // Centrar verticalmente
+            justifyContent: "center", // Centrar horizontalmente
+            fontWeight: "bold",
+            fontSize: "16px", // Ajustar el tamaño de la fuente
+            borderRadius: "24px 24px 0 0", // Bordes redondeados en la parte superior
           }}
         >
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Ult Reporte: {fechaHora.slice(0, -3)}
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Estado: {estadoDeMotor}
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Evento: {estado}
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Velocidad: {velocidad} km/h
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            Área: {area}
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: "12px" }}>
-            <a
-              href={`https://www.google.com/maps?q=${latitud},${longitud}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                textDecoration: "none",
-                color: "blue",
-                fontWeight: "bold",
-              }}
-            >
-              Cómo llegar
-            </a>
-          </Typography>
-        </Box>
-
-        {/* Mitad derecha */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr", // Dos columnas iguales
-            gridTemplateRows: "1fr auto", // Una fila superior y una fila inferior que ocupa el resto
-            flex: 1,
-          }}
-        >
-          {/* Cuadrante superior izquierdo */}
-          <Box
+          <Typography
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "6px",
+              fontWeight: "bold",
+              fontSize: "16px",
+              flexGrow: 1,
+              textAlign: "center",
+              pr: 4, // Añadir padding para equilibrar con el ícono
             }}
           >
-            <Typography
-              variant="body2"
-              sx={{ textAlign: "center", fontSize: "12px" }}
-            >
-              {marca}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ textAlign: "center", fontSize: "12px" }}
-            >
-              {modelo}
+            {empresa} - {patente}
+          </Typography>
+          <IconButton
+            onClick={handleViewWorks}
+            sx={{
+              color: "white",
+              padding: "4px",
+              position: "absolute",
+              right: "8px",
+            }}
+            size="small"
+          >
+            <OpenInNewIcon sx={{ fontSize: "16px" }} />
+          </IconButton>
+        </Box>
+
+        {/* Resto del contenido sin cambios */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            marginTop: "48px",
+            paddingBottom: { xs: "16px", sm: "0" }, // Espacio inferior en móviles
+          }}
+        >
+          {/* Mitad izquierda */}
+          <Box
+            sx={{
+              flex: 1,
+              padding: "10px",
+              bgcolor: "#f9f9f9", // Fondo gris muy claro
+            }}
+          >
+            <Typography variant="body2" sx={{ fontSize: "12px" }}>
+              Ult Reporte: {fechaHora.slice(0, -3)}
             </Typography>
             <Typography variant="body2" sx={{ fontSize: "12px" }}>
-              Id: {equipo_id_OID}
+              Estado: {estadoDeMotor}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "12px" }}>
+              Evento: {estado}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "12px" }}>
+              Velocidad: {velocidad} km/h
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "12px" }}>
+              Área: {area}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "12px" }}>
+              <a
+                href={`https://www.google.com/maps?q=${latitud},${longitud}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  textDecoration: "none",
+                  color: "blue",
+                  fontWeight: "bold",
+                }}
+              >
+                Cómo llegar
+              </a>
             </Typography>
           </Box>
 
-          {/* Cuadrante superior derecho */}
+          {/* Mitad derecha - Sin cambios */}
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "6px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr", // Dos columnas iguales
+              gridTemplateRows: "1fr auto", // Una fila superior y una fila inferior que ocupa el resto
+              flex: 1,
             }}
           >
-            <IconButton
-              onClick={handleViewHistory}
+            {/* Contenido sin cambios */}
+            <Box
               sx={{
-                color: "#1E90FF", // Celeste claro
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "6px",
               }}
             >
-              <HistoryIcon sx={{ fontSize: "24px" }} />
-            </IconButton>
-            <Typography
-              variant="body2"
-              sx={{ marginTop: "4px", color: "#1E90FF", fontSize: "12px" }}
-            >
-              HISTORICO
-            </Typography>
-          </Box>
+              <Typography
+                variant="body2"
+                sx={{ textAlign: "center", fontSize: "12px" }}
+              >
+                {marca}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ textAlign: "center", fontSize: "12px" }}
+              >
+                {modelo}
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: "12px" }}>
+                Id: {equipo_id_OID}
+              </Typography>
+            </Box>
 
-          {/* Cuadrante inferior (unificado) */}
-          <Box
-            sx={{
-              gridColumn: "1 / span 2", // Ocupa ambas columnas
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "16px",
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{ textAlign: "center", fontSize: "12px" }}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "6px",
+              }}
             >
-              {nombre}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ textAlign: "center", fontSize: "12px" }}
+              <IconButton
+                onClick={handleViewHistory}
+                sx={{
+                  color: "#1E90FF", // Celeste claro
+                }}
+              >
+                <HistoryIcon sx={{ fontSize: "24px" }} />
+              </IconButton>
+              <Typography
+                variant="body2"
+                sx={{ marginTop: "4px", color: "#1E90FF", fontSize: "12px" }}
+              >
+                HISTORICO
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                gridColumn: "1 / span 2", // Ocupa ambas columnas
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "16px",
+              }}
             >
-              {llave}
-            </Typography>
+              <Typography
+                variant="body2"
+                sx={{ textAlign: "center", fontSize: "12px" }}
+              >
+                {nombre}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ textAlign: "center", fontSize: "12px" }}
+              >
+                {llave}
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </Box>
-    </Box>
+
+      {/* Modal de Obras asociadas */}
+      <UnitWorksModal
+        open={worksModalOpen}
+        onClose={() => setWorksModalOpen(false)}
+        movilId={Movil_ID}
+        patente={patente}
+      />
+    </>
   );
 };
 
