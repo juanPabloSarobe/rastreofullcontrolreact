@@ -168,7 +168,8 @@ const ContractReportsModal = ({ open, onClose }) => {
         (!advancedView && selectedMonth) ||
         (advancedView && dateRange[0] && dateRange[1])
       ) ||
-      loading
+      loading ||
+      dateRange[0] > dateRange[1]
     );
   };
 
@@ -318,7 +319,16 @@ const ContractReportsModal = ({ open, onClose }) => {
                 control={
                   <Switch
                     checked={advancedView}
-                    onChange={(e) => setAdvancedView(e.target.checked)}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setAdvancedView(isChecked);
+                      if (!isChecked) {
+                        // Resetear el rango de fechas al salir de la vista avanzada
+                        setDateRange([null, null]);
+                        // También resetear el mes seleccionado para forzar una nueva selección
+                        setSelectedMonth("");
+                      }
+                    }}
                     disabled={!selectedContract}
                     color="success"
                   />
