@@ -13,6 +13,7 @@ import IconButton from "@mui/material/IconButton";
 import ClearIcon from "@mui/icons-material/Clear";
 import { FixedSizeList as List } from "react-window";
 import { useDebounce } from "use-debounce";
+import Tooltip from "@mui/material/Tooltip";
 
 import StatusIcon from "./StatusIcon";
 import logoFullControl from "../../assets/LogoFullcontrolSoloGota.webp";
@@ -77,6 +78,7 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchInput, setSearchInput] = useState("");
   const [searchText] = useDebounce(searchInput, 300); // Aplica debounce de 300ms
+  const [selectAll, setSelectAll] = useState(false);
   const open = Boolean(anchorEl);
 
   const handleClick = useCallback((event) => {
@@ -110,6 +112,35 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
   const handleClearSearch = useCallback(() => {
     setSearchInput("");
   }, []);
+
+  // Función para seleccionar/deseleccionar todas las unidades
+  const handleSelectAll = useCallback(() => {
+    const newSelectAllState = !selectAll;
+    setSelectAll(newSelectAllState);
+
+    // Obtener todas las unidades disponibles
+    const allUnits = [];
+    Object.keys(liteData.GPS || {}).forEach((empresa) => {
+      liteData.GPS[empresa].forEach((unit) => {
+        if (unit && unit.Movil_ID) {
+          allUnits.push(unit.Movil_ID);
+        }
+      });
+    });
+
+    // Actualizar selección basada en el estado del switch
+    const updatedUnits = newSelectAllState ? allUnits : [];
+
+    dispatch({ type: "SET_SELECTED_UNITS", payload: updatedUnits });
+    onUnitSelect(updatedUnits);
+
+    // Si seleccionamos todas, cerramos el selector para que se vean seleccionadas
+    if (newSelectAllState) {
+      setTimeout(() => {
+        handleClose();
+      }, 200);
+    }
+  }, [selectAll, liteData, dispatch, onUnitSelect, handleClose]);
 
   // Procesa los datos
   const groupedUnits = liteData.GPS || {};
@@ -230,10 +261,16 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
           },
         }}
       >
-        {/* Campo de búsqueda */}
-        <Box sx={{ padding: "8px" }}>
+        {/* Campo de búsqueda con switch para seleccionar todos */}
+        <Box
+          sx={{
+            padding: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <TextField
-            fullWidth
             size="small"
             placeholder="Buscar unidades..."
             value={searchInput}
@@ -242,6 +279,7 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
             onKeyDown={(event) => {
               event.stopPropagation();
             }}
+            sx={{ flexGrow: 1, mr: 1 }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -256,6 +294,20 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
               },
             }}
           />
+          <Tooltip title="Seleccionar todos">
+            <Switch
+              checked={selectAll}
+              onChange={handleSelectAll}
+              color="success"
+              size="small"
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: "green" },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                  backgroundColor: "green",
+                },
+              }}
+            />
+          </Tooltip>
         </Box>
 
         {/* Lista virtualizada de unidades */}
