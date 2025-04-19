@@ -5,7 +5,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import EventIcon from "@mui/icons-material/Event";
-import HistoryIcon from "@mui/icons-material/History"; // Nuevo ícono para Histórico Avanzado
+import HistoryIcon from "@mui/icons-material/History";
 import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
@@ -14,14 +14,15 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import { useContextValue } from "../../context/Context";
-import AdvancedHistoryModal from "./AdvancedHistoryModal"; // Importamos el nuevo componente
+import AdvancedHistoryModal from "./AdvancedHistoryModal";
+import ContractReportsModal from "./ContractReportsModal"; // Importar el nuevo componente
 
 const MenuButton = ({ selectedUnit }) => {
-  // Recibir selectedUnit como prop
   const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
-  const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false); // Estado para el modal
+  const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false);
+  const [contractReportsOpen, setContractReportsOpen] = useState(false); // Nuevo estado
   const open = Boolean(anchorEl);
 
   useEffect(() => {
@@ -38,9 +39,14 @@ const MenuButton = ({ selectedUnit }) => {
     setAnchorEl(null);
   };
 
-  // Nuevo manejador para abrir el modal de histórico avanzado
   const openAdvancedHistory = () => {
     setAdvancedHistoryOpen(true);
+    handleClose();
+  };
+
+  // Nuevo manejador para abrir el modal de Informes Parciales
+  const openContractReports = () => {
+    setContractReportsOpen(true);
     handleClose();
   };
 
@@ -66,10 +72,10 @@ const MenuButton = ({ selectedUnit }) => {
 
   const menuItems = [
     {
-      icon: <HistoryIcon fontSize="small" />, // Nuevo ítem para Histórico Avanzado
+      icon: <HistoryIcon fontSize="small" />,
       label: "Histórico Avanzado",
       show: true,
-      onClick: openAdvancedHistory, // Usamos el nuevo manejador
+      onClick: openAdvancedHistory,
     },
     {
       icon: <BarChartIcon fontSize="small" />,
@@ -86,10 +92,9 @@ const MenuButton = ({ selectedUnit }) => {
     },
     {
       icon: <SsidChartIcon fontSize="small" />,
-      label: "Parciales",
-      link: "/parciales",
+      label: "Informes Parciales", // Cambiamos el texto del menú
       show: true,
-      onClick: handleClose,
+      onClick: openContractReports, // Usamos el nuevo manejador
     },
     {
       icon: <SettingsIcon fontSize="small" />,
@@ -189,6 +194,12 @@ const MenuButton = ({ selectedUnit }) => {
         open={advancedHistoryOpen}
         onClose={() => setAdvancedHistoryOpen(false)}
         selectedUnit={selectedUnit}
+      />
+
+      {/* Modal de Informes Parciales */}
+      <ContractReportsModal
+        open={contractReportsOpen}
+        onClose={() => setContractReportsOpen(false)}
       />
     </Box>
   );
