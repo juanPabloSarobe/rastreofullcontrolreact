@@ -23,6 +23,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AddFleetModal from "./AddFleetModal";
+import DeleteFleetModal from "./DeleteFleetModal";
 
 const FleetAdminModal = ({ open, onClose }) => {
   const [loading, setLoading] = useState(true);
@@ -30,10 +32,13 @@ const FleetAdminModal = ({ open, onClose }) => {
   const [empresaId, setEmpresaId] = useState(null);
   const [fleets, setFleets] = useState([]);
   const [selectedFleet, setSelectedFleet] = useState("");
+  const [selectedFleetName, setSelectedFleetName] = useState("");
   const [allUnits, setAllUnits] = useState([]);
   const [fleetUnits, setFleetUnits] = useState([]);
   const [selectedAllUnits, setSelectedAllUnits] = useState([]);
   const [selectedFleetUnits, setSelectedFleetUnits] = useState([]);
+  const [addFleetModalOpen, setAddFleetModalOpen] = useState(false);
+  const [deleteFleetModalOpen, setDeleteFleetModalOpen] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -230,15 +235,36 @@ const FleetAdminModal = ({ open, onClose }) => {
   };
 
   const handleFleetChange = (event) => {
-    setSelectedFleet(event.target.value);
+    const fleetId = event.target.value;
+    setSelectedFleet(fleetId);
+
+    // Guardar el nombre de la flota seleccionada
+    const fleet = fleets.find((fleet) => fleet.Flota_ID === fleetId);
+    if (fleet) {
+      setSelectedFleetName(fleet.Flota_Nombre);
+    }
+
     setSelectedAllUnits([]);
     setSelectedFleetUnits([]);
   };
 
   const handleDeleteFleet = () => {
-    // Lógica para eliminar flota (API call)
-    console.log("Eliminar flota:", selectedFleet);
-    // Reset después de eliminar
+    setDeleteFleetModalOpen(true);
+  };
+
+  const handleOpenAddFleetModal = () => {
+    setAddFleetModalOpen(true);
+  };
+
+  const handleFleetAdded = () => {
+    // Actualizar la lista de flotas después de añadir una nueva
+    fetchFleets();
+  };
+
+  const handleFleetDeleted = () => {
+    // Actualizar la lista de flotas
+    fetchFleets();
+    // Limpiar la selección
     setSelectedFleet("");
   };
 
@@ -331,6 +357,7 @@ const FleetAdminModal = ({ open, onClose }) => {
                 </FormControl>
                 <IconButton
                   color="success"
+                  onClick={handleOpenAddFleetModal}
                   sx={{
                     bgcolor: "rgba(0, 128, 0, 0.1)",
                     "&:hover": { bgcolor: "rgba(0, 128, 0, 0.2)" },
@@ -533,6 +560,22 @@ const FleetAdminModal = ({ open, onClose }) => {
             Cerrar
           </Button>
         </Box>
+
+        <AddFleetModal
+          open={addFleetModalOpen}
+          onClose={() => setAddFleetModalOpen(false)}
+          userId={userId}
+          empresaId={empresaId}
+          onFleetAdded={handleFleetAdded}
+        />
+
+        <DeleteFleetModal
+          open={deleteFleetModalOpen}
+          onClose={() => setDeleteFleetModalOpen(false)}
+          fleetId={selectedFleet}
+          fleetName={selectedFleetName}
+          onFleetDeleted={handleFleetDeleted}
+        />
       </Paper>
     </Modal>
   );
