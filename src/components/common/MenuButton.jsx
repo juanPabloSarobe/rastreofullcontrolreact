@@ -9,20 +9,23 @@ import HistoryIcon from "@mui/icons-material/History";
 import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
+import ListAltIcon from "@mui/icons-material/ListAlt"; // Nuevo icono para Flotas
 import ReportIcon from "@mui/icons-material/Report";
 import LogoutIcon from "@mui/icons-material/Logout";
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import { useContextValue } from "../../context/Context";
 import AdvancedHistoryModal from "./AdvancedHistoryModal";
-import ContractReportsModal from "./ContractReportsModal"; // Importar el nuevo componente
+import ContractReportsModal from "./ContractReportsModal";
+import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 
 const MenuButton = ({ selectedUnit }) => {
   const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
   const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false);
-  const [contractReportsOpen, setContractReportsOpen] = useState(false); // Nuevo estado
+  const [contractReportsOpen, setContractReportsOpen] = useState(false);
+  const [fleetAdminOpen, setFleetAdminOpen] = useState(false); // Nuevo estado
   const open = Boolean(anchorEl);
 
   useEffect(() => {
@@ -44,9 +47,14 @@ const MenuButton = ({ selectedUnit }) => {
     handleClose();
   };
 
-  // Nuevo manejador para abrir el modal de Informes Parciales
   const openContractReports = () => {
     setContractReportsOpen(true);
+    handleClose();
+  };
+
+  // Nuevo manejador para abrir el administrador de flotas
+  const openFleetAdmin = () => {
+    setFleetAdminOpen(true);
     handleClose();
   };
 
@@ -78,6 +86,12 @@ const MenuButton = ({ selectedUnit }) => {
       onClick: openAdvancedHistory,
     },
     {
+      icon: <ListAltIcon fontSize="small" />, // Nuevo icono para Flotas
+      label: "Flotas", // Nueva opción de menú
+      show: true, // Mostrar a todos los usuarios
+      onClick: openFleetAdmin, // Nuevo manejador
+    },
+    {
       icon: <BarChartIcon fontSize="small" />,
       label: "Informes",
       link: "https://plataforma.fullcontrolgps.com.ar/informes/",
@@ -92,9 +106,9 @@ const MenuButton = ({ selectedUnit }) => {
     },
     {
       icon: <SsidChartIcon fontSize="small" />,
-      label: "Informes Parciales", // Cambiamos el texto del menú
+      label: "Informes Parciales",
       show: true,
-      onClick: openContractReports, // Usamos el nuevo manejador
+      onClick: openContractReports,
     },
     {
       icon: <SettingsIcon fontSize="small" />,
@@ -145,41 +159,28 @@ const MenuButton = ({ selectedUnit }) => {
       <IconButton
         color="black"
         aria-label="menu"
-        size="large"
         onClick={handleClick}
         sx={{
           backgroundColor: "white",
-          boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "&:hover": {
-            backgroundColor: "lightgray",
-          },
+          "&:hover": { backgroundColor: "lightgrey" },
+          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
         }}
       >
         <MenuIcon />
       </IconButton>
-
       <Menu
+        id="basic-menu"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "center",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "center",
+        MenuListProps={{
+          "aria-labelledby": "basic-button",
         }}
       >
         {menuItems
           .filter((item) => item.show)
           .map((item, index) => (
-            <MenuItem
-              key={index}
-              onClick={item.onClick}
-              sx={{ paddingY: 1.5 }}
-              disableRipple={!item.onClick}
-            >
+            <MenuItem key={index} onClick={item.onClick}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               {item.label}
               {item.renderRight && (
@@ -200,6 +201,12 @@ const MenuButton = ({ selectedUnit }) => {
       <ContractReportsModal
         open={contractReportsOpen}
         onClose={() => setContractReportsOpen(false)}
+      />
+
+      {/* Modal de Administración de Flotas */}
+      <FleetAdminModal
+        open={fleetAdminOpen}
+        onClose={() => setFleetAdminOpen(false)}
       />
     </Box>
   );
