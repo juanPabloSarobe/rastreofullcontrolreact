@@ -26,6 +26,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import AddFleetModal from "./AddFleetModal";
 import DeleteFleetModal from "./DeleteFleetModal";
 
@@ -581,7 +583,11 @@ const FleetAdminModal = ({ open, onClose }) => {
                         color="success"
                         size={isMobile ? "small" : "medium"}
                       >
-                        <ArrowForwardIcon />
+                        {isMobile ? (
+                          <ArrowDownwardIcon />
+                        ) : (
+                          <ArrowForwardIcon />
+                        )}
                       </IconButton>
                       <IconButton
                         onClick={handleRemoveFromFleet}
@@ -589,7 +595,7 @@ const FleetAdminModal = ({ open, onClose }) => {
                         color="error"
                         size={isMobile ? "small" : "medium"}
                       >
-                        <ArrowBackIcon />
+                        {isMobile ? <ArrowUpwardIcon /> : <ArrowBackIcon />}
                       </IconButton>
                     </Box>
 
