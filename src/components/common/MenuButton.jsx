@@ -161,6 +161,8 @@ const MenuButton = ({ selectedUnit }) => {
         aria-label="menu"
         onClick={handleClick}
         sx={{
+          height: "48px",
+          width: "48px",
           backgroundColor: "white",
           "&:hover": { backgroundColor: "lightgrey" },
           boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
@@ -173,8 +175,10 @@ const MenuButton = ({ selectedUnit }) => {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        MenuListProps={{
-          "aria-labelledby": "basic-button",
+        slotProps={{
+          list: {
+            "aria-labelledby": "basic-button",
+          },
         }}
       >
         {menuItems

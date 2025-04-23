@@ -18,7 +18,8 @@ import LinearLoading from "../common/LinearLoading";
 import empresasAExcluir from "../../data/empresasAExcluir.json";
 import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
-import UserChip from "../common/UserChip"; // Importamos el nuevo componente
+import UserChip from "../common/UserChip";
+import FleetSelectorButton from "../common/FleetSelectorButton"; // Añadir esta importación
 
 const PrincipalPage = () => {
   const { state, dispatch } = useContextValue();
@@ -28,8 +29,8 @@ const PrincipalPage = () => {
   const [markersData, setMarkersData] = useState([]);
   const [liteData, setLiteData] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Estado para controlar el modal de carga
-  const [historicalData, setHistoricalData] = useState(null); // Estado para los datos históricos
+  const [isLoading, setIsLoading] = useState(true);
+  const [historicalData, setHistoricalData] = useState(null);
   const mapRef = useRef(null);
 
   const { data: prefData, loading: prefLoading } = usePrefFetch(
@@ -48,12 +49,11 @@ const PrincipalPage = () => {
     if (prefData) {
       setMarkersData(prefData?.GPS || []);
 
-      // Actualiza los datos de la unidad seleccionada en UnitDetails
       if (selectedUnit) {
         const updatedSelectedUnit = prefData?.GPS?.find(
           (marker) => marker.Movil_ID === selectedUnit.Movil_ID
         );
-        setSelectedUnit(updatedSelectedUnit || null); // Actualiza solo si la unidad actual existe en los nuevos datos
+        setSelectedUnit(updatedSelectedUnit || null);
       }
     }
   }, [prefData, selectedUnit]);
@@ -63,16 +63,13 @@ const PrincipalPage = () => {
       let filteredData = liteResponse?.GPS || {};
       console.log("HideLowUnits: ", state.hideLowUnits);
 
-      // Aplica los filtros solo si el usuario es administrador y `hideLowUnits` es true
       if (state.role === "Administrador" && state.hideLowUnits) {
         console.log(
           "Aplicando filtros para administrador con hideLowUnits activado"
         );
 
-        // Filtra únicamente el objeto cuya clave sea ""
         if (filteredData[""]) {
           filteredData[""] = filteredData[""].filter((unit) => {
-            // Verifica que `unit.fec` no sea null o undefined antes de usar `.split()`
             if (!unit.fec) return false;
 
             const fecha = new Date(
@@ -83,14 +80,11 @@ const PrincipalPage = () => {
             const fechaCorte = new Date("2025-01-01");
 
             return (
-              unit.id !== null && // ID no debe ser null
-              unit.patente !== null && // Patente no debe ser null
-              fecha >= fechaCorte // Fecha debe ser mayor o igual al 1 de enero de 2024
+              unit.id !== null && unit.patente !== null && fecha >= fechaCorte
             );
           });
         }
 
-        // Itera sobre las claves y elimina las empresas a excluir
         empresasAExcluir.forEach((empresa) => {
           if (filteredData[empresa]) {
             delete filteredData[empresa];
@@ -100,16 +94,15 @@ const PrincipalPage = () => {
 
       console.log(Object.keys(filteredData).length);
       console.log("filteredData", filteredData);
-      setLiteData({ GPS: filteredData }); // Actualiza `liteData` con los datos filtrados
+      setLiteData({ GPS: filteredData });
     }
   }, [liteResponse, state.role, state.hideLowUnits]);
 
-  // Controla el estado de carga
   useEffect(() => {
     if (!prefLoading && !liteLoading) {
-      setIsLoading(false); // Oculta el modal cuando ambos fetchs han terminado
+      setIsLoading(false);
     } else {
-      setIsLoading(true); // Muestra el modal mientras los fetchs están cargando
+      setIsLoading(true);
     }
   }, [prefLoading, liteLoading]);
 
@@ -149,12 +142,10 @@ const PrincipalPage = () => {
 
   return (
     <>
-      {/* Modal de carga */}
       {state.viewMode === "rastreo" && markersData.length === 0 && (
         <LoadingModal isLoading={isLoading} />
       )}
 
-      {/* Indicador de carga lineal */}
       {state.viewMode === "rastreo" &&
         markersData.length > 0 &&
         (prefLoading || liteLoading) && <LinearLoading />}
@@ -174,9 +165,7 @@ const PrincipalPage = () => {
             sx={{ borderRadius: "12px" }}
             position="relative"
           >
-            <MenuButton selectedUnit={selectedUnit} />{" "}
-            {/* Pasar selectedUnit como prop */}
-            {/* Chip de usuario (solo visible en vista rastreo y desktop) */}
+            <MenuButton selectedUnit={selectedUnit} />
             {state.viewMode === "rastreo" && <UserChip />}
             {state.viewMode === "rastreo" &&
               liteData?.GPS &&
@@ -186,7 +175,8 @@ const PrincipalPage = () => {
                     liteData={liteData}
                     onUnitSelect={handleUnitSelect}
                   />
-                  {/* Muestra los detalles de la unidad seleccionada */}
+                  <FleetSelectorButton setSelectedUnit={setSelectedUnit} />{" "}
+                  {/* Pasamos setSelectedUnit como prop */}
                   <UnitDetails
                     unitData={selectedUnit}
                     onViewHistory={handleViewHistory}
@@ -209,7 +199,6 @@ const PrincipalPage = () => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
 
-              {/* Renderizar marcadores de rastreo */}
               {state.viewMode === "rastreo" &&
                 filteredMarkersData.map((marker) => (
                   <CustomMarker
@@ -225,7 +214,6 @@ const PrincipalPage = () => {
                     }
                     rotationAngle={marker.grados}
                     onClick={() => {
-                      // Actualizar la unidad seleccionada
                       setSelectedUnit(marker);
                     }}
                     velocidad={marker.velocidad}
@@ -238,7 +226,6 @@ const PrincipalPage = () => {
                 />
               )}
 
-              {/* Renderizar datos históricos */}
               {state.viewMode === "historico" && historicalData && (
                 <HistoricalMarkers historicalData={historicalData} />
               )}
