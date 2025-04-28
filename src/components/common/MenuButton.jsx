@@ -5,6 +5,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import EventIcon from "@mui/icons-material/Event";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HistoryIcon from "@mui/icons-material/History";
 import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -19,7 +20,7 @@ import AdvancedHistoryModal from "./AdvancedHistoryModal";
 import ContractReportsModal from "./ContractReportsModal";
 import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 
-const MenuButton = ({ selectedUnit }) => {
+const MenuButton = ({ selectedUnit, onReportClick }) => {
   const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
@@ -90,6 +91,12 @@ const MenuButton = ({ selectedUnit }) => {
       label: "Flotas", // Nueva opción de menú
       show: true, // Mostrar a todos los usuarios
       onClick: openFleetAdmin, // Nuevo manejador
+    },
+    {
+      icon: <CheckCircleOutlineIcon fontSize="small" />,
+      label: "Certificado de Funcionamiento",
+      show: Boolean(selectedUnit),
+      onClick: onReportClick,
     },
     {
       icon: <BarChartIcon fontSize="small" />,

@@ -1,4 +1,3 @@
-import ExamplePage from "./components/pages/ExamplePage";
 import Login from "./components/pages/Login";
 import PrincipalPage from "./components/pages/PrincipalPage";
 
