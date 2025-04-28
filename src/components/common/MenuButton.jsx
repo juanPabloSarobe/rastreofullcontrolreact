@@ -58,6 +58,11 @@ const MenuButton = ({ selectedUnit, onReportClick }) => {
     setFleetAdminOpen(true);
     handleClose();
   };
+  // Nuevo manejador para abrir el certificado de funcionamiento
+  const openReportClic = () => {
+    handleClose();
+    onReportClick(true);
+  };
 
   const Logout = () => {
     document.cookie = "rol=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -96,7 +101,7 @@ const MenuButton = ({ selectedUnit, onReportClick }) => {
       icon: <CheckCircleOutlineIcon fontSize="small" />,
       label: "Certificado de Funcionamiento",
       show: Boolean(selectedUnit),
-      onClick: onReportClick,
+      onClick: openReportClic,
     },
     {
       icon: <BarChartIcon fontSize="small" />,
