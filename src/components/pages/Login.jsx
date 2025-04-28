@@ -79,8 +79,6 @@ const Login = () => {
         } else {
           toggleOnLoginError();
         }
-
-        console.log("Cookies almacenadas:", document.cookie);
       }
     } catch (error) {
       console.error("Error:", error);

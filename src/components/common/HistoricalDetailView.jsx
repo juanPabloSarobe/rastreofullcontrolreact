@@ -52,7 +52,6 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
       }
 
       const data = await response.json();
-      console.log("Datos históricos detallados:", data);
 
       // Accedemos al arreglo Historico dentro de la respuesta JSON
       const historicoData = data.Historico || [];

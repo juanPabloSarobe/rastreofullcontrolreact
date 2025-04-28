@@ -61,13 +61,8 @@ const PrincipalPage = () => {
   useEffect(() => {
     if (liteResponse) {
       let filteredData = liteResponse?.GPS || {};
-      console.log("HideLowUnits: ", state.hideLowUnits);
 
       if (state.role === "Administrador" && state.hideLowUnits) {
-        console.log(
-          "Aplicando filtros para administrador con hideLowUnits activado"
-        );
-
         if (filteredData[""]) {
           filteredData[""] = filteredData[""].filter((unit) => {
             if (!unit.fec) return false;
@@ -92,8 +87,6 @@ const PrincipalPage = () => {
         });
       }
 
-      console.log(Object.keys(filteredData).length);
-      console.log("filteredData", filteredData);
       setLiteData({ GPS: filteredData });
     }
   }, [liteResponse, state.role, state.hideLowUnits]);
@@ -134,12 +127,6 @@ const PrincipalPage = () => {
     );
   }, [state.selectedUnits, markersData]);
 
-  const handleViewHistory = () => {
-    if (selectedUnit) {
-      console.log("Ver histórico de la unidad:", selectedUnit);
-    }
-  };
-
   return (
     <>
       {state.viewMode === "rastreo" && markersData.length === 0 && (
@@ -177,10 +164,7 @@ const PrincipalPage = () => {
                   />
                   <FleetSelectorButton setSelectedUnit={setSelectedUnit} />{" "}
                   {/* Pasamos setSelectedUnit como prop */}
-                  <UnitDetails
-                    unitData={selectedUnit}
-                    onViewHistory={handleViewHistory}
-                  />
+                  <UnitDetails unitData={selectedUnit} />
                 </>
               )}
             <MapContainer

@@ -14,9 +14,6 @@ export default defineConfig({
         configure: (proxy, options) => {
           proxy.on("proxyRes", (proxyRes, req, res) => {
             const cookies = proxyRes.headers["set-cookie"];
-            if (cookies) {
-              console.log("Cookies from API:", cookies);
-            }
           });
         },
       },
@@ -27,9 +24,6 @@ export default defineConfig({
         configure: (proxy, options) => {
           proxy.on("proxyRes", (proxyRes, req, res) => {
             const cookies = proxyRes.headers["set-cookie"];
-            if (cookies) {
-              console.log("Cookies from API:", cookies);
-            }
           });
         },
       },
@@ -40,9 +34,6 @@ export default defineConfig({
         configure: (proxy, options) => {
           proxy.on("proxyRes", (proxyRes, req, res) => {
             const cookies = proxyRes.headers["set-cookie"];
-            if (cookies) {
-              console.log("Cookies from API:", cookies);
-            }
           });
         },
       },

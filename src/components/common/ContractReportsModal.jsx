@@ -128,8 +128,6 @@ const ContractReportsModal = ({ open, onClose }) => {
 
       const url = `/api/servicio/excelinformes.php?fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}&contrato=${contrato}`;
 
-      console.log("Descargando informe desde:", url);
-
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",

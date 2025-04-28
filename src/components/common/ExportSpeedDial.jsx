@@ -37,8 +37,6 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       // Construir la URL con los parámetros requeridos
       const url = `/api/servicio/excel.php?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaInicial}`;
 
-      console.log("Descargando Excel desde:", url);
-
       // Realizar la solicitud fetch
       const response = await fetch(url, {
         method: "GET",
@@ -89,9 +87,6 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       const movilId = selectedUnit.Movil_ID;
       const patente = selectedUnit.patente;
       const fechaInicial = selectedDate.format("YYYY-MM-DD");
-
-      // Verificar la estructura de datos
-      console.log("Estructura de historicalData:", Object.keys(historicalData));
 
       // Verificar si tenemos Markers (con M mayúscula) o markers (con m minúscula)
       const markersArray =
@@ -209,8 +204,6 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
-      console.log("KML exportado correctamente");
     } catch (error) {
       console.error("Error al exportar a KML:", error);
     } finally {

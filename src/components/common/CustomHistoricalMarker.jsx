@@ -5,7 +5,7 @@ import { Typography } from "@mui/material";
 
 const CustomHistoricalMarker = ({ position, message, iconAngle, iconData }) => {
   // Crear un ícono personalizado con rotación
-  console.log("iconData.popUpAnchor: ", iconData.popUpAnchor);
+
   const customIcon = L.divIcon({
     html: `
       <div style="transform: rotate(${

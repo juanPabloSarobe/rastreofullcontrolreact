@@ -51,8 +51,6 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
       // Construir la URL con los parámetros requeridos
       const url = `/api/servicio/excel.php?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
 
-      console.log("Descargando Excel desde:", url);
-
       // Realizar la solicitud fetch
       const response = await fetch(url, {
         method: "GET",
