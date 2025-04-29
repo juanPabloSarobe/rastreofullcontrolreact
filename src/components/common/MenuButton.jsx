@@ -22,7 +22,8 @@ import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
 import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
 
-const target = import.meta.env.VITE_APP_TARGET;
+const target =
+  import.meta.env.VITE_APP_TARGET || "https://plataforma.fullcontrolgps.com.ar";
 // Función simplificada para abrir una URL externa con cookies existentes
 const openExternalUrl = (url) => {
   // Las cookies se enviarán automáticamente si el dominio coincide

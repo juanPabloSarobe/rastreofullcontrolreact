@@ -29,6 +29,7 @@ jobs:
         run: npm run build
         env:
           CI: false # Esto evita que las advertencias se traten como errores
+          VITE_APP_TARGET: "https://plataforma.fullcontrolgps.com.ar" # Variable de entorno para target
 
       - name: Verificar archivos compilados
         run: |
