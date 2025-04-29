@@ -105,7 +105,6 @@ la fecha se encuentra funcionando correctamente.`,
           width: { xs: "90%", sm: "400px" },
           p: 4,
           borderRadius: "12px",
-          position: "relative", // Necesario para posicionar el ícono de cerrar
         }}
       >
         {/* Ícono de cerrar */}
