@@ -129,7 +129,7 @@ const MenuButton = ({ selectedUnit }) => {
       show: true,
       onClick: () => {
         // Cambiamos para usar la función getFullURL
-        openExternalUrl(getFullURL("/informes/"));
+        openExternalUrl(getFullURL("../informes/"));
         handleClose();
       },
     },
@@ -145,7 +145,7 @@ const MenuButton = ({ selectedUnit }) => {
       show: state.role === "Administrador" || state.role === "Proveedor",
       onClick: () => {
         // Cambiamos para usar la función getFullURL
-        openExternalUrl(getFullURL("/fulladm/"));
+        openExternalUrl(getFullURL("../fulladm/"));
         handleClose();
       },
     },
