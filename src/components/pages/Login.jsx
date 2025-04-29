@@ -203,7 +203,7 @@ const Login = () => {
                     </Link>
                   </Box>
                   <Button type="submit" fullWidth color="success">
-                    Sign in
+                    Ingresar
                   </Button>
                 </Stack>
               </form>
