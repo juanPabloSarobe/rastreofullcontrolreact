@@ -1,39 +1,55 @@
-name: Build and Deploy React App
+name: Compilar y Desplegar Aplicación React
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build React Application
+    name: Compilar Aplicación React
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout code
+      - name: Checkout del código
         uses: actions/checkout@v3
-      
-      - name: Setup Node.js
+
+      - name: Configurar Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install Dependencies
+          node-version: "18"
+          cache: "npm"
+
+      - name: Instalar dependencias
         run: npm ci
-      
-      - name: Build Project
+
+      - name: Compilar proyecto
         run: npm run build
         env:
-          CI: false # This prevents treating warnings as errors
-      
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v3
+          CI: false # Esto evita que las advertencias se traten como errores
+
+      - name: Verificar archivos compilados
+        run: |
+          ls -la
+          if [ -d "build" ]; then
+            echo "✅ Carpeta build encontrada"
+            ls -la build/
+          elif [ -d "dist" ]; then
+            echo "⚠️ Carpeta build no encontrada, pero se encontró dist"
+            ls -la dist/
+          else
+            echo "❌ No se encontró carpeta build ni dist"
+            exit 1
+          fi
+
+      - name: Archivar los archivos compilados
+        uses: actions/upload-artifact@v4
         with:
-          name: build-files
-          path: build/
+          name: archivos-compilados
+          path: |
+            build/
+            dist/
+          if-no-files-found: warn
           retention-days: 7
-  
