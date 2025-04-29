@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import dotenv from "dotenv";
 dotenv.config();
 
-const target = process.env.TARGET;
+const target = process.env.VITE_APP_TARGET;
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {

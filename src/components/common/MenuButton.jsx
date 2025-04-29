@@ -22,6 +22,13 @@ import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
 import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
 
+const target = import.meta.env.VITE_APP_TARGET;
+// Función simplificada para abrir una URL externa con cookies existentes
+const openExternalUrl = (url) => {
+  // Las cookies se enviarán automáticamente si el dominio coincide
+  window.open(url, "_blank");
+};
+
 const MenuButton = ({ selectedUnit }) => {
   const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -114,13 +121,9 @@ const MenuButton = ({ selectedUnit }) => {
     {
       icon: <BarChartIcon fontSize="small" />,
       label: "Informes",
-      link: "https://plataforma.fullcontrolgps.com.ar/informes/",
       show: true,
       onClick: () => {
-        window.open(
-          "https://plataforma.fullcontrolgps.com.ar/informes/",
-          "_blank"
-        );
+        openExternalUrl(target + "/informes/");
         handleClose();
       },
     },
@@ -133,12 +136,9 @@ const MenuButton = ({ selectedUnit }) => {
     {
       icon: <SettingsIcon fontSize="small" />,
       label: "Administración",
-      link: "https://plataforma.fullcontrolgps.com.ar/fulladm/#/",
       show: state.role === "Administrador" || state.role === "Proveedor",
       onClick: () => {
-        const url = "https://plataforma.fullcontrolgps.com.ar/fulladm/#/";
-        const options = "noopener,noreferrer";
-        window.open(url, "_blank", options);
+        openExternalUrl(target + "/fulladm/");
         handleClose();
       },
     },
