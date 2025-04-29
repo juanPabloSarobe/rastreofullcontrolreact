@@ -1,20 +1,16 @@
 import * as React from "react";
-import { CssVarsProvider, extendTheme, useColorScheme } from "@mui/joy/styles";
+import { extendTheme } from "@mui/joy/styles";
 import GlobalStyles from "@mui/joy/GlobalStyles";
-import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
 import Divider from "@mui/joy/Divider";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
-import IconButton from "@mui/joy/IconButton";
 import Link from "@mui/joy/Link";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
-import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
-import logoFullControlLargo from "../../assets/logoFullControlLargo.webp";
+import logoFullcontrolLargo from "../../assets/logoFullcontrolLargo.webp";
 import { useContextValue } from "../../context/Context";
 import { FormHelperText } from "@mui/joy";
 import { InfoOutlined } from "@mui/icons-material";
@@ -126,7 +122,7 @@ const Login = () => {
             <Box sx={{ gap: 2, display: "flex", alignItems: "center" }}>
               <Box
                 component="img"
-                src={logoFullControlLargo}
+                src={logoFullcontrolLargo}
                 alt="Logo"
                 sx={{
                   height: 60,

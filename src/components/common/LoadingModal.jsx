@@ -2,7 +2,7 @@ import React from "react";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
-import logoFullControlLargo from "../../assets/logoFullControlLargo.webp";
+import logoFullcontrolLargo from "../../assets/logoFullcontrolLargo.webp";
 
 const LoadingModal = ({ isLoading }) => {
   if (!isLoading) return null; // No renderiza nada si no está cargando
@@ -35,7 +35,7 @@ const LoadingModal = ({ isLoading }) => {
       >
         {/* Logo de FullControl */}
         <img
-          src={logoFullControlLargo} // Reemplaza con la ruta correcta del logo
+          src={logoFullcontrolLargo} // Reemplaza con la ruta correcta del logo
           alt="FullControl Logo"
           style={{ width: "220px", marginBottom: "1px" }}
         />
