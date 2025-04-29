@@ -16,6 +16,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import "dayjs/locale/es";
 import dayjs from "dayjs";
+import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
 
 const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
   const [loading, setLoading] = useState(false);
@@ -96,45 +97,11 @@ const AdvancedHistoryModal = ({ open, onClose, selectedUnit }) => {
   // Modal cuando no hay unidad seleccionada
   if (!hasUnitSelected) {
     return (
-      <Modal
+      <NoUnitSelectedModal
         open={open}
         onClose={onClose}
-        aria-labelledby="no-unit-modal-title"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: { xs: "90%", sm: 400 },
-            bgcolor: "background.paper",
-            borderRadius: "12px",
-            boxShadow: 24,
-            p: 4,
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            id="no-unit-modal-title"
-            variant="h6"
-            component="h2"
-            sx={{ mb: 2 }}
-          >
-            Seleccionar unidad para obtener el Histórico Avanzado
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={onClose}
-            sx={{
-              bgcolor: "green",
-              "&:hover": { bgcolor: "darkgreen" },
-            }}
-          >
-            Aceptar
-          </Button>
-        </Box>
-      </Modal>
+        message="Seleccionar unidad para obtener el Histórico Avanzado"
+      />
     );
   }
 

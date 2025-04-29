@@ -1,8 +1,11 @@
-export const reportando = (fechaHora, aplicarOffset = true) => {
+export const reportando = (
+  fechaHora,
+  aplicarOffset = true,
+  horasLimite = 24
+) => {
   if (!fechaHora) return false;
 
   // Extraer la fecha base y el offset usando una expresión regular más específica
-  // Esta regex captura la fecha+hora y el offset por separado
   const matches = fechaHora.match(/^(.*?)([+-]\d{2})$/);
 
   let fechaBase, offsetPart;
@@ -22,21 +25,18 @@ export const reportando = (fechaHora, aplicarOffset = true) => {
 
   // Aplicar offset solo si se indica y hay un offset
   if (aplicarOffset && offsetPart) {
-    // Extraer el signo y las horas
     const offsetSign = offsetPart.startsWith("-") ? -1 : 1;
     const offsetHours = parseInt(offsetPart.substring(1, 3));
-
-    // Ajustar la fecha según el offset (CORRECCIÓN AQUÍ)
     fecha.setHours(fecha.getHours() + offsetHours * offsetSign);
   }
 
   // Obtener la fecha actual
   const ahora = new Date();
 
-  // Calcular la fecha límite (24 horas antes)
+  // Calcular la fecha límite según las horas proporcionadas
   const fechaLimite = new Date(ahora);
-  fechaLimite.setHours(fechaLimite.getHours() - 24);
+  fechaLimite.setHours(fechaLimite.getHours() - horasLimite);
 
-  // La unidad está reportando si su fecha es más reciente que el límite de 24h
+  // La unidad está reportando si su fecha es más reciente que el límite
   return fecha >= fechaLimite;
 };

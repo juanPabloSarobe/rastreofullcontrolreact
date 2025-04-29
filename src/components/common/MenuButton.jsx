@@ -19,14 +19,18 @@ import { useContextValue } from "../../context/Context";
 import AdvancedHistoryModal from "./AdvancedHistoryModal";
 import ContractReportsModal from "./ContractReportsModal";
 import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
+import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
+import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
 
-const MenuButton = ({ selectedUnit, onReportClick }) => {
+const MenuButton = ({ selectedUnit }) => {
   const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
   const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false);
   const [contractReportsOpen, setContractReportsOpen] = useState(false);
   const [fleetAdminOpen, setFleetAdminOpen] = useState(false); // Nuevo estado
+  const [noUnitModalOpen, setNoUnitModalOpen] = useState(false);
+  const [unitReportOpen, setUnitReportOpen] = useState(false);
   const open = Boolean(anchorEl);
 
   useEffect(() => {
@@ -58,10 +62,14 @@ const MenuButton = ({ selectedUnit, onReportClick }) => {
     setFleetAdminOpen(true);
     handleClose();
   };
-  // Nuevo manejador para abrir el certificado de funcionamiento
-  const openReportClic = () => {
+
+  const handleOpenReport = () => {
+    if (selectedUnit) {
+      setUnitReportOpen(true);
+    } else {
+      setNoUnitModalOpen(true);
+    }
     handleClose();
-    onReportClick(true);
   };
 
   const Logout = () => {
@@ -100,8 +108,8 @@ const MenuButton = ({ selectedUnit, onReportClick }) => {
     {
       icon: <CheckCircleOutlineIcon fontSize="small" />,
       label: "Certificado de Funcionamiento",
-      show: Boolean(selectedUnit),
-      onClick: openReportClic,
+      show: true, // Siempre visible
+      onClick: handleOpenReport,
     },
     {
       icon: <BarChartIcon fontSize="small" />,
@@ -223,6 +231,20 @@ const MenuButton = ({ selectedUnit, onReportClick }) => {
       <FleetAdminModal
         open={fleetAdminOpen}
         onClose={() => setFleetAdminOpen(false)}
+      />
+
+      {/* Modal de unidad no seleccionada */}
+      <NoUnitSelectedModal
+        open={noUnitModalOpen}
+        onClose={() => setNoUnitModalOpen(false)}
+        message="Seleccionar unidad para obtener el Certificado de Funcionamiento"
+      />
+
+      {/* Modal de informe de unidad */}
+      <UnitReportModal
+        open={unitReportOpen}
+        onClose={() => setUnitReportOpen(false)}
+        unitData={selectedUnit}
       />
     </Box>
   );

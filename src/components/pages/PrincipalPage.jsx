@@ -20,7 +20,6 @@ import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
-import UnitReportModal from "../common/UnitReportModal"; // Importar el modal
 
 const PrincipalPage = () => {
   const { state, dispatch } = useContextValue();
@@ -32,7 +31,6 @@ const PrincipalPage = () => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [historicalData, setHistoricalData] = useState(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const mapRef = useRef(null);
 
   const { data: prefData, loading: prefLoading } = usePrefFetch(
@@ -122,12 +120,6 @@ const PrincipalPage = () => {
     }
   };
 
-  const handleOpenReportModal = () => {
-    if (selectedUnit) {
-      setIsReportModalOpen(true);
-    }
-  };
-
   const filteredMarkersData = useMemo(() => {
     if (!state.selectedUnits.length || !markersData) return [];
     return markersData.filter((marker) =>
@@ -160,10 +152,7 @@ const PrincipalPage = () => {
             sx={{ borderRadius: "12px" }}
             position="relative"
           >
-            <MenuButton
-              selectedUnit={selectedUnit}
-              onReportClick={handleOpenReportModal} // Pasar la función al botón del menú
-            />
+            <MenuButton selectedUnit={selectedUnit} />
             {state.viewMode === "rastreo" && <UserChip />}
             {state.viewMode === "rastreo" &&
               liteData?.GPS &&
@@ -200,7 +189,7 @@ const PrincipalPage = () => {
                     position={[Number(marker.latitud), Number(marker.longitud)]}
                     popupContent={marker.patente}
                     color={
-                      !reportando(marker.fechaHora, false)
+                      !reportando(marker.fechaHora, false, 24) // Enviar 24 horas como parámetro
                         ? "gray"
                         : marker.estadoDeMotor === "Motor Encendido"
                         ? "green"
@@ -228,11 +217,6 @@ const PrincipalPage = () => {
 
               {isMobile || <AddZoomControl />}
             </MapContainer>
-            <UnitReportModal
-              open={isReportModalOpen}
-              onClose={() => setIsReportModalOpen(false)}
-              unitData={selectedUnit}
-            />
           </Box>
         </Box>
       </Box>

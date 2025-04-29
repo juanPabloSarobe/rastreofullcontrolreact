@@ -1,10 +1,19 @@
 import React from "react";
-import { Modal, Box, Typography, Button, Paper } from "@mui/material";
+import {
+  Modal,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  IconButton,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close"; // Importar el ícono de cerrar
 import { jsPDF } from "jspdf";
 import dayjs from "dayjs";
 import { reportando } from "../../utils/reportando";
-import logofullcontrolgps3 from "../../assets/logofullcontrolgps3.png"; // Asegúrate de que el logo esté en esta ruta
-import firma from "../../assets/firma.png"; // Asegúrate de que la firma esté en esta ruta
+import logofullcontrolgps3 from "../../assets/logofullcontrolgps3.png";
+import firma from "../../assets/firma.png";
+
 const UnitReportModal = ({ open, onClose, unitData }) => {
   if (!unitData) return null;
 
@@ -16,15 +25,12 @@ const UnitReportModal = ({ open, onClose, unitData }) => {
     modelo,
     equipo_id_OID: Id,
   } = unitData;
-  const isReporting = reportando(fechaHora);
+  const isReporting = reportando(fechaHora, false, 720);
 
   const handleExportPDF = () => {
-    console.log(unitData);
     const doc = new jsPDF();
-
-    // Agregar el logo como membrete
     const pageWidth = doc.internal.pageSize.getWidth();
-    const logoHeight = 57; // Altura del logo en mm
+    const logoHeight = 57;
     doc.addImage(
       logofullcontrolgps3,
       "PNG",
@@ -33,16 +39,11 @@ const UnitReportModal = ({ open, onClose, unitData }) => {
       pageWidth - 70,
       logoHeight
     );
-
-    // Título
     doc.setFontSize(16);
     doc.text("Certificado de Funcionamiento", pageWidth / 2, 80, {
       align: "center",
     });
-
-    // Datos de la unidad
     doc.setFontSize(12);
-
     doc.text(
       `Neuquén, ${dayjs().locale("es").format("DD [de] MMMM [de] YYYY")}`,
       190,
@@ -61,7 +62,6 @@ la fecha se encuentra funcionando correctamente.`,
       20,
       150
     );
-
     doc.text(
       `Sin otro particular lo saluda atte.`,
       190,
@@ -72,8 +72,6 @@ la fecha se encuentra funcionando correctamente.`,
     );
     doc.addImage(firma, "PNG", 145, 182, 30, 15, "right");
     doc.text(`Sarobe Juan Pablo`, 177, 200, null, null, "right");
-
-    // Pie de página
     doc.setFontSize(6);
     doc.text(
       "Este certificado confirma el estado de funcionamiento del equipo. Informe descargado automáticamente desde el sistema de rastreo FullControlGPS. No requiere firma.",
@@ -82,9 +80,17 @@ la fecha se encuentra funcionando correctamente.`,
     );
     doc.text("www.fullcontrolgps.com.ar", 190, 285, null, null, "right");
     doc.text(`${dayjs().locale("es").format("DD/MM/YYYY HH:mm:ss")}`, 20, 285);
+    doc.save(`Certificado de funcionamiento ${empresa} _ ${patente}.pdf`);
+  };
 
-    // Guardar el PDF
-    doc.save(`Certificado_${patente}.pdf`);
+  const handleTecnicalSupport = () => {
+    const message = `Solicito asistencia técnica para la unidad ${patente}, empresa ${empresa}`;
+    const phoneNumber = "+5492994667595";
+    const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+      message
+    )}`;
+    window.open(whatsappURL, "_blank");
+    onClose();
   };
 
   return (
@@ -99,8 +105,22 @@ la fecha se encuentra funcionando correctamente.`,
           width: { xs: "90%", sm: "400px" },
           p: 4,
           borderRadius: "12px",
+          position: "relative", // Necesario para posicionar el ícono de cerrar
         }}
       >
+        {/* Ícono de cerrar */}
+        <IconButton
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            color: "grey.500",
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+
         <Typography
           id="unit-report-title"
           variant="h6"
@@ -124,22 +144,29 @@ la fecha se encuentra funcionando correctamente.`,
           <strong>Estado:</strong>{" "}
           {isReporting ? "Reportando" : "No Reportando"}
         </Typography>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={handleExportPDF}
-          sx={{ bgcolor: "blue", "&:hover": { bgcolor: "darkblue" }, mb: 2 }}
-        >
-          Imprimir
-        </Button>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={onClose}
-          sx={{ bgcolor: "green", "&:hover": { bgcolor: "darkgreen" } }}
-        >
-          Cerrar
-        </Button>
+        {isReporting ? (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleExportPDF}
+            sx={{
+              bgcolor: "green",
+              "&:hover": { bgcolor: "darkgreen" },
+              mb: 2,
+            }}
+          >
+            Imprimir
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleTecnicalSupport}
+            sx={{ bgcolor: "red", "&:hover": { bgcolor: "darkred" }, mb: 2 }}
+          >
+            Pedir asistencia técnica
+          </Button>
+        )}
       </Paper>
     </Modal>
   );
