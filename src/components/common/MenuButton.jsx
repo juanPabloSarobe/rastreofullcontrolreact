@@ -22,13 +22,6 @@ import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
 import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
 
-// Eliminamos la variable target y creamos una función para construir URLs
-const getFullURL = (path) => {
-  // Si estamos en desarrollo, usamos una URL relativa
-  // En producción, la URL completa se construirá correctamente por el servidor
-  return path;
-};
-
 // Función simplificada para abrir una URL externa con cookies existentes
 const openExternalUrl = (url) => {
   window.open(url, "_blank");
@@ -129,7 +122,7 @@ const MenuButton = ({ selectedUnit }) => {
       show: true,
       onClick: () => {
         // Cambiamos para usar la función getFullURL
-        openExternalUrl(getFullURL("../informes/"));
+        openExternalUrl("https://plataforma.fullcontrolgps.com.ar/informes/");
         handleClose();
       },
     },
@@ -145,7 +138,7 @@ const MenuButton = ({ selectedUnit }) => {
       show: state.role === "Administrador" || state.role === "Proveedor",
       onClick: () => {
         // Cambiamos para usar la función getFullURL
-        openExternalUrl(getFullURL("../fulladm/"));
+        openExternalUrl("https://plataforma.fullcontrolgps.com.ar/fulladm/");
         handleClose();
       },
     },
