@@ -85,7 +85,7 @@ la fecha se encuentra funcionando correctamente.`,
 
   const handleTecnicalSupport = () => {
     const message = `Solicito asistencia técnica para la unidad ${patente}, empresa ${empresa}`;
-    const phoneNumber = "+5492994667595";
+    const phoneNumber = "+5492994119010";
     const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
       message
     )}`;
