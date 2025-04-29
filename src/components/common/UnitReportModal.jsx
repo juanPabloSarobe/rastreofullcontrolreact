@@ -4,19 +4,27 @@ import { jsPDF } from "jspdf";
 import dayjs from "dayjs";
 import { reportando } from "../../utils/reportando";
 import logofullcontrolgps3 from "../../assets/logofullcontrolgps3.png"; // Asegúrate de que el logo esté en esta ruta
-
+import firma from "../../assets/firma.png"; // Asegúrate de que la firma esté en esta ruta
 const UnitReportModal = ({ open, onClose, unitData }) => {
   if (!unitData) return null;
 
-  const { patente, empresa, fechaHora } = unitData;
+  const {
+    patente,
+    empresa,
+    fechaHora,
+    marca,
+    modelo,
+    equipo_id_OID: Id,
+  } = unitData;
   const isReporting = reportando(fechaHora);
 
   const handleExportPDF = () => {
+    console.log(unitData);
     const doc = new jsPDF();
 
     // Agregar el logo como membrete
     const pageWidth = doc.internal.pageSize.getWidth();
-    const logoHeight = 50; // Altura del logo en mm
+    const logoHeight = 57; // Altura del logo en mm
     doc.addImage(
       logofullcontrolgps3,
       "PNG",
@@ -28,32 +36,52 @@ const UnitReportModal = ({ open, onClose, unitData }) => {
 
     // Título
     doc.setFontSize(16);
-    doc.text("Certificado de Funcionamiento", pageWidth / 2, 70, {
+    doc.text("Certificado de Funcionamiento", pageWidth / 2, 80, {
       align: "center",
     });
 
     // Datos de la unidad
     doc.setFontSize(12);
-    doc.text(`Empresa: ${empresa}`, 20, 80);
-    doc.text(`Patente: ${patente}`, 20, 90);
+
     doc.text(
-      `Último Reporte: ${dayjs(fechaHora).format("DD/MM/YYYY HH:mm")}`,
-      20,
-      100
+      `Neuquén, ${dayjs().locale("es").format("DD [de] MMMM [de] YYYY")}`,
+      190,
+      100,
+      null,
+      null,
+      "right"
     );
+    doc.text(`Atte, ${empresa}`, 20, 110);
+    doc.text(`Para presentar ante quien corresponda.`, 20, 120);
+    doc.text(`De nuestra mayor consideración:`, 20, 140);
     doc.text(
-      `Estado: ${isReporting ? "Reportando" : "No Reportando"}`,
+      `                            Por la presente informamos que la unidad ${marca}, ${modelo}, 
+patente ${patente}, cuenta con GPS Id ${Id}, marca FullControlGPS y al día de 
+la fecha se encuentra funcionando correctamente.`,
       20,
-      110
+      150
     );
 
-    // Pie de página
-    doc.setFontSize(10);
     doc.text(
-      "Este certificado confirma el estado de funcionamiento del equipo.",
-      20,
-      130
+      `Sin otro particular lo saluda atte.`,
+      190,
+      180,
+      null,
+      null,
+      "right"
     );
+    doc.addImage(firma, "PNG", 145, 182, 30, 15, "right");
+    doc.text(`Sarobe Juan Pablo`, 177, 200, null, null, "right");
+
+    // Pie de página
+    doc.setFontSize(6);
+    doc.text(
+      "Este certificado confirma el estado de funcionamiento del equipo. Informe descargado automáticamente desde el sistema de rastreo FullControlGPS. No requiere firma.",
+      20,
+      280
+    );
+    doc.text("www.fullcontrolgps.com.ar", 190, 285, null, null, "right");
+    doc.text(`${dayjs().locale("es").format("DD/MM/YYYY HH:mm:ss")}`, 20, 285);
 
     // Guardar el PDF
     doc.save(`Certificado_${patente}.pdf`);
