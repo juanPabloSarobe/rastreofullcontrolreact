@@ -154,7 +154,9 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
       const filteredVehicles = groupedUnits[empresa].filter(
         (unit) =>
           unit.patente?.toLowerCase().includes(searchText.toLowerCase()) ||
-          unit.id?.toLowerCase().includes(searchText) ||
+          unit.nom?.toLowerCase().includes(searchText.toLowerCase()) ||
+          unit.empr?.toLowerCase().includes(searchText.toLowerCase()) ||
+          unit.id?.toLowerCase().includes(searchText.toLowerCase()) ||
           (unit.alias &&
             unit.alias.toLowerCase().includes(searchText.toLowerCase()))
       );

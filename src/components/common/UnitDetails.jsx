@@ -2,39 +2,42 @@ import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip"; // Añadimos esta importación
+import Tooltip from "@mui/material/Tooltip";
 import HistoryIcon from "@mui/icons-material/History";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Nuevo ícono
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import CloseIcon from "@mui/icons-material/Close";
+import PersonIcon from "@mui/icons-material/Person";
 import { useContextValue } from "../../context/Context";
-import UnitWorksModal from "./UnitWorksModal"; // Importamos el nuevo componente que crearemos
+import UnitWorksModal from "./UnitWorksModal";
+import DriverWorksModal from "./DriverWorksModal";
 
 const UnitDetails = ({ unitData }) => {
-  const [worksModalOpen, setWorksModalOpen] = useState(false); // Estado para controlar la apertura del modal
+  const [worksModalOpen, setWorksModalOpen] = useState(false);
+  const [driverWorksModalOpen, setDriverWorksModalOpen] = useState(false);
+  const { state, dispatch } = useContextValue();
 
-  if (!unitData) return null; // Si no hay datos, no renderiza nada
+  if (!unitData) return null;
 
   const {
-    empresa, // Empresa
-    patente, // Patente
-    fechaHora, // Fecha y hora sin los últimos 3 dígitos
-    estadoDeMotor, // Estado del motor
-    estado, // Evento
-    latitud, // Latitud
-    longitud, // Longitud
-    area, // Área
-    velocidad, // Velocidad
-    marca, // Marca del vehículo
-    modelo, // Modelo del vehículo
-    nombre, // Nombre del conductor
-    llave, // Llave
-    equipo_id_OID, // ID del equipo
-    Movil_ID, // ID del móvil
+    empresa,
+    patente,
+    fechaHora,
+    estadoDeMotor,
+    estado,
+    latitud,
+    longitud,
+    area,
+    velocidad,
+    marca,
+    modelo,
+    nombre,
+    llave,
+    equipo_id_OID,
+    Movil_ID,
+    conductorEnViaje_identificacion_OID: conductorId,
   } = unitData;
 
-  const { dispatch } = useContextValue();
-
   const handleViewHistory = () => {
-    // Guarda los datos completos de la unidad en el contexto
     dispatch({
       type: "SET_HISTORY_UNIT",
       payload: unitData,
@@ -46,83 +49,107 @@ const UnitDetails = ({ unitData }) => {
     setWorksModalOpen(true);
   };
 
+  const handleViewDriverWorks = () => {
+    setDriverWorksModalOpen(true);
+  };
+
+  const handleClose = () => {
+    const updatedUnits = state.selectedUnits.filter((id) => id !== Movil_ID);
+    dispatch({ type: "SET_SELECTED_UNITS", payload: updatedUnits });
+  };
+
   return (
     <>
       <Box
         sx={{
           position: "absolute",
-          top: { xs: "auto", sm: "80px" }, // En móviles, se posiciona en la parte inferior
-          bottom: { xs: 0, sm: "auto" }, // En móviles, se fija al fondo
-          left: { xs: 0, sm: "16px" }, // Alineado a la izquierda
-          width: { xs: "100%", sm: "400px" }, // En móviles, ocupa todo el ancho
-          maxWidth: { sm: "400px" }, // En pantallas más grandes, tiene un ancho máximo
+          top: { xs: "auto", sm: "80px" },
+          bottom: { xs: 0, sm: "auto" },
+          left: { xs: 0, sm: "16px" },
+          width: { xs: "100%", sm: "400px" },
+          maxWidth: { sm: "400px" },
           zIndex: 1000,
           bgcolor: "white",
-          borderRadius: { xs: "24px 24px 0 0", sm: "24px" }, // Bordes redondeados en móviles
+          borderRadius: { xs: "24px 24px 0 0", sm: "24px" },
           boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          overflow: "hidden", // Asegura que el contenido no se desborde
+          overflow: "hidden",
         }}
       >
-        {/* Título fuera del padding */}
         <Box
           sx={{
             position: "absolute",
             top: 0,
             left: 0,
             width: "100%",
-            height: "48px", // Altura fija para el título
-            bgcolor: "green", // Fondo verde
-            color: "white", // Texto blanco
-            display: "flex", // Usar flexbox para alinear título e ícono
-            alignItems: "center", // Centrar verticalmente
-            justifyContent: "center", // Centrar horizontalmente
-            fontWeight: "bold",
-            fontSize: "16px", // Ajustar el tamaño de la fuente
-            borderRadius: "24px 24px 0 0", // Bordes redondeados en la parte superior
+            height: "48px",
+            bgcolor: "green",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: "24px 24px 0 0",
+            px: 2,
           }}
         >
-          <Typography
+          <Box sx={{ width: "24px" }}></Box>
+          <Box
             sx={{
-              fontWeight: "bold",
-              fontSize: "16px",
-              flexGrow: 1,
-              textAlign: "center",
-              pr: 4, // Añadir padding para equilibrar con el ícono
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            {empresa} - {patente}
-          </Typography>
-          <Tooltip title="Ver contratos">
+            <Typography
+              sx={{
+                fontWeight: "bold",
+                fontSize: "16px",
+                textAlign: "center",
+                pr: 0,
+              }}
+            >
+              {empresa} - {patente}
+            </Typography>
+            <Tooltip title="Ver contratos">
+              <IconButton
+                onClick={handleViewWorks}
+                sx={{
+                  color: "white",
+                  padding: "4px",
+                  marginBottom: "18px",
+                }}
+                size="small"
+              >
+                <OpenInNewIcon sx={{ fontSize: "16px" }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Tooltip title="Quitar unidad">
             <IconButton
-              onClick={handleViewWorks}
+              onClick={handleClose}
               sx={{
                 color: "white",
                 padding: "4px",
-                position: "absolute",
-                right: "8px",
               }}
               size="small"
             >
-              <OpenInNewIcon sx={{ fontSize: "16px" }} />
+              <CloseIcon sx={{ fontSize: "20px" }} />
             </IconButton>
           </Tooltip>
         </Box>
 
-        {/* Resto del contenido sin cambios */}
         <Box
           sx={{
             display: "flex",
             flexDirection: "row",
             marginTop: "48px",
-            paddingBottom: { xs: "16px", sm: "0" }, // Espacio inferior en móviles
+            paddingBottom: { xs: "16px", sm: "0" },
           }}
         >
-          {/* Mitad izquierda */}
           <Box
             sx={{
               flex: 1,
               padding: "10px",
-              bgcolor: "#f9f9f9", // Fondo gris muy claro
+              bgcolor: "#f9f9f9",
             }}
           >
             <Typography variant="body2" sx={{ fontSize: "12px" }}>
@@ -156,16 +183,14 @@ const UnitDetails = ({ unitData }) => {
             </Typography>
           </Box>
 
-          {/* Mitad derecha - Sin cambios */}
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr", // Dos columnas iguales
-              gridTemplateRows: "1fr auto", // Una fila superior y una fila inferior que ocupa el resto
+              gridTemplateColumns: "1fr 1fr",
+              gridTemplateRows: "1fr auto",
               flex: 1,
             }}
           >
-            {/* Contenido sin cambios */}
             <Box
               sx={{
                 display: "flex",
@@ -204,7 +229,7 @@ const UnitDetails = ({ unitData }) => {
               <IconButton
                 onClick={handleViewHistory}
                 sx={{
-                  color: "#1E90FF", // Celeste claro
+                  color: "#1E90FF",
                 }}
               >
                 <HistoryIcon sx={{ fontSize: "24px" }} />
@@ -219,7 +244,7 @@ const UnitDetails = ({ unitData }) => {
 
             <Box
               sx={{
-                gridColumn: "1 / span 2", // Ocupa ambas columnas
+                gridColumn: "1 / span 2",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "center",
@@ -227,12 +252,37 @@ const UnitDetails = ({ unitData }) => {
                 padding: "16px",
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{ textAlign: "center", fontSize: "12px" }}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                {nombre}
-              </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: "center", fontSize: "12px" }}
+                >
+                  {nombre}
+                </Typography>
+
+                {conductorId && (
+                  <Tooltip title="Ver obras del conductor">
+                    <IconButton
+                      onClick={handleViewDriverWorks}
+                      sx={{
+                        color: "#1E90FF",
+                        padding: "4px",
+                        marginLeft: "4px",
+                      }}
+                      size="small"
+                    >
+                      <PersonIcon sx={{ fontSize: "16px" }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+
               <Typography
                 variant="body2"
                 sx={{ textAlign: "center", fontSize: "12px" }}
@@ -244,13 +294,21 @@ const UnitDetails = ({ unitData }) => {
         </Box>
       </Box>
 
-      {/* Modal de Obras asociadas */}
       <UnitWorksModal
         open={worksModalOpen}
         onClose={() => setWorksModalOpen(false)}
         movilId={Movil_ID}
         patente={patente}
       />
+
+      {conductorId && (
+        <DriverWorksModal
+          open={driverWorksModalOpen}
+          onClose={() => setDriverWorksModalOpen(false)}
+          conductorId={conductorId}
+          conductorNombre={nombre}
+        />
+      )}
     </>
   );
 };
@@ -281,7 +339,6 @@ const MainComponent = ({
         Object.keys(liteData.GPS).length > 0 && (
           <>
             <UnitSelector liteData={liteData} onUnitSelect={handleUnitSelect} />
-            {/* Muestra los detalles de la unidad seleccionada */}
             <UnitDetails unitData={selectedUnit} />
           </>
         )}

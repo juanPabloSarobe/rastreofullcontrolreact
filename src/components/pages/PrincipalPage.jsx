@@ -99,6 +99,38 @@ const PrincipalPage = () => {
     }
   }, [prefLoading, liteLoading]);
 
+  useEffect(() => {
+    if (state.selectedUnits.length > 0) {
+      // Solo actualizar selectedUnit si no está definido o ya no está en la lista
+      if (
+        !selectedUnit ||
+        !state.selectedUnits.includes(selectedUnit.Movil_ID)
+      ) {
+        // Si selectedUnit ya no está en la lista, seleccionar la última unidad añadida
+        const unitToSelect =
+          state.selectedUnits[state.selectedUnits.length - 1];
+        const selectedMarker = markersData.find(
+          (marker) => marker.Movil_ID === unitToSelect
+        );
+
+        if (selectedMarker) {
+          setSelectedUnit(selectedMarker);
+
+          // Centrar el mapa en la unidad seleccionada
+          if (mapRef.current) {
+            mapRef.current.setView(
+              [selectedMarker.latitud, selectedMarker.longitud],
+              13
+            );
+          }
+        }
+      }
+    } else {
+      // Si no quedan unidades seleccionadas, limpiar la selección
+      setSelectedUnit(null);
+    }
+  }, [state.selectedUnits, markersData, selectedUnit]);
+
   const handleUnitSelect = (units) => {
     dispatch({ type: "SET_SELECTED_UNITS", payload: units });
 
