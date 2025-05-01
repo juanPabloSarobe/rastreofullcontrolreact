@@ -169,10 +169,15 @@ const PrincipalPage = () => {
         markersData.length > 0 &&
         (prefLoading || liteLoading) && <LinearLoading />}
 
-      <Box display="flex" height="100vh" width="100vw" bgcolor="grey">
+      <Box
+        display="flex"
+        height="calc(var(--vh, 1vh) * 100)"
+        width="100vw"
+        bgcolor="grey"
+      >
         <Box
           display="flex"
-          height="100vh"
+          height="calc(var(--vh, 1vh) * 100)"
           padding="4px"
           width="100vw"
           flexDirection="row"

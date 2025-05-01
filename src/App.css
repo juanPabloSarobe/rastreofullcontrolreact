@@ -19,3 +19,88 @@
   transform: translateY(-20px);
   transition: opacity 300ms, transform 300ms;
 }
+
+/* Configuración específica para iOS - incluido Safari */
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Estilo específico para el contenedor del mapa en iOS */
+.leaflet-container {
+  position: absolute !important;
+  height: 100% !important;
+  width: 100% !important;
+  inset: 0 !important;
+}
+
+/* Forzar contenido dentro de los límites de la ventana */
+* {
+  -webkit-text-size-adjust: 100%;
+  max-height: 100%;
+}
+
+/* Fix específico para Safari en iOS */
+@supports (-webkit-touch-callout: none) {
+  body,
+  html,
+  #root {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    position: fixed;
+    width: 100vw;
+  }
+}
+
+/* Ajustes para el mapa */
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Asegurarse de que los controles del mapa estén posicionados correctamente */
+.map-controls-container {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.map-controls-container > * {
+  pointer-events: auto;
+}
+
+/* Asegurarse de que el contenedor principal ocupe toda la altura disponible */
+body {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* En src/App.css o tu archivo de estilos principal */
+.app-container {
+  height: 100vh; /* Fallback para navegadores que no soportan variables personalizadas */
+  height: calc(var(--vh, 1vh) * 100);
+}
