@@ -1,0 +1,12 @@
+[
+  {
+    "id": "notification1",
+    "title": "Actualización del Sistema",
+    "content": "Hemos mejorado la interfaz de usuario y añadido nuevas funcionalidades. Explora las nuevas opciones en el menú principal.",
+    "imageUrl": "https://i.imgur.com/YKS9eJ8.png",
+    "createdAt": "2023-06-01T10:00:00",
+    "expiresAt": "2023-12-31T23:59:59",
+    "priority": "high",
+    "readBy": []
+  }
+]

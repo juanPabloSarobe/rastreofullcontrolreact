@@ -13,6 +13,7 @@ import SsidChartIcon from "@mui/icons-material/SsidChart";
 import ListAltIcon from "@mui/icons-material/ListAlt"; // Nuevo icono para Flotas
 import ReportIcon from "@mui/icons-material/Report";
 import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsIcon from "@mui/icons-material/Notifications"; // Nuevo icono para Notificaciones
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import { useContextValue } from "../../context/Context";
@@ -21,6 +22,8 @@ import ContractReportsModal from "./ContractReportsModal";
 import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
 import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
+import NotificationAdminModal from "./NotificationAdminModal"; // Importar el nuevo componente
+import { useNotifications } from "../../hooks/useNotifications"; // Añadir esta importación
 
 // Función simplificada para abrir una URL externa con cookies existentes
 const openExternalUrl = (url) => {
@@ -34,9 +37,13 @@ const MenuButton = ({ selectedUnit }) => {
   const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false);
   const [contractReportsOpen, setContractReportsOpen] = useState(false);
   const [fleetAdminOpen, setFleetAdminOpen] = useState(false); // Nuevo estado
+  const [notificationAdminOpen, setNotificationAdminOpen] = useState(false); // Nuevo estado
   const [noUnitModalOpen, setNoUnitModalOpen] = useState(false);
   const [unitReportOpen, setUnitReportOpen] = useState(false);
   const open = Boolean(anchorEl);
+
+  // Obtener la función createNotification del hook
+  const { createNotification } = useNotifications();
 
   useEffect(() => {
     if (state.ocultaUnidadesDeBaja !== undefined) {
@@ -65,6 +72,12 @@ const MenuButton = ({ selectedUnit }) => {
   // Nuevo manejador para abrir el administrador de flotas
   const openFleetAdmin = () => {
     setFleetAdminOpen(true);
+    handleClose();
+  };
+
+  // Nuevo manejador para abrir el administrador de notificaciones
+  const openNotificationAdmin = () => {
+    setNotificationAdminOpen(true);
     handleClose();
   };
 
@@ -109,6 +122,12 @@ const MenuButton = ({ selectedUnit }) => {
       label: "Flotas", // Nueva opción de menú
       show: true, // Mostrar a todos los usuarios
       onClick: openFleetAdmin, // Nuevo manejador
+    },
+    {
+      icon: <NotificationsIcon fontSize="small" />, // Nuevo icono para Notificaciones
+      label: "Gestionar Notificaciones", // Nueva opción de menú
+      show: state.role === "Administrador", // Mostrar solo a administradores
+      onClick: openNotificationAdmin, // Nuevo manejador
     },
     {
       icon: <CheckCircleOutlineIcon fontSize="small" />,
@@ -245,6 +264,13 @@ const MenuButton = ({ selectedUnit }) => {
         open={unitReportOpen}
         onClose={() => setUnitReportOpen(false)}
         unitData={selectedUnit}
+      />
+
+      {/* Modal de Administración de Notificaciones */}
+      <NotificationAdminModal
+        open={notificationAdminOpen}
+        onClose={() => setNotificationAdminOpen(false)}
+        onSave={createNotification} // Esta función vendría del hook useNotifications
       />
     </Box>
   );

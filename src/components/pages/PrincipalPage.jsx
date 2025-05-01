@@ -20,6 +20,8 @@ import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
+import NotificationModal from "../common/NotificationModal";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const PrincipalPage = () => {
   const { state, dispatch } = useContextValue();
@@ -32,6 +34,9 @@ const PrincipalPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [historicalData, setHistoricalData] = useState(null);
   const mapRef = useRef(null);
+
+  const { activeNotification, markAsRead, dismissNotification } =
+    useNotifications();
 
   const { data: prefData, loading: prefLoading } = usePrefFetch(
     "/api/servicio/equipos.php/pref",
@@ -161,6 +166,14 @@ const PrincipalPage = () => {
 
   return (
     <>
+      {activeNotification && (
+        <NotificationModal
+          message={activeNotification}
+          onClose={() => markAsRead(activeNotification.id)}
+          onDismiss={dismissNotification}
+        />
+      )}
+
       {state.viewMode === "rastreo" && markersData.length === 0 && (
         <LoadingModal isLoading={isLoading} />
       )}
