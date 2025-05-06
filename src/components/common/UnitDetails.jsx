@@ -18,21 +18,22 @@ const UnitDetails = ({ unitData }) => {
 
   if (!unitData) return null;
 
+  // Desestructuración con valores predeterminados
   const {
-    empresa,
-    patente,
-    fechaHora,
-    estadoDeMotor,
-    estado,
-    latitud,
-    longitud,
-    area,
-    velocidad,
-    marca,
-    modelo,
-    nombre,
-    llave,
-    equipo_id_OID,
+    empresa = "Sin empresa",
+    patente = "Sin patente",
+    fechaHora = "01/01/1999 00:00-03",
+    estadoDeMotor = "Desconocido",
+    estado = "Sin datos",
+    latitud = 0,
+    longitud = 0,
+    area = "No especificada",
+    velocidad = 0,
+    marca = "Sin marca",
+    modelo = "Sin modelo",
+    nombre = "Sin nombre",
+    llave = "",
+    equipo_id_OID = "Sin ID",
     Movil_ID,
     conductorEnViaje_identificacion_OID: conductorId,
   } = unitData;
@@ -153,7 +154,7 @@ const UnitDetails = ({ unitData }) => {
             }}
           >
             <Typography variant="body2" sx={{ fontSize: "12px" }}>
-              Ult Reporte: {fechaHora.slice(0, -3)}
+              Ult Reporte: {fechaHora ? fechaHora.slice(0, -3) : "Sin datos"}
             </Typography>
             <Typography variant="body2" sx={{ fontSize: "12px" }}>
               Estado: {estadoDeMotor}

@@ -52,10 +52,14 @@ const PrincipalPage = () => {
 
   useEffect(() => {
     if (prefData) {
-      setMarkersData(prefData?.GPS || []);
+      // Filtrar unidades con coordenadas válidas
+      const validMarkers = (prefData?.GPS || []).filter(
+        (marker) => marker.latitud !== null && marker.longitud !== null
+      );
+      setMarkersData(validMarkers);
 
       if (selectedUnit) {
-        const updatedSelectedUnit = prefData?.GPS?.find(
+        const updatedSelectedUnit = validMarkers.find(
           (marker) => marker.Movil_ID === selectedUnit.Movil_ID
         );
         setSelectedUnit(updatedSelectedUnit || null);
@@ -144,13 +148,24 @@ const PrincipalPage = () => {
       const selectedMarker = markersData.find(
         (marker) => marker.Movil_ID === lastSelectedUnit
       );
-      setSelectedUnit(selectedMarker);
 
-      if (selectedMarker && mapRef.current) {
-        mapRef.current.setView(
-          [selectedMarker.latitud, selectedMarker.longitud],
-          13
-        );
+      // Solo actualizar si el marker existe y tiene coordenadas válidas
+      if (
+        selectedMarker &&
+        selectedMarker.latitud !== null &&
+        selectedMarker.longitud !== null
+      ) {
+        setSelectedUnit(selectedMarker);
+
+        if (mapRef.current) {
+          mapRef.current.setView(
+            [
+              Number(selectedMarker.latitud) || 0,
+              Number(selectedMarker.longitud) || 0,
+            ],
+            13
+          );
+        }
       }
     } else {
       setSelectedUnit(null);
@@ -159,8 +174,11 @@ const PrincipalPage = () => {
 
   const filteredMarkersData = useMemo(() => {
     if (!state.selectedUnits.length || !markersData) return [];
-    return markersData.filter((marker) =>
-      state.selectedUnits.includes(marker.Movil_ID)
+    return markersData.filter(
+      (marker) =>
+        state.selectedUnits.includes(marker.Movil_ID) &&
+        marker.latitud !== null &&
+        marker.longitud !== null
     );
   }, [state.selectedUnits, markersData]);
 
