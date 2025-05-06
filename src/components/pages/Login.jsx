@@ -10,16 +10,17 @@ import Link from "@mui/joy/Link";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
+import { FormHelperText } from "@mui/joy";
+import { InfoOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
+import { useState } from "react";
 import logoFullcontrolLargo from "../../assets/logoFullcontrolLargo.webp";
 import { useContextValue } from "../../context/Context";
-import { FormHelperText } from "@mui/joy";
-import { InfoOutlined } from "@mui/icons-material";
-import { useState } from "react";
 
 const customTheme = extendTheme({ defaultColorScheme: "dark" });
 const Login = () => {
-  const { dispatch } = useContextValue(); // Accede al dispatch del contexto
+  const { dispatch } = useContextValue();
   const [loginError, setLoginError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const toggleOnLoginError = () => {
     setLoginError(true);
@@ -27,6 +28,11 @@ const Login = () => {
   const toggleOffLoginError = () => {
     setLoginError(false);
   };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const formElements = e.currentTarget.elements;
@@ -42,17 +48,16 @@ const Login = () => {
       let myHeaders = new Headers();
       myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
 
-      // Crear el payload en formato URL-encoded
       const payload = new URLSearchParams();
       payload.append("usuario", username);
       payload.append("clave", password);
 
       let requestOptions = {
         method: "POST",
-        body: payload.toString(), // Convertir a string
+        body: payload.toString(),
         headers: myHeaders,
         redirect: "follow",
-        credentials: "include", // Asegura que las cookies se envíen automáticamente
+        credentials: "include",
       };
 
       const response = await fetch(
@@ -86,7 +91,7 @@ const Login = () => {
         styles={{
           ":root": {
             "--Form-maxWidth": "800px",
-            "--Transition-duration": "0.4s", // set to `none` to disable transition
+            "--Transition-duration": "0.4s",
           },
         }}
       />
@@ -171,9 +176,25 @@ const Login = () => {
                 <FormControl required error={loginError}>
                   <FormLabel>Password</FormLabel>
                   <Input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="clave"
                     onChange={toggleOffLoginError}
+                    endDecorator={
+                      <Box
+                        onClick={togglePasswordVisibility}
+                        sx={{
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        {showPassword ? (
+                          <VisibilityOff fontSize="small" />
+                        ) : (
+                          <Visibility fontSize="small" />
+                        )}
+                      </Box>
+                    }
                   />
                   {loginError && (
                     <FormHelperText>
