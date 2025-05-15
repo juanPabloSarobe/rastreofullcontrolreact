@@ -1,0 +1,5 @@
+{
+  "version": "1.0.17",
+  "buildDate": "2025-05-15T22:29:50.440Z",
+  "changelog": "- Nuevo sistema de alertas de Actualizaciones. Permite conocer y utilizar las actualizaciones se sistema de forma inmediata.\r\n- Corrección de filtro para unidades.\r\n- Boton para visualización y control de password.\r\n- Mejora de rendimiento del mapa.\r\n- Se corrige bug que al selecionar algunas unidades la pagina quedaba en blanco."
+}

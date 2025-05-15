@@ -1,0 +1,5 @@
+- Nuevo sistema de alertas de Actualizaciones. Permite conocer y utilizar las actualizaciones se sistema de forma inmediata.
+- Corrección de filtro para unidades.
+- Boton para visualización y control de password.
+- Mejora de rendimiento del mapa.
+- Se corrige bug que al selecionar algunas unidades la pagina quedaba en blanco.

@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node ./update-version.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "uv": "node update-version.js --file changelog.txt"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
