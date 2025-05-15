@@ -30,8 +30,10 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import AddFleetModal from "./AddFleetModal";
 import DeleteFleetModal from "./DeleteFleetModal";
+import { useContextValue } from "../../context/Context";
 
 const FleetAdminModal = ({ open, onClose }) => {
+  const { state } = useContextValue(); // Añadimos acceso al contexto global
   const [loading, setLoading] = useState(true);
   const [loadingUnits, setLoadingUnits] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -189,9 +191,17 @@ const FleetAdminModal = ({ open, onClose }) => {
       if (data.prefijos) {
         // Filtrar las unidades que ya están en la flota
         const fleetMovilIds = fleetUnits.map((unit) => unit.Movil_ID);
-        const filteredUnits = data.prefijos.filter(
+        let filteredUnits = data.prefijos.filter(
           (unit) => !fleetMovilIds.includes(unit.idMov)
         );
+
+        // Para usuarios no administradores, filtrar también unidades de empresas "De Baja" o sin nombre
+        if (state.role !== "Administrador") {
+          filteredUnits = filteredUnits.filter(
+            (unit) => unit.empresa !== "De Baja" && unit.empresa !== ""
+          );
+        }
+
         setAllUnits(filteredUnits);
       } else {
         setAllUnits([]);

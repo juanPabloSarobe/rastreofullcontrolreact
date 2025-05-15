@@ -121,6 +121,14 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
     // Obtener todas las unidades disponibles
     const allUnits = [];
     Object.keys(liteData.GPS || {}).forEach((empresa) => {
+      // Para usuarios no administradores, excluimos unidades de "De Baja" o empresa vacía
+      if (
+        state.role !== "Administrador" &&
+        (empresa === "De Baja" || empresa === "")
+      ) {
+        return; // Saltar esta empresa
+      }
+
       liteData.GPS[empresa].forEach((unit) => {
         if (unit && unit.Movil_ID) {
           allUnits.push(unit.Movil_ID);
@@ -140,17 +148,42 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
         handleClose();
       }, 200);
     }
-  }, [selectAll, liteData, dispatch, onUnitSelect, handleClose]);
+  }, [selectAll, liteData, dispatch, onUnitSelect, handleClose, state.role]);
 
   // Procesa los datos
   const groupedUnits = liteData.GPS || {};
 
   // Filtra las unidades usando el texto de búsqueda con debounce
   const filteredUnits = useMemo(() => {
-    if (!searchText) return groupedUnits;
+    if (!searchText) {
+      // Si no hay texto de búsqueda, aplicamos filtros según el rol del usuario
+      if (state.role !== "Administrador") {
+        // Para usuarios no administradores, filtramos empresas "De Baja" y con nombres vacíos
+        const filteredGroups = {};
 
+        Object.keys(groupedUnits).forEach((empresa) => {
+          // Excluimos las empresas "De Baja" o con nombre vacío
+          if (empresa !== "De Baja" && empresa !== "") {
+            filteredGroups[empresa] = groupedUnits[empresa];
+          }
+        });
+
+        return filteredGroups;
+      }
+      return groupedUnits;
+    }
+
+    // Si hay texto de búsqueda, filtramos por texto pero manteniendo la lógica de filtrado por rol
     return Object.keys(groupedUnits).reduce((acc, empresa) => {
-      // Optimiza el filtrado para solo verificar campos relevantes
+      // Para usuarios no administradores, excluimos empresas "De Baja" o con nombre vacío
+      if (
+        state.role !== "Administrador" &&
+        (empresa === "De Baja" || empresa === "")
+      ) {
+        return acc;
+      }
+
+      // Filtrado por texto de búsqueda
       const filteredVehicles = groupedUnits[empresa].filter(
         (unit) =>
           unit.patente?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -166,7 +199,7 @@ const UnitSelector = React.memo(({ liteData = {}, onUnitSelect }) => {
       }
       return acc;
     }, {});
-  }, [groupedUnits, searchText]);
+  }, [groupedUnits, searchText, state.role]);
 
   // Prepara los datos para la lista virtualizada
   const listItems = useMemo(() => {

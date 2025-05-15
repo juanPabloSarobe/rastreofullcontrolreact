@@ -136,6 +136,14 @@ const FleetSelectorButton = ({ setSelectedUnit }) => {
       const units = [];
 
       Object.keys(data).forEach((empresa) => {
+        // Para usuarios no administradores, excluimos unidades de "De Baja" o empresa vacía
+        if (
+          state.role !== "Administrador" &&
+          (empresa === "De Baja" || empresa === "")
+        ) {
+          return; // Saltar esta empresa
+        }
+
         data[empresa].forEach((unit) => {
           if (unit && unit.Movil_ID) {
             units.push(unit.Movil_ID);
