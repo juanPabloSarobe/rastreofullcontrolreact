@@ -1,4 +1,7 @@
-📅 Junio 2025 - Versión 2025.06
+📅 Junio 2025 - Versión 2025.06.1
 ✅ NUEVO: Manual de Usuario Integrado - Acceda a la ayuda completa desde el menú principal (☰) sin salir de la plataforma
 ✅ Guías Paso a Paso - Instrucciones detalladas para todas las funciones del sistema
 ✅ Soporte Directo - Enlaces integrados a WhatsApp para asistencia inmediata
+🔧 MEJORA: Sistema de Notificaciones Optimizado - Detección más precisa y rápida de nuevas actualizaciones disponibles
+⚡ OPTIMIZACIÓN: Verificación automática cada 10 minutos para usuarios que mantienen la aplicación abierta
+✅ CORRECCIÓN: Resolución de problemas en la detección de versiones para usuarios nuevos y existentes

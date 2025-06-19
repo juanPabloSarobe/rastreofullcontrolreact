@@ -34,7 +34,6 @@ const UpdateNotification = () => {
 
     // Configurar callback para cuando hay una actualización disponible
     updateService.setUpdateCallback((versionData) => {
-      console.log("📢 Callback de actualización ejecutado:", versionData);
       setUpdateInfo(versionData);
 
       // Si es primera ejecución o si el diálogo no está abierto, mostrar la notificación

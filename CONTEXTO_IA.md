@@ -520,6 +520,123 @@ El archivo `changelog.txt` es la **única fuente de información sobre actualiza
 - **Contenido**: Historial completo de todas las actualizaciones implementadas
 - **Función**: Servir como archivo de respaldo y referencia histórica
 
+### 🔧 SISTEMA DE NOTIFICACIONES DE ACTUALIZACIONES - CORREGIDO JUNIO 2025
+
+#### Problemas Detectados y Solucionados
+
+##### **Problema 1: Sistema de localStorage inconsistente**
+
+- **Error**: Usaba 2 claves confusas (`fcgps_first_version_run`, `fcgps_updated_versions`)
+- **Solución**: Unificado a una sola clave `fcgps_current_version`
+- **Beneficio**: Sistema más simple y confiable
+
+##### **Problema 2: Lógica de comparación defectuosa**
+
+- **Error**: `if (userStoredVersion && serverVersion !== userStoredVersion && serverVersion !== this.currentVersion)`
+- **Problema**: `this.currentVersion` siempre igual a `serverVersion` → nunca detectaba cambios
+- **Solución**: `if (!userStoredVersion || serverVersion !== userStoredVersion)`
+- **Beneficio**: Detecta tanto primera vez como actualizaciones
+
+##### **Problema 3: No detectaba usuarios nuevos**
+
+- **Error**: Cuando `userStoredVersion` era `null`, la condición `userStoredVersion &&` era `false`
+- **Solución**: Cambio a `!userStoredVersion ||` para incluir primera vez
+- **Beneficio**: Funciona para usuarios nuevos y existentes
+
+##### **Problema 4: Versiones inconsistentes**
+
+- **Error**: `version.json` tenía "1.0.18" mientras changelog tenía "2025.06"
+- **Solución**: Unificado a formato "2025.06" en ambos archivos
+- **Beneficio**: Comparaciones correctas entre archivos
+
+#### Arquitectura Corregida del Sistema
+
+##### **updateService.js - Lógica Principal**
+
+```javascript
+// Nueva clave unificada
+CURRENT_VERSION_KEY = "fcgps_current_version";
+
+// Lógica corregida para detección
+if (!userStoredVersion || serverVersion !== userStoredVersion) {
+  // Mostrar notificación
+}
+
+// Verificación cada 10 minutos para usuarios activos
+setInterval(() => {
+  /* verificación */
+}, 600000);
+```
+
+##### **Flujo de Funcionamiento Correcto**
+
+1. **Al cargar**: Verifica inmediatamente si hay nueva versión
+2. **Primera vez**: `userStoredVersion = null` → Muestra popup de bienvenida
+3. **Actualización**: `userStoredVersion ≠ serverVersion` → Muestra popup de actualización
+4. **Usuario activo**: Verifica cada 10 minutos automáticamente
+5. **Migración**: Limpia automáticamente datos del sistema anterior
+
+##### **Escenarios de Uso Validados**
+
+- ✅ **Usuario nuevo** (localStorage vacío) → Popup de bienvenida
+- ✅ **Usuario con versión anterior** → Popup de actualización
+- ✅ **Usuario con versión actual** → No molesta
+- ✅ **Usuario que deja app abierta** → Detecta en 10 minutos máximo
+- ✅ **Migración automática** → Limpia sistema anterior transparentemente
+
+#### Mejores Prácticas Implementadas
+
+##### **Gestión de localStorage**
+
+- **Una sola clave**: `fcgps_current_version` con la versión del usuario
+- **Migración automática**: Limpia claves obsoletas del sistema anterior
+- **Validación**: Manejo de errores si localStorage falla
+
+##### **Detección de Versiones**
+
+- **Cache busting**: `?t=${timestamp}` en requests a version.json
+- **Extracción inteligente**: Lee versión del changelog y de version.json
+- **Comparación simple**: Solo usuario vs servidor, sin lógica compleja
+
+##### **UX Optimizada**
+
+- **Verificación inmediata**: Al cargar la aplicación
+- **Verificación periódica**: Cada 10 minutos para usuarios activos
+- **No bloquea interfaz**: Popup modal que permite seguir usando la app
+- **Migración transparente**: Usuario no nota el cambio de sistema
+
+#### Lecciones Aprendidas - Desarrollo de Sistemas de Versiones
+
+##### **❌ Errores Comunes a Evitar**
+
+1. **Lógica de comparación compleja**: Mantener simple la detección
+2. **Múltiples fuentes de verdad**: Un solo lugar para la versión del usuario
+3. **No considerar usuarios nuevos**: Manejar caso `null` explícitamente
+4. **Versiones inconsistentes**: Unificar formato en todos los archivos
+5. **Logs de debugging en producción**: Limpiar antes de deploy
+
+##### **✅ Buenas Prácticas Aplicadas**
+
+1. **Sistema unificado**: Una clave, una lógica, un flujo
+2. **Migración automática**: Sin intervención manual del usuario
+3. **Logs informativos**: Solo errores críticos en producción
+4. **Testing exhaustivo**: Probar todos los escenarios posibles
+5. **Debugging temporal**: Hacer sistema accesible en desarrollo
+
+#### Archivos Modificados en la Corrección
+
+##### **Archivos Principales**
+
+- `src/utils/updateService.js`: Lógica completamente reescrita
+- `src/components/common/UpdateNotification.jsx`: Migración automática agregada
+- `public/version.json`: Formato de versión unificado
+
+##### **Archivos de Documentación**
+
+- `changelog.txt`: Información de la mejora para clientes
+- `historial-actualizaciones.txt`: Histórico actualizado
+- `CONTEXTO_IA.md`: Esta documentación completa
+
 ### ⚠️ LECCIONES APRENDIDAS - ERRORES COMUNES A EVITAR
 
 #### 🚨 ERROR CRÍTICO: Confundir el propósito del changelog

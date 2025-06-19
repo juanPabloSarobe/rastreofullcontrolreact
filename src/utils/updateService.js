@@ -45,26 +45,29 @@ export class UpdateService {
       // Obtener la versión actual del servidor
       const response = await fetch("/version.json?t=" + new Date().getTime());
       const versionData = await response.json();
-      
+
       // Extraer versión del changelog si viene en formato "Versión 2025.06"
-      const serverVersion = this.extractVersionFromChangelog(versionData.changelog) || versionData.version;
-      
+      const serverVersion =
+        this.extractVersionFromChangelog(versionData.changelog) ||
+        versionData.version;
+
       this.currentVersion = serverVersion;
       this.lastBuildDate = versionData.buildDate;
       this.lastChangelog = versionData.changelog;
 
       // Obtener la versión que tenía el usuario anteriormente
       const userStoredVersion = this.getStoredUserVersion();
-      
-      console.log('🔍 Verificando versiones:', {
+
+      console.log("🔍 Verificando versiones:", {
         serverVersion: serverVersion,
         userStoredVersion: userStoredVersion,
-        isFirstTime: userStoredVersion === null
+        isFirstTime: userStoredVersion === null,
       });
 
       // Verificar si es primera vez o hay nueva versión
       const isFirstTime = this.isFirstTimeUser();
-      const hasNewVersion = userStoredVersion && userStoredVersion !== serverVersion;
+      const hasNewVersion =
+        userStoredVersion && userStoredVersion !== serverVersion;
 
       if (isFirstTime || hasNewVersion) {
         // Mostrar notificación de actualización
@@ -76,7 +79,7 @@ export class UpdateService {
               buildDate: this.lastBuildDate,
               changelog: this.lastChangelog,
               isFirstRun: isFirstTime,
-              isUpdate: hasNewVersion
+              isUpdate: hasNewVersion,
             });
           }, 1000); // Reducido a 1 segundo para respuesta más rápida
         }
@@ -94,7 +97,10 @@ export class UpdateService {
         changelog: versionData.changelog,
       };
     } catch (error) {
-      console.error("Error al inicializar el servicio de actualización:", error);
+      console.error(
+        "Error al inicializar el servicio de actualización:",
+        error
+      );
       return null;
     }
   }
@@ -102,13 +108,15 @@ export class UpdateService {
   // Extraer versión del changelog en formato "Versión 2025.06"
   extractVersionFromChangelog(changelog) {
     if (!changelog) return null;
-    
+
     // Buscar patrón "Versión YYYY.MM" o "Versión YYYY.MM.DD"
-    const versionMatch = changelog.match(/Versión\s+(\d{4}\.\d{2}(?:\.\d{2})?)/);
+    const versionMatch = changelog.match(
+      /Versión\s+(\d{4}\.\d{2}(?:\.\d{2})?)/
+    );
     if (versionMatch) {
       return versionMatch[1];
     }
-    
+
     // Buscar patrón de fecha "Junio 2025" y convertir a "2025.06"
     const monthYearMatch = changelog.match(/(\w+)\s+(\d{4})/);
     if (monthYearMatch) {
@@ -116,19 +124,28 @@ export class UpdateService {
       const year = monthYearMatch[2];
       const monthNumber = this.getMonthNumber(monthName);
       if (monthNumber) {
-        return `${year}.${monthNumber.toString().padStart(2, '0')}`;
+        return `${year}.${monthNumber.toString().padStart(2, "0")}`;
       }
     }
-    
+
     return null;
   }
 
   // Convertir nombre de mes a número
   getMonthNumber(monthName) {
     const months = {
-      'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-      'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-      'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+      enero: "01",
+      febrero: "02",
+      marzo: "03",
+      abril: "04",
+      mayo: "05",
+      junio: "06",
+      julio: "07",
+      agosto: "08",
+      septiembre: "09",
+      octubre: "10",
+      noviembre: "11",
+      diciembre: "12",
     };
     return months[monthName.toLowerCase()];
   }
@@ -140,36 +157,31 @@ export class UpdateService {
       return;
     }
 
-    // Verificación más frecuente: cada 10 minutos
+    // Verificación cada 10 minutos en producción
     this.checkInterval = setInterval(async () => {
       try {
         const response = await fetch("/version.json?t=" + new Date().getTime());
         const versionData = await response.json();
-        
-        const serverVersion = this.extractVersionFromChangelog(versionData.changelog) || versionData.version;
+
+        const serverVersion =
+          this.extractVersionFromChangelog(versionData.changelog) ||
+          versionData.version;
         const userStoredVersion = this.getStoredUserVersion();
 
-        console.log('🔄 Verificación periódica:', {
-          serverVersion: serverVersion,
-          userStoredVersion: userStoredVersion,
-          currentVersion: this.currentVersion
-        });
-
-        // Si hay una nueva versión disponible
-        if (userStoredVersion && serverVersion !== userStoredVersion && serverVersion !== this.currentVersion) {
-          console.log('🎉 Nueva versión detectada!', serverVersion);
-          
+        // Si hay una nueva versión disponible o es primera vez
+        if (!userStoredVersion || serverVersion !== userStoredVersion) {
           this.currentVersion = serverVersion;
           this.lastBuildDate = versionData.buildDate;
           this.lastChangelog = versionData.changelog;
-          
+
           if (this.onUpdateAvailable) {
             this.onUpdateAvailable({
               version: serverVersion,
               buildDate: versionData.buildDate,
               changelog: versionData.changelog,
-              isFirstRun: false,
-              isUpdate: true
+              isFirstRun: !userStoredVersion,
+              isUpdate:
+                userStoredVersion && serverVersion !== userStoredVersion,
             });
           }
         }
@@ -182,8 +194,8 @@ export class UpdateService {
   // Limpiar la caché del navegador y recargar la aplicación
   clearCacheAndReload() {
     try {
-      console.log('🔄 Actualizando a versión:', this.currentVersion);
-      
+      console.log("🔄 Actualizando a versión:", this.currentVersion);
+
       // Guardar la nueva versión como la versión actual del usuario
       this.storeUserVersion(this.currentVersion);
 
@@ -216,7 +228,7 @@ export class UpdateService {
 
   // Marcar la versión actual como vista (sin recargar)
   markCurrentVersionAsSeen() {
-    console.log('✅ Versión marcada como vista:', this.currentVersion);
+    console.log("✅ Versión marcada como vista:", this.currentVersion);
     this.storeUserVersion(this.currentVersion);
   }
 
@@ -226,7 +238,7 @@ export class UpdateService {
       // Limpiar claves del sistema anterior
       localStorage.removeItem("fcgps_updated_versions");
       localStorage.removeItem("fcgps_first_version_run");
-      console.log('🧹 Datos de versiones anteriores limpiados');
+      console.log("🧹 Datos de versiones anteriores limpiados");
     } catch (error) {
       console.error("Error al limpiar datos antiguos:", error);
     }
@@ -235,3 +247,8 @@ export class UpdateService {
 
 // Exportar una instancia única del servicio
 export const updateService = new UpdateService();
+
+// Para debugging: hacer el servicio accesible globalmente en desarrollo
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  window.updateService = updateService;
+}
