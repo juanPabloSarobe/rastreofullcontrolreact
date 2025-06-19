@@ -1,0 +1,8 @@
+📅 HISTORIAL DE ACTUALIZACIONES - FullControl GPS
+
+🗓️ Actualizaciones Anteriores
+- Nuevo sistema de alertas de Actualizaciones. Permite conocer y utilizar las actualizaciones de sistema de forma inmediata.
+- Corrección de filtro para unidades.
+- Botón para visualización y control de password.
+- Mejora de rendimiento del mapa.
+- Se corrige bug que al seleccionar algunas unidades la página quedaba en blanco.

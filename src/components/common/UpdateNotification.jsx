@@ -26,11 +26,15 @@ const UpdateNotification = () => {
   const [hasShownNotification, setHasShownNotification] = useState(false);
 
   useEffect(() => {
+    // Limpiar datos del sistema anterior (migración)
+    updateService.cleanOldVersionData();
+
     // Inicializar el servicio de actualización
     updateService.initialize();
 
     // Configurar callback para cuando hay una actualización disponible
     updateService.setUpdateCallback((versionData) => {
+      console.log("📢 Callback de actualización ejecutado:", versionData);
       setUpdateInfo(versionData);
 
       // Si es primera ejecución o si el diálogo no está abierto, mostrar la notificación
@@ -61,6 +65,10 @@ const UpdateNotification = () => {
 
   const handleCloseDialog = () => {
     setShowUpdateDialog(false);
+    // Marcar la versión como vista cuando el usuario cierra el diálogo
+    if (updateInfo && updateInfo.isFirstRun) {
+      updateService.markCurrentVersionAsSeen();
+    }
   };
 
   const handleSnackbarClose = (event, reason) => {

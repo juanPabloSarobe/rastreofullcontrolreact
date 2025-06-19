@@ -14,6 +14,7 @@ import ListAltIcon from "@mui/icons-material/ListAlt"; // Nuevo icono para Flota
 import ReportIcon from "@mui/icons-material/Report";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications"; // Nuevo icono para Notificaciones
+import HelpIcon from "@mui/icons-material/Help"; // Nuevo icono para Manual
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import { useContextValue } from "../../context/Context";
@@ -23,6 +24,7 @@ import FleetAdminModal from "./FleetAdminModal"; // Importar el nuevo componente
 import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo componente
 import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
 import NotificationAdminModal from "./NotificationAdminModal"; // Importar el nuevo componente
+import UserManualModal from "./UserManualModal"; // Importar el manual de usuario
 import { useNotifications } from "../../hooks/useNotifications"; // Añadir esta importación
 
 // Función simplificada para abrir una URL externa con cookies existentes
@@ -40,6 +42,7 @@ const MenuButton = ({ selectedUnit }) => {
   const [notificationAdminOpen, setNotificationAdminOpen] = useState(false); // Nuevo estado
   const [noUnitModalOpen, setNoUnitModalOpen] = useState(false);
   const [unitReportOpen, setUnitReportOpen] = useState(false);
+  const [userManualOpen, setUserManualOpen] = useState(false); // Nuevo estado para el manual de usuario
   const open = Boolean(anchorEl);
 
   // Obtener la función createNotification del hook
@@ -78,6 +81,12 @@ const MenuButton = ({ selectedUnit }) => {
   // Nuevo manejador para abrir el administrador de notificaciones
   const openNotificationAdmin = () => {
     setNotificationAdminOpen(true);
+    handleClose();
+  };
+
+  // Nuevo manejador para abrir el manual de usuario
+  const openUserManual = () => {
+    setUserManualOpen(true);
     handleClose();
   };
 
@@ -173,6 +182,12 @@ const MenuButton = ({ selectedUnit }) => {
           color="primary"
         />
       ),
+    },
+    {
+      icon: <HelpIcon fontSize="small" />,
+      label: "Manual de Usuario",
+      show: true, // Mostrar a todos los usuarios
+      onClick: openUserManual, // Nuevo manejador
     },
     {
       icon: <LogoutIcon fontSize="small" />,
@@ -271,6 +286,12 @@ const MenuButton = ({ selectedUnit }) => {
         open={notificationAdminOpen}
         onClose={() => setNotificationAdminOpen(false)}
         onSave={createNotification} // Esta función vendría del hook useNotifications
+      />
+
+      {/* Modal de Manual de Usuario */}
+      <UserManualModal
+        open={userManualOpen}
+        onClose={() => setUserManualOpen(false)}
       />
     </Box>
   );

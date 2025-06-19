@@ -1,5 +1,5 @@
 {
-  "version": "1.0.17",
-  "buildDate": "2025-05-15T22:29:50.440Z",
-  "changelog": "- Nuevo sistema de alertas de Actualizaciones. Permite conocer y utilizar las actualizaciones se sistema de forma inmediata.\r\n- Corrección de filtro para unidades.\r\n- Boton para visualización y control de password.\r\n- Mejora de rendimiento del mapa.\r\n- Se corrige bug que al selecionar algunas unidades la pagina quedaba en blanco."
+  "version": "2025.06",
+  "buildDate": "2025-06-19T15:56:18.909Z",
+  "changelog": "📅 Junio 2025 - Versión 2025.06\n✅ NUEVO: Manual de Usuario Integrado - Acceda a la ayuda completa desde el menú principal (☰) sin salir de la plataforma\n✅ Guías Paso a Paso - Instrucciones detalladas para todas las funciones del sistema\n✅ Soporte Directo - Enlaces integrados a WhatsApp para asistencia inmediata\n\n### Actualizaciones Anteriores\n- Nuevo sistema de alertas de Actualizaciones. Permite conocer y utilizar las actualizaciones de sistema de forma inmediata.\n- Corrección de filtro para unidades.\n- Botón para visualización y control de password.\n- Mejora de rendimiento del mapa.\n- Se corrige bug que al seleccionar algunas unidades la página quedaba en blanco."
 }

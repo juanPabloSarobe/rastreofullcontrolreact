@@ -3,8 +3,7 @@ export class UpdateService {
   constructor() {
     this.currentVersion = null;
     this.onUpdateAvailable = null;
-    this.UPDATED_VERSIONS_KEY = "fcgps_updated_versions";
-    this.FIRST_RUN_KEY = "fcgps_first_version_run";
+    this.CURRENT_VERSION_KEY = "fcgps_current_version"; // Nueva clave unificada
     this.isInitialized = false;
     this.checkInterval = null;
   }
@@ -14,57 +13,21 @@ export class UpdateService {
     this.onUpdateAvailable = callback;
   }
 
-  // Verificar si es la primera vez que se ejecuta el sistema de versionado
-  isFirstRun() {
-    return localStorage.getItem(this.FIRST_RUN_KEY) !== "true";
+  // Obtener la versión que tenía guardada el usuario anteriormente
+  getStoredUserVersion() {
+    return localStorage.getItem(this.CURRENT_VERSION_KEY);
   }
 
-  // Marcar que ya no es la primera vez que se ejecuta
-  markAsNotFirstRun() {
-    localStorage.setItem(this.FIRST_RUN_KEY, "true");
-  }
-
-  // Verificar si una versión ya ha sido actualizada
-  isVersionAlreadyUpdated(version) {
-    try {
-      const updatedVersions = JSON.parse(
-        localStorage.getItem(this.UPDATED_VERSIONS_KEY) || "[]"
-      );
-      return updatedVersions.includes(version);
-    } catch (error) {
-      console.error("Error al verificar versiones actualizadas:", error);
-      return false;
+  // Guardar la versión actual del usuario
+  storeUserVersion(version) {
+    if (version) {
+      localStorage.setItem(this.CURRENT_VERSION_KEY, version);
     }
   }
 
-  // Marcar una versión como actualizada
-  markVersionAsUpdated(version) {
-    try {
-      // Verificar que la versión no sea null o undefined
-      if (!version) {
-        console.error("Se intentó marcar una versión nula como actualizada");
-        return;
-      }
-
-      const updatedVersions = JSON.parse(
-        localStorage.getItem(this.UPDATED_VERSIONS_KEY) || "[]"
-      );
-
-      // Asegurarse de que sea un array y que no contenga valores nulos
-      const cleanVersions = Array.isArray(updatedVersions)
-        ? updatedVersions.filter((v) => v)
-        : [];
-
-      if (!cleanVersions.includes(version)) {
-        cleanVersions.push(version);
-        localStorage.setItem(
-          this.UPDATED_VERSIONS_KEY,
-          JSON.stringify(cleanVersions)
-        );
-      }
-    } catch (error) {
-      console.error("Error al marcar versión como actualizada:", error);
-    }
+  // Verificar si es la primera vez que el usuario usa el sistema
+  isFirstTimeUser() {
+    return this.getStoredUserVersion() === null;
   }
 
   // Inicializar el servicio y comenzar a verificar actualizaciones
@@ -79,85 +42,95 @@ export class UpdateService {
     }
 
     try {
-      // Limpiar las versiones almacenadas para eliminar valores nulos
-      this.cleanStoredVersions();
-
-      // Obtener la versión actual y guardarla
+      // Obtener la versión actual del servidor
       const response = await fetch("/version.json?t=" + new Date().getTime());
       const versionData = await response.json();
-      this.currentVersion = versionData.version;
+      
+      // Extraer versión del changelog si viene en formato "Versión 2025.06"
+      const serverVersion = this.extractVersionFromChangelog(versionData.changelog) || versionData.version;
+      
+      this.currentVersion = serverVersion;
       this.lastBuildDate = versionData.buildDate;
       this.lastChangelog = versionData.changelog;
 
-      // Verificar si es la primera vez que se ejecuta el sistema de versionado
-      const isFirstTime = this.isFirstRun();
-      if (isFirstTime) {
-        // Notificar sobre la versión actual para mostrar el changelog
-        // aunque técnicamente no sea una "actualización"
+      // Obtener la versión que tenía el usuario anteriormente
+      const userStoredVersion = this.getStoredUserVersion();
+      
+      console.log('🔍 Verificando versiones:', {
+        serverVersion: serverVersion,
+        userStoredVersion: userStoredVersion,
+        isFirstTime: userStoredVersion === null
+      });
+
+      // Verificar si es primera vez o hay nueva versión
+      const isFirstTime = this.isFirstTimeUser();
+      const hasNewVersion = userStoredVersion && userStoredVersion !== serverVersion;
+
+      if (isFirstTime || hasNewVersion) {
+        // Mostrar notificación de actualización
         if (this.onUpdateAvailable) {
           // Pequeño retardo para asegurar que la UI esté lista
           setTimeout(() => {
             this.onUpdateAvailable({
-              version: this.currentVersion,
+              version: serverVersion,
               buildDate: this.lastBuildDate,
               changelog: this.lastChangelog,
-              isFirstRun: true, // Indicador de primera ejecución
+              isFirstRun: isFirstTime,
+              isUpdate: hasNewVersion
             });
-          }, 2000);
+          }, 1000); // Reducido a 1 segundo para respuesta más rápida
         }
-
-        // Marcar que ya no es la primera ejecución
-        this.markAsNotFirstRun();
       }
 
-      // Iniciar verificación periódica (solo si no se ha iniciado ya)
+      // Iniciar verificación periódica
       this.startVersionCheck();
 
       // Marcar como inicializado
       this.isInitialized = true;
 
       return {
-        version: this.currentVersion,
+        version: serverVersion,
         buildDate: versionData.buildDate,
         changelog: versionData.changelog,
       };
     } catch (error) {
-      console.error(
-        "Error al inicializar el servicio de actualización:",
-        error
-      );
+      console.error("Error al inicializar el servicio de actualización:", error);
       return null;
     }
   }
 
-  // Limpiar las versiones almacenadas eliminando valores nulos
-  cleanStoredVersions() {
-    try {
-      const storedVersionsStr = localStorage.getItem(this.UPDATED_VERSIONS_KEY);
-      if (!storedVersionsStr) return;
-
-      const storedVersions = JSON.parse(storedVersionsStr);
-      if (!Array.isArray(storedVersions)) {
-        // Si no es un array, inicializar con un array vacío
-        localStorage.setItem(this.UPDATED_VERSIONS_KEY, JSON.stringify([]));
-        return;
-      }
-
-      // Filtrar valores nulos o undefined
-      const cleanVersions = storedVersions.filter((v) => v);
-
-      // Si hubo cambios, guardar el array limpio
-      if (cleanVersions.length !== storedVersions.length) {
-        localStorage.setItem(
-          this.UPDATED_VERSIONS_KEY,
-          JSON.stringify(cleanVersions)
-        );
-      }
-    } catch (error) {
-      console.error("Error al limpiar versiones almacenadas:", error);
-      // En caso de error, reiniciar el almacenamiento
-      localStorage.setItem(this.UPDATED_VERSIONS_KEY, JSON.stringify([]));
+  // Extraer versión del changelog en formato "Versión 2025.06"
+  extractVersionFromChangelog(changelog) {
+    if (!changelog) return null;
+    
+    // Buscar patrón "Versión YYYY.MM" o "Versión YYYY.MM.DD"
+    const versionMatch = changelog.match(/Versión\s+(\d{4}\.\d{2}(?:\.\d{2})?)/);
+    if (versionMatch) {
+      return versionMatch[1];
     }
+    
+    // Buscar patrón de fecha "Junio 2025" y convertir a "2025.06"
+    const monthYearMatch = changelog.match(/(\w+)\s+(\d{4})/);
+    if (monthYearMatch) {
+      const monthName = monthYearMatch[1];
+      const year = monthYearMatch[2];
+      const monthNumber = this.getMonthNumber(monthName);
+      if (monthNumber) {
+        return `${year}.${monthNumber.toString().padStart(2, '0')}`;
+      }
+    }
+    
+    return null;
+  }
+
+  // Convertir nombre de mes a número
+  getMonthNumber(monthName) {
+    const months = {
+      'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+      'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+      'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+    };
+    return months[monthName.toLowerCase()];
   }
 
   // Verificar periódicamente si hay nuevas versiones disponibles
@@ -167,74 +140,95 @@ export class UpdateService {
       return;
     }
 
+    // Verificación más frecuente: cada 10 minutos
     this.checkInterval = setInterval(async () => {
       try {
-        // Añadimos un timestamp para evitar la caché
         const response = await fetch("/version.json?t=" + new Date().getTime());
         const versionData = await response.json();
+        
+        const serverVersion = this.extractVersionFromChangelog(versionData.changelog) || versionData.version;
+        const userStoredVersion = this.getStoredUserVersion();
 
-        // Si la versión ha cambiado y no ha sido marcada como actualizada, notificar
-        if (
-          versionData.version !== this.currentVersion &&
-          !this.isVersionAlreadyUpdated(versionData.version)
-        ) {
+        console.log('🔄 Verificación periódica:', {
+          serverVersion: serverVersion,
+          userStoredVersion: userStoredVersion,
+          currentVersion: this.currentVersion
+        });
+
+        // Si hay una nueva versión disponible
+        if (userStoredVersion && serverVersion !== userStoredVersion && serverVersion !== this.currentVersion) {
+          console.log('🎉 Nueva versión detectada!', serverVersion);
+          
+          this.currentVersion = serverVersion;
+          this.lastBuildDate = versionData.buildDate;
+          this.lastChangelog = versionData.changelog;
+          
           if (this.onUpdateAvailable) {
-            this.onUpdateAvailable(versionData);
+            this.onUpdateAvailable({
+              version: serverVersion,
+              buildDate: versionData.buildDate,
+              changelog: versionData.changelog,
+              isFirstRun: false,
+              isUpdate: true
+            });
           }
         }
       } catch (error) {
         console.error("Error al verificar actualizaciones:", error);
       }
-    }, 3600000); // Verificar cada 60 minutos (60 * 60 * 1000 ms)
+    }, 600000); // Cada 10 minutos (10 * 60 * 1000 ms)
   }
 
   // Limpiar la caché del navegador y recargar la aplicación
   clearCacheAndReload() {
     try {
-      // Obtener la versión más reciente antes de recargar
-      fetch("/version.json?t=" + new Date().getTime())
-        .then((response) => response.json())
-        .then((versionData) => {
-          // Guardar la versión nueva como actualizada (no la actual)
-          if (versionData && versionData.version) {
-            this.markVersionAsUpdated(versionData.version);
-          } else {
-            // Si no podemos obtener la versión nueva, usar la actual como respaldo
-            this.markVersionAsUpdated(this.currentVersion);
-          }
+      console.log('🔄 Actualizando a versión:', this.currentVersion);
+      
+      // Guardar la nueva versión como la versión actual del usuario
+      this.storeUserVersion(this.currentVersion);
 
-          // Después de guardar en localStorage, limpiar caché y recargar
-          if ("caches" in window) {
-            caches
-              .keys()
-              .then((cacheNames) => {
-                return Promise.all(
-                  cacheNames.map((cacheName) => {
-                    return caches.delete(cacheName);
-                  })
-                );
+      // Limpiar caché y recargar
+      if ("caches" in window) {
+        caches
+          .keys()
+          .then((cacheNames) => {
+            return Promise.all(
+              cacheNames.map((cacheName) => {
+                return caches.delete(cacheName);
               })
-              .finally(() => {
-                // Forzar recarga desde el servidor
-                window.location.reload(true);
-              });
-          } else {
-            // Si no hay API de caché, solo recargar
+            );
+          })
+          .finally(() => {
+            // Forzar recarga desde el servidor
             window.location.reload(true);
-          }
-        })
-        .catch((error) => {
-          console.error(
-            "Error al obtener la versión antes de recargar:",
-            error
-          );
-          // En caso de error, intentar guardar la versión actual
-          this.markVersionAsUpdated(this.currentVersion);
-          window.location.reload(true);
-        });
+          });
+      } else {
+        // Si no hay API de caché, solo recargar
+        window.location.reload(true);
+      }
     } catch (error) {
       console.error("Error en clearCacheAndReload:", error);
+      // En caso de error, intentar guardar la versión actual y recargar
+      this.storeUserVersion(this.currentVersion);
       window.location.reload(true);
+    }
+  }
+
+  // Marcar la versión actual como vista (sin recargar)
+  markCurrentVersionAsSeen() {
+    console.log('✅ Versión marcada como vista:', this.currentVersion);
+    this.storeUserVersion(this.currentVersion);
+  }
+
+  // Limpiar datos de versiones anteriores (migración)
+  cleanOldVersionData() {
+    try {
+      // Limpiar claves del sistema anterior
+      localStorage.removeItem("fcgps_updated_versions");
+      localStorage.removeItem("fcgps_first_version_run");
+      console.log('🧹 Datos de versiones anteriores limpiados');
+    } catch (error) {
+      console.error("Error al limpiar datos antiguos:", error);
     }
   }
 }
