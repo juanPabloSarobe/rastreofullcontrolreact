@@ -12,6 +12,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import ListAltIcon from "@mui/icons-material/ListAlt"; // Nuevo icono para Flotas
 import ReportIcon from "@mui/icons-material/Report";
+import LocationOnIcon from "@mui/icons-material/LocationOn"; // Nuevo icono para Ubicación
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications"; // Nuevo icono para Notificaciones
 import HelpIcon from "@mui/icons-material/Help"; // Nuevo icono para Manual
@@ -25,6 +26,7 @@ import NoUnitSelectedModal from "./NoUnitSelectedModal"; // Importar el nuevo co
 import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el modal
 import NotificationAdminModal from "./NotificationAdminModal"; // Importar el nuevo componente
 import UserManualModal from "./UserManualModal"; // Importar el manual de usuario
+import LocationReportModal from "./LocationReportModal"; // Importar el nuevo reporte de ubicación
 import { useNotifications } from "../../hooks/useNotifications"; // Añadir esta importación
 
 // Función simplificada para abrir una URL externa con cookies existentes
@@ -43,6 +45,7 @@ const MenuButton = ({ selectedUnit }) => {
   const [noUnitModalOpen, setNoUnitModalOpen] = useState(false);
   const [unitReportOpen, setUnitReportOpen] = useState(false);
   const [userManualOpen, setUserManualOpen] = useState(false); // Nuevo estado para el manual de usuario
+  const [locationReportOpen, setLocationReportOpen] = useState(false); // Nuevo estado para reporte de ubicación
   const open = Boolean(anchorEl);
 
   // Obtener la función createNotification del hook
@@ -90,6 +93,12 @@ const MenuButton = ({ selectedUnit }) => {
     handleClose();
   };
 
+  // Nuevo manejador para abrir el reporte de ubicación
+  const openLocationReport = () => {
+    setLocationReportOpen(true);
+    handleClose();
+  };
+
   const handleOpenReport = () => {
     if (selectedUnit) {
       setUnitReportOpen(true);
@@ -125,6 +134,12 @@ const MenuButton = ({ selectedUnit }) => {
       label: "Histórico Avanzado",
       show: true,
       onClick: openAdvancedHistory,
+    },
+    {
+      icon: <LocationOnIcon fontSize="small" />, // Nuevo icono para Reporte de Ubicación
+      label: "Reporte de Posición Actual", // Nueva opción de menú
+      show: true, // Mostrar a todos los usuarios
+      onClick: openLocationReport, // Nuevo manejador
     },
     {
       icon: <ListAltIcon fontSize="small" />, // Nuevo icono para Flotas
@@ -265,6 +280,12 @@ const MenuButton = ({ selectedUnit }) => {
       <FleetAdminModal
         open={fleetAdminOpen}
         onClose={() => setFleetAdminOpen(false)}
+      />
+
+      {/* Modal de Reporte de Posición Actual */}
+      <LocationReportModal
+        open={locationReportOpen}
+        onClose={() => setLocationReportOpen(false)}
       />
 
       {/* Modal de unidad no seleccionada */}
