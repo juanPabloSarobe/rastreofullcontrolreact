@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Sistema de Versiones</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #e8f5e8;
+        border-color: #4caf50;
+      }
+      .error {
+        background-color: #ffeaea;
+        border-color: #f44336;
+      }
+      .info {
+        background-color: #e3f2fd;
+        border-color: #2196f3;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .warning {
+        background-color: #fff3cd;
+        border-color: #ffc107;
+      }
+      pre {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      #results {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 Test Sistema de Detección de Versiones</h1>
+      <p>
+        Esta página te permite probar el sistema de detección de versiones de
+        FullControl GPS.
+      </p>
+
+      <div class="test-section info">
+        <h3>📋 Estado Actual</h3>
+        <p><strong>Versión esperada del servidor:</strong> 2025.06.1</p>
+        <p>
+          <strong>Versión almacenada del usuario:</strong>
+          <span id="stored-version">Cargando...</span>
+        </p>
+        <p>
+          <strong>Es primera vez:</strong>
+          <span id="is-first-time">Cargando...</span>
+        </p>
+      </div>
+
+      <div class="test-section">
+        <h3>🔧 Acciones de Prueba</h3>
+        <button onclick="clearUserVersion()">🗑️ Simular Usuario Nuevo</button>
+        <button onclick="setOldVersion()">📅 Simular Versión Antigua</button>
+        <button onclick="testVersionDetection()">🔍 Probar Detección</button>
+        <button onclick="refreshStatus()">🔄 Actualizar Estado</button>
+      </div>
+
+      <div id="results"></div>
+    </div>
+
+    <script>
+      // Función para mostrar el estado actual
+      function refreshStatus() {
+        const storedVersion = localStorage.getItem("fcgps_current_version");
+        const isFirstTime = storedVersion === null;
+
+        document.getElementById("stored-version").textContent =
+          storedVersion || "Ninguna (usuario nuevo)";
+        document.getElementById("is-first-time").textContent = isFirstTime
+          ? "Sí"
+          : "No";
+      }
+
+      // Limpiar versión del usuario (simular usuario nuevo)
+      function clearUserVersion() {
+        localStorage.removeItem("fcgps_current_version");
+        addResult(
+          "✅ Se eliminó la versión almacenada. Usuario simulado como nuevo.",
+          "success"
+        );
+        refreshStatus();
+      }
+
+      // Simular versión antigua
+      function setOldVersion() {
+        localStorage.setItem("fcgps_current_version", "2025.05.1");
+        addResult(
+          "✅ Se estableció versión anterior (2025.05.1). Se debería detectar actualización.",
+          "success"
+        );
+        refreshStatus();
+      }
+
+      // Probar el sistema de detección
+      async function testVersionDetection() {
+        try {
+          addResult("🔍 Iniciando prueba de detección...", "info");
+
+          // 1. Obtener version.json
+          const response = await fetch(
+            "/version.json?t=" + new Date().getTime()
+          );
+          const versionData = await response.json();
+
+          addResult(`📋 Datos del servidor obtenidos:`, "info");
+          addResult(
+            `<pre>${JSON.stringify(versionData, null, 2)}</pre>`,
+            "info"
+          );
+
+          // 2. Simular la lógica del UpdateService
+          const serverVersion = versionData.version;
+          const userStoredVersion = localStorage.getItem(
+            "fcgps_current_version"
+          );
+          const isFirstTime = userStoredVersion === null;
+          const hasNewVersion =
+            userStoredVersion && userStoredVersion !== serverVersion;
+
+          addResult(`🔢 Análisis de versiones:`, "info");
+          addResult(
+            `<pre>Versión del servidor: ${serverVersion}
+Versión del usuario: ${userStoredVersion || "null (nuevo usuario)"}
+Es primera vez: ${isFirstTime}
+Hay nueva versión: ${hasNewVersion}</pre>`,
+            "info"
+          );
+
+          // 3. Determinar qué debería pasar
+          if (isFirstTime) {
+            addResult(
+              "🎉 RESULTADO: Se debería mostrar notificación de bienvenida",
+              "success"
+            );
+          } else if (hasNewVersion) {
+            addResult(
+              "🔄 RESULTADO: Se debería mostrar notificación de actualización",
+              "success"
+            );
+          } else {
+            addResult(
+              "✅ RESULTADO: Usuario al día, no se muestra notificación",
+              "info"
+            );
+          }
+
+          // 4. Verificar que la versión es correcta
+          if (serverVersion === "2025.06.1") {
+            addResult(
+              "✅ VERIFICACIÓN: Versión del servidor es correcta (2025.06.1)",
+              "success"
+            );
+          } else {
+            addResult(
+              `❌ ERROR: Versión incorrecta. Esperada: 2025.06.1, Obtenida: ${serverVersion}`,
+              "error"
+            );
+          }
+        } catch (error) {
+          addResult(`❌ ERROR: ${error.message}`, "error");
+          console.error("Error en la prueba:", error);
+        }
+      }
+
+      // Función para agregar resultados
+      function addResult(message, type = "info") {
+        const resultsDiv = document.getElementById("results");
+        const resultDiv = document.createElement("div");
+        resultDiv.className = `test-section ${type}`;
+        resultDiv.innerHTML = `<p>${message}</p>`;
+        resultsDiv.appendChild(resultDiv);
+
+        // Scroll al final
+        resultDiv.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Inicializar al cargar la página
+      document.addEventListener("DOMContentLoaded", function () {
+        refreshStatus();
+        addResult(
+          "💡 Página de pruebas cargada. Usa los botones para probar el sistema.",
+          "info"
+        );
+      });
+    </script>
+  </body>
+</html>

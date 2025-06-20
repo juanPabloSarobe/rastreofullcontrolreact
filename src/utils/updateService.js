@@ -46,10 +46,8 @@ export class UpdateService {
       const response = await fetch("/version.json?t=" + new Date().getTime());
       const versionData = await response.json();
 
-      // Extraer versión del changelog si viene en formato "Versión 2025.06"
-      const serverVersion =
-        this.extractVersionFromChangelog(versionData.changelog) ||
-        versionData.version;
+      // Usar directamente la versión del archivo version.json
+      const serverVersion = versionData.version;
 
       this.currentVersion = serverVersion;
       this.lastBuildDate = versionData.buildDate;
@@ -105,27 +103,14 @@ export class UpdateService {
     }
   }
 
-  // Extraer versión del changelog en formato "Versión 2025.06"
+  // Extraer versión del changelog en formato "Versión 2025.06.1"
   extractVersionFromChangelog(changelog) {
     if (!changelog) return null;
 
-    // Buscar patrón "Versión YYYY.MM" o "Versión YYYY.MM.DD"
-    const versionMatch = changelog.match(
-      /Versión\s+(\d{4}\.\d{2}(?:\.\d{2})?)/
-    );
+    // Buscar patrón "Versión YYYY.MM.DD" o "Versión YYYY.MM"
+    const versionMatch = changelog.match(/Versión\s+(\d{4}\.\d{2}(?:\.\d+)?)/);
     if (versionMatch) {
       return versionMatch[1];
-    }
-
-    // Buscar patrón de fecha "Junio 2025" y convertir a "2025.06"
-    const monthYearMatch = changelog.match(/(\w+)\s+(\d{4})/);
-    if (monthYearMatch) {
-      const monthName = monthYearMatch[1];
-      const year = monthYearMatch[2];
-      const monthNumber = this.getMonthNumber(monthName);
-      if (monthNumber) {
-        return `${year}.${monthNumber.toString().padStart(2, "0")}`;
-      }
     }
 
     return null;
@@ -163,9 +148,8 @@ export class UpdateService {
         const response = await fetch("/version.json?t=" + new Date().getTime());
         const versionData = await response.json();
 
-        const serverVersion =
-          this.extractVersionFromChangelog(versionData.changelog) ||
-          versionData.version;
+        // Usar directamente la versión del archivo version.json
+        const serverVersion = versionData.version;
         const userStoredVersion = this.getStoredUserVersion();
 
         // Si hay una nueva versión disponible o es primera vez
