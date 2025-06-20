@@ -763,53 +763,6 @@ const LocationReportModal = ({ open, onClose }) => {
     // Agregar la hoja al workbook
     XLSX.utils.book_append_sheet(wb, ws, "Posición Actual");
 
-    // NUEVA FUNCIÓN: Proteger la hoja con password
-    // Permitir ordenar, filtrar y copiar, pero bloquear edición
-    if (ws["!protect"]) {
-      // Si ya existe protección, la modificamos
-      ws["!protect"] = {
-        ...ws["!protect"],
-        password: "password",
-        selectLockedCells: true,
-        selectUnlockedCells: true,
-        formatCells: false,
-        formatColumns: false,
-        formatRows: false,
-        insertColumns: false,
-        insertRows: false,
-        insertHyperlinks: false,
-        deleteColumns: false,
-        deleteRows: false,
-        sort: true, // ✅ Permitir ordenar
-        autoFilter: true, // ✅ Permitir filtros
-        pivotTables: false,
-        objects: false,
-        scenarios: false,
-        sheet: true,
-      };
-    } else {
-      // Crear nueva protección
-      ws["!protect"] = {
-        password: "password",
-        selectLockedCells: true,
-        selectUnlockedCells: true,
-        formatCells: false,
-        formatColumns: false,
-        formatRows: false,
-        insertColumns: false,
-        insertRows: false,
-        insertHyperlinks: false,
-        deleteColumns: false,
-        deleteRows: false,
-        sort: true, // ✅ Permitir ordenar
-        autoFilter: true, // ✅ Permitir filtros
-        pivotTables: false,
-        objects: false,
-        scenarios: false,
-        sheet: true,
-      };
-    }
-
     // Descargar archivo con hora en el nombre
     const fileName = `Reporte_Posicion_Actual_${
       scope === "selected" ? "Seleccionadas" : "Toda_Flota"

@@ -25,7 +25,7 @@ npm run dev  # → http://localhost:5177/
 9. **📜 Cumplimiento OSM** - Direcciones Photon completas
 10. **⏰ Excel con hora** - Timestamp 24hs en nombre archivo
 11. **🕒 Formato 24hs** - Celda A2 en formato estándar
-12. **🔒 Protección Excel** - Password "password", permite ordenar/filtrar
+12. **📄 Excel optimizado** - Sin protección, funcionalidad completa
 
 ## 📁 Estructura Organizada
 
@@ -42,7 +42,7 @@ docs/
 - ✅ **Servidor funcionando**: http://localhost:5177/
 - ✅ **Sin errores detectados**
 - ✅ **100% cumplimiento legal** (políticas OSM)
-- ✅ **Excel mejorado** (hora en nombre, formato 24hs, protección)
+- ✅ **Excel mejorado** (hora en nombre, formato 24hs, sin restricciones)
 - ✅ **Listo para producción**
 
 ## 🔧 Tecnologías
