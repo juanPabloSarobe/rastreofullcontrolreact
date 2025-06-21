@@ -21,7 +21,9 @@ import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
 import NotificationModal from "../common/NotificationModal";
+import PaymentAlertModal from "../common/PaymentAlertModal";
 import { useNotifications } from "../../hooks/useNotifications";
+import { paymentService } from "../../services/paymentService";
 
 const PrincipalPage = () => {
   const { state, dispatch } = useContextValue();
@@ -33,6 +35,8 @@ const PrincipalPage = () => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [historicalData, setHistoricalData] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const mapRef = useRef(null);
 
   const { activeNotification, markAsRead, dismissNotification } =
@@ -182,6 +186,24 @@ const PrincipalPage = () => {
     );
   }, [state.selectedUnits, markersData]);
 
+  // Efecto para inicializar el sistema de verificación de pagos
+  useEffect(() => {
+    const handlePaymentStatusChange = (status) => {
+      setPaymentStatus(status);
+      if (status.restrictions.showModal) {
+        setShowPaymentModal(true);
+      }
+    };
+
+    // Iniciar verificación periódica
+    paymentService.startPeriodicCheck(handlePaymentStatusChange);
+
+    // Limpiar al desmontar el componente
+    return () => {
+      paymentService.stopPeriodicCheck();
+    };
+  }, []);
+
   return (
     <>
       {activeNotification && (
@@ -191,6 +213,14 @@ const PrincipalPage = () => {
           onDismiss={dismissNotification}
         />
       )}
+
+      {/* Modal de Alertas de Pago */}
+      <PaymentAlertModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        paymentStatus={paymentStatus}
+        autoCloseAfterCountdown={true}
+      />
 
       {state.viewMode === "rastreo" && markersData.length === 0 && (
         <LoadingModal isLoading={isLoading} />

@@ -16,6 +16,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn"; // Nuevo icono para
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications"; // Nuevo icono para Notificaciones
 import HelpIcon from "@mui/icons-material/Help"; // Nuevo icono para Manual
+import BusinessIcon from "@mui/icons-material/Business"; // Nuevo icono para Empresas Morosas
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import { useContextValue } from "../../context/Context";
@@ -27,7 +28,9 @@ import UnitReportModal from "./UnitReportModal"; // Asegurarnos de importar el m
 import NotificationAdminModal from "./NotificationAdminModal"; // Importar el nuevo componente
 import UserManualModal from "./UserManualModal"; // Importar el manual de usuario
 import LocationReportModal from "./LocationReportModal"; // Importar el nuevo reporte de ubicación
+import DelinquentCompaniesModal from "./DelinquentCompaniesModal"; // Importar el modal de empresas morosas
 import { useNotifications } from "../../hooks/useNotifications"; // Añadir esta importación
+import { paymentService } from "../../services/paymentService";
 
 // Función simplificada para abrir una URL externa con cookies existentes
 const openExternalUrl = (url) => {
@@ -38,10 +41,12 @@ const MenuButton = ({ selectedUnit }) => {
   const { state, dispatch } = useContextValue();
   const [anchorEl, setAnchorEl] = useState(null);
   const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const [advancedHistoryOpen, setAdvancedHistoryOpen] = useState(false);
   const [contractReportsOpen, setContractReportsOpen] = useState(false);
   const [fleetAdminOpen, setFleetAdminOpen] = useState(false); // Nuevo estado
   const [notificationAdminOpen, setNotificationAdminOpen] = useState(false); // Nuevo estado
+  const [delinquentCompaniesOpen, setDelinquentCompaniesOpen] = useState(false); // Nuevo estado para empresas morosas
   const [noUnitModalOpen, setNoUnitModalOpen] = useState(false);
   const [unitReportOpen, setUnitReportOpen] = useState(false);
   const [userManualOpen, setUserManualOpen] = useState(false); // Nuevo estado para el manual de usuario
@@ -56,6 +61,25 @@ const MenuButton = ({ selectedUnit }) => {
       setOcultaUnidadesDeBaja(state.ocultaUnidadesDeBaja);
     }
   }, [state.ocultaUnidadesDeBaja]);
+
+  // Efecto para obtener el estado de pagos
+  useEffect(() => {
+    const getCurrentPaymentStatus = () => {
+      const status = paymentService.getCurrentUserStatus();
+      setPaymentStatus(status);
+    };
+
+    // Obtener estado inicial
+    getCurrentPaymentStatus();
+
+    // Actualizar cada vez que cambie el estado de pago
+    const interval = setInterval(getCurrentPaymentStatus, 5000); // Verificar cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Verificar si el usuario tiene restricciones de menú
+  const isMenuRestricted = paymentStatus?.restrictions?.menuDisabled || false;
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -84,6 +108,12 @@ const MenuButton = ({ selectedUnit }) => {
   // Nuevo manejador para abrir el administrador de notificaciones
   const openNotificationAdmin = () => {
     setNotificationAdminOpen(true);
+    handleClose();
+  };
+
+  // Nuevo manejador para abrir el modal de empresas morosas
+  const openDelinquentCompanies = () => {
+    setDelinquentCompaniesOpen(true);
     handleClose();
   };
 
@@ -134,30 +164,42 @@ const MenuButton = ({ selectedUnit }) => {
       label: "Histórico Avanzado",
       show: true,
       onClick: openAdvancedHistory,
+      disabled: isMenuRestricted,
     },
     {
       icon: <LocationOnIcon fontSize="small" />, // Nuevo icono para Reporte de Ubicación
       label: "Reporte de Posición Actual", // Nueva opción de menú
       show: true, // Mostrar a todos los usuarios
       onClick: openLocationReport, // Nuevo manejador
+      disabled: isMenuRestricted,
     },
     {
       icon: <ListAltIcon fontSize="small" />, // Nuevo icono para Flotas
       label: "Flotas", // Nueva opción de menú
       show: true, // Mostrar a todos los usuarios
       onClick: openFleetAdmin, // Nuevo manejador
+      disabled: isMenuRestricted,
     },
     {
       icon: <NotificationsIcon fontSize="small" />, // Nuevo icono para Notificaciones
       label: "Gestionar Notificaciones", // Nueva opción de menú
       show: state.role === "Administrador", // Mostrar solo a administradores
       onClick: openNotificationAdmin, // Nuevo manejador
+      disabled: isMenuRestricted,
+    },
+    {
+      icon: <BusinessIcon fontSize="small" />, // Nuevo icono para Empresas Morosas
+      label: "Empresas Morosas", // Nueva opción de menú
+      show: state.role === "Administrador", // Mostrar solo a administradores
+      onClick: openDelinquentCompanies, // Nuevo manejador
+      disabled: isMenuRestricted,
     },
     {
       icon: <CheckCircleOutlineIcon fontSize="small" />,
       label: "Certificado de Funcionamiento",
       show: true, // Siempre visible
       onClick: handleOpenReport,
+      disabled: isMenuRestricted,
     },
     {
       icon: <BarChartIcon fontSize="small" />,
@@ -168,12 +210,14 @@ const MenuButton = ({ selectedUnit }) => {
         openExternalUrl("https://plataforma.fullcontrolgps.com.ar/informes/");
         handleClose();
       },
+      disabled: isMenuRestricted,
     },
     {
       icon: <SsidChartIcon fontSize="small" />,
       label: "Informes Parciales",
       show: true,
       onClick: openContractReports,
+      disabled: isMenuRestricted,
     },
     {
       icon: <SettingsIcon fontSize="small" />,
@@ -184,6 +228,7 @@ const MenuButton = ({ selectedUnit }) => {
         openExternalUrl("https://plataforma.fullcontrolgps.com.ar/fulladm/");
         handleClose();
       },
+      disabled: isMenuRestricted,
     },
     {
       icon: <ReportIcon fontSize="small" />,
@@ -195,14 +240,17 @@ const MenuButton = ({ selectedUnit }) => {
           checked={ocultaUnidadesDeBaja}
           onChange={toggleOcultarBajas}
           color="primary"
+          disabled={isMenuRestricted}
         />
       ),
+      disabled: isMenuRestricted,
     },
     {
       icon: <HelpIcon fontSize="small" />,
       label: "Manual de Usuario",
       show: true, // Mostrar a todos los usuarios
       onClick: openUserManual, // Nuevo manejador
+      disabled: isMenuRestricted,
     },
     {
       icon: <LogoutIcon fontSize="small" />,
@@ -213,6 +261,7 @@ const MenuButton = ({ selectedUnit }) => {
         handleClose();
         Logout();
       },
+      disabled: false, // Cerrar sesión nunca debe estar deshabilitado
     },
   ];
 
@@ -253,8 +302,21 @@ const MenuButton = ({ selectedUnit }) => {
         {menuItems
           .filter((item) => item.show)
           .map((item, index) => (
-            <MenuItem key={index} onClick={item.onClick}>
-              <ListItemIcon>{item.icon}</ListItemIcon>
+            <MenuItem
+              key={index}
+              onClick={item.disabled ? undefined : item.onClick}
+              disabled={item.disabled}
+              sx={{
+                opacity: item.disabled ? 0.5 : 1,
+                cursor: item.disabled ? "not-allowed" : "pointer",
+                "&.Mui-disabled": {
+                  opacity: 0.5,
+                },
+              }}
+            >
+              <ListItemIcon sx={{ opacity: item.disabled ? 0.5 : 1 }}>
+                {item.icon}
+              </ListItemIcon>
               {item.label}
               {item.renderRight && (
                 <Box sx={{ marginLeft: "auto" }}>{item.renderRight}</Box>
@@ -313,6 +375,12 @@ const MenuButton = ({ selectedUnit }) => {
       <UserManualModal
         open={userManualOpen}
         onClose={() => setUserManualOpen(false)}
+      />
+
+      {/* Modal de Empresas Morosas */}
+      <DelinquentCompaniesModal
+        open={delinquentCompaniesOpen}
+        onClose={() => setDelinquentCompaniesOpen(false)}
       />
     </Box>
   );

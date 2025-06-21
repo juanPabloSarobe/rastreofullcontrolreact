@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -10,11 +10,32 @@ import PersonIcon from "@mui/icons-material/Person";
 import { useContextValue } from "../../context/Context";
 import UnitWorksModal from "./UnitWorksModal";
 import DriverWorksModal from "./DriverWorksModal";
+import { paymentService } from "../../services/paymentService";
 
 const UnitDetails = ({ unitData }) => {
   const [worksModalOpen, setWorksModalOpen] = useState(false);
   const [driverWorksModalOpen, setDriverWorksModalOpen] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const { state, dispatch } = useContextValue();
+
+  // Efecto para obtener el estado de pagos
+  useEffect(() => {
+    const getCurrentPaymentStatus = () => {
+      const status = paymentService.getCurrentUserStatus();
+      setPaymentStatus(status);
+    };
+
+    // Obtener estado inicial
+    getCurrentPaymentStatus();
+
+    // Actualizar cada vez que cambie el estado de pago
+    const interval = setInterval(getCurrentPaymentStatus, 10000); // Verificar cada 10 segundos
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Verificar si el botón histórico debe estar deshabilitado
+  const isHistoryDisabled = paymentStatus?.restrictions?.menuDisabled || false;
 
   if (!unitData) return null;
 
@@ -39,6 +60,9 @@ const UnitDetails = ({ unitData }) => {
   } = unitData;
 
   const handleViewHistory = () => {
+    if (isHistoryDisabled) {
+      return; // No hacer nada si está deshabilitado
+    }
     dispatch({
       type: "SET_HISTORY_UNIT",
       payload: unitData,
@@ -227,17 +251,36 @@ const UnitDetails = ({ unitData }) => {
                 padding: "6px",
               }}
             >
-              <IconButton
-                onClick={handleViewHistory}
-                sx={{
-                  color: "#1E90FF",
-                }}
+              <Tooltip
+                title={
+                  isHistoryDisabled
+                    ? "Funcionalidad restringida por morosidad"
+                    : "Ver histórico"
+                }
               >
-                <HistoryIcon sx={{ fontSize: "24px" }} />
-              </IconButton>
+                <span>
+                  <IconButton
+                    onClick={handleViewHistory}
+                    disabled={isHistoryDisabled}
+                    sx={{
+                      color: isHistoryDisabled ? "#ccc" : "#1E90FF",
+                      cursor: isHistoryDisabled ? "not-allowed" : "pointer",
+                      "&.Mui-disabled": {
+                        opacity: 0.5,
+                      },
+                    }}
+                  >
+                    <HistoryIcon sx={{ fontSize: "24px" }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
               <Typography
                 variant="body2"
-                sx={{ marginTop: "4px", color: "#1E90FF", fontSize: "12px" }}
+                sx={{
+                  marginTop: "4px",
+                  color: isHistoryDisabled ? "#ccc" : "#1E90FF",
+                  fontSize: "12px",
+                }}
               >
                 HISTORICO
               </Typography>
