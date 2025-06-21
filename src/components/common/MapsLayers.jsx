@@ -25,7 +25,7 @@ const MapsLayers = ({ isMobile, unitData }) => {
         id="custom-layers-container"
         style={{
           position: "absolute",
-          bottom: isMobile && unitData ? "236px" : "96px", // Ajusta la posición según sea necesario
+          bottom: isMobile && unitData ? "236px" : "98px", // Ajusta la posición según sea necesario
           right: "10px",
           zIndex: 1000,
           /*           backgroundColor: "white",

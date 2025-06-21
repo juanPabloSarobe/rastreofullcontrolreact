@@ -22,6 +22,7 @@ import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
 import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
+import VersionIndicator from "../common/VersionIndicator";
 import { useNotifications } from "../../hooks/useNotifications";
 import { paymentService } from "../../services/paymentService";
 
@@ -318,6 +319,9 @@ const PrincipalPage = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Indicador de versión */}
+      <VersionIndicator />
     </>
   );
 };
