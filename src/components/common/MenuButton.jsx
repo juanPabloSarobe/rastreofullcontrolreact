@@ -180,13 +180,13 @@ const MenuButton = ({ selectedUnit }) => {
       onClick: openFleetAdmin, // Nuevo manejador
       disabled: isMenuRestricted,
     },
-    {
+    /* {
       icon: <NotificationsIcon fontSize="small" />, // Nuevo icono para Notificaciones
       label: "Gestionar Notificaciones", // Nueva opción de menú
       show: state.role === "Administrador", // Mostrar solo a administradores
       onClick: openNotificationAdmin, // Nuevo manejador
       disabled: isMenuRestricted,
-    },
+    }, */
     {
       icon: <BusinessIcon fontSize="small" />, // Nuevo icono para Empresas Morosas
       label: "Empresas Morosas", // Nueva opción de menú
