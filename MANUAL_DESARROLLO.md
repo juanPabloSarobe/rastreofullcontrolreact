@@ -48,6 +48,16 @@ src/
 - **CustomMarker.jsx**: Marcadores personalizados en el mapa
 - **FleetAdminModal.jsx**: Administración de flotas
 - **ExportSpeedDial.jsx**: Exportación de datos (Excel, KML)
+- **LocationReportModal.jsx**: ⭐ NUEVO - Reporte de posición con geocodificación
+
+#### Modales y Notificaciones ⭐ NUEVO
+
+- **LocationReportModal.jsx**: Generación de reportes de posición
+  - Geocodificación automática de coordenadas
+  - Exportación Excel con timestamps y protección
+  - Notificaciones sonoras y visuales
+  - Rate limiting para cumplimiento de políticas OSM
+  - Vista móvil optimizada con tarjetas expandibles
 
 ## APIs y Endpoints
 
@@ -98,10 +108,27 @@ FormData: flota={fleetId}&vehiculo={vehicleId}
 ```javascript
 // Excel de históricos
 GET /api/servicio/excel.php?movil={id}&fechaInicial={date}&fechaFinal={date}
-
-// Informes por contrato
-GET /api/servicio/excelinformes.php?fechaInicial={date}&fechaFinal={date}&contrato={name}
 ```
+
+### Geocodificación ⭐ NUEVO
+
+El sistema incluye servicios de geocodificación para convertir coordenadas GPS a direcciones:
+
+```javascript
+// Proveedores disponibles (en orden de prioridad)
+1. Nominatim (OpenStreetMap) - Principal
+2. Photon (OpenStreetMap) - Respaldo
+3. BigDataCloud - Emergencia
+
+// Rate limiting para cumplimiento de políticas
+const NOMINATIM_DELAY = 1100; // 1.1 segundos entre requests
+```
+
+#### Políticas de Uso
+
+- **Nominatim**: Máximo 1 request por segundo + User-Agent obligatorio
+- **Cumplimiento OSM**: Atribución requerida + límites respetados
+- **Fallback automático**: Si un proveedor falla, usa el siguiente
 
 ## Estado Global (Context)
 
@@ -199,6 +226,109 @@ proxy: {
 - **Debounce**: use-debounce para búsquedas
 - **Lazy Loading**: Componentes de desarrollo
 
+### Exportación Excel Avanzada ⭐ NUEVO
+
+#### Generación de Archivos con Timestamp
+
+```javascript
+// Formateo de timestamp para nombre de archivo
+const fileTimestamp = now
+  .toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+  .replace(/[\/\s:]/g, "_");
+
+// Resultado: 20_06_2025_14_30
+const fileName = `Reporte_Posicion_Actual_${scope}_${fileTimestamp}.xlsx`;
+```
+
+#### Protección de Hojas Excel
+
+```javascript
+// Configuración de protección
+ws["!protect"] = {
+  password: "password",
+  selectLockedCells: true,
+  selectUnlockedCells: true,
+  sort: true, // ✅ Permitir ordenar
+  autoFilter: true, // ✅ Permitir filtros
+  formatCells: false, // ❌ Bloquear formato
+  insertRows: false, // ❌ Bloquear inserción
+  deleteRows: false, // ❌ Bloquear eliminación
+};
+```
+
+#### Geocodificación con Rate Limiting
+
+```javascript
+// Control de velocidad para políticas OSM
+const processWithDelay = async (items, delay = 1100) => {
+  for (const item of items) {
+    await geocodeAddress(item);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+};
+
+// Manejo de múltiples proveedores
+const geocodeWithFallback = async (lat, lng) => {
+  try {
+    return await nominatimGeocode(lat, lng);
+  } catch (error) {
+    try {
+      return await photonGeocode(lat, lng);
+    } catch (error) {
+      return await bigDataCloudGeocode(lat, lng);
+    }
+  }
+};
+```
+
+### Sistema de Notificaciones ⭐ NUEVO
+
+#### Audio Web API
+
+```javascript
+// Sonido de finalización
+const playCompletionSound = () => {
+  const audioContext = new AudioContext();
+  const frequencies = [523.25, 659.25, 783.99]; // Do-Mi-Sol
+
+  frequencies.forEach((freq, index) => {
+    const oscillator = audioContext.createOscillator();
+    oscillator.frequency.setValueAtTime(
+      freq,
+      audioContext.currentTime + index * 0.2
+    );
+    // ... configuración adicional
+  });
+};
+```
+
+#### Gestión de Permisos
+
+```javascript
+// Manejo inteligente de permisos de notificación
+const requestNotificationPermission = async () => {
+  if (Notification.permission === "default") {
+    return await Notification.requestPermission();
+  }
+  return Notification.permission;
+};
+
+// Polling de cambios de permisos
+useEffect(() => {
+  const interval = setInterval(() => {
+    setPermissionStatus(Notification.permission);
+  }, 2000);
+  return () => clearInterval(interval);
+}, []);
+```
+
 ### Gestión de Caché
 
 - **UpdateService**: Sistema automático de detección de versiones
@@ -291,74 +421,443 @@ if (process.env.NODE_ENV === "development") {
 }
 ```
 
-## Buenas Prácticas
+### Debugging y Troubleshooting
 
-### Código
-
-- **Componentes funcionales**: Usar siempre hooks
-- **Prop destructuring**: Desestructurar props con defaults
-- **Early returns**: Salidas tempranas en componentes
-- **Memoización**: React.memo para componentes pesados
-
-### Estilos
-
-- **sx prop**: Preferir sx sobre styled components
-- **Theme consistency**: Usar colores del tema MUI
-- **Responsive values**: Objetos para breakpoints
-
-### Performance
-
-- **useCallback/useMemo**: Para funciones y valores costosos
-- **Lazy loading**: Componentes no críticos
-- **Image optimization**: WebP para imágenes
-
-### Seguridad
-
-- **Credentials**: Include en todas las requests API
-- **Input validation**: Validar entradas de usuario
-- **Error handling**: No exponer información sensible
-
-## Troubleshooting
-
-### Problemas Comunes
-
-#### Cookies de Sesión
+#### Herramientas de Desarrollo
 
 ```javascript
-// Verificar cookies
-const cookies = document.cookie.split(";");
-const sessionCookie = cookies.find((cookie) =>
-  cookie.trim().startsWith("sesion=")
-);
+// Debug de geocodificación
+console.log("Geocoding provider:", provider);
+console.log("Rate limit delay:", NOMINATIM_DELAY);
+console.log("Request headers:", headers);
+
+// Monitoreo de performance
+const startTime = performance.now();
+await geocodeUnit(unit);
+const endTime = performance.now();
+console.log(`Geocoding took ${endTime - startTime} milliseconds`);
 ```
 
-#### Problemas de CORS
+#### Logs de Exportación Excel
 
-- Verificar configuración del proxy en vite.config.js
-- Asegurar `credentials: "include"` en requests
+```javascript
+// Información del archivo generado
+console.log("Excel filename:", fileName);
+console.log("Timestamp format:", timestamp);
+console.log("Protection settings:", ws["!protect"]);
+console.log("Data rows:", geocodedData.length);
+```
 
-#### Performance en Móviles
+## Documentación del Proyecto
 
-- Usar `react-window` para listas largas
-- Implementar debounce en búsquedas
-- Optimizar re-renders con React.memo
+### Estructura de Documentación
 
-## Contribución
+La documentación está organizada en `docs/` con las siguientes carpetas:
 
-### Git Flow
+```
+docs/
+├── mejoras/          # 11 archivos - Implementaciones detalladas
+├── testing/          # 6 archivos - Guías de pruebas
+├── cumplimiento/     # 3 archivos - Políticas y legal
+└── estados/          # 5 archivos - Resúmenes ejecutivos
+```
 
-1. Feature branches desde `main`
-2. Commits descriptivos
-3. Pull requests con review
-4. Testing antes de merge
+#### Archivos Clave de Documentación
 
-### Convenciones de Código
+**Mejoras Implementadas:**
 
-- **Naming**: camelCase para variables, PascalCase para componentes
-- **Files**: kebab-case para archivos
-- **Imports**: Orden: React, librerías, componentes locales
+- `MEJORAS_EXPORTACION_EXCEL.md` - Detalles técnicos Excel
+- `CORRECCION_CONTEO_UNIDADES.md` - Fix de inconsistencia
+- `MEJORAS_VISTA_MOVIL.md` - Optimización móvil
+- `NOTIFICACION_SONORA_FINALIZACION.md` - Sistema audio
+
+**Testing y Verificación:**
+
+- `TESTING_EXPORTACION_EXCEL.md` - Pruebas Excel
+- `LISTA_VERIFICACION_FINAL.md` - Checklist completo
+- `TESTING_CUMPLIMIENTO_NOMINATIM.md` - Verificación OSM
+
+**Cumplimiento Legal:**
+
+- `CUMPLIMIENTO_POLITICA_NOMINATIM.md` - Políticas OSM
+- `CORRECCION_URGENTE_GEOCODING.md` - Fixes críticos
+
+### Versionado del Sistema
+
+#### Control de Versiones Automático
+
+```javascript
+// update-version.js
+const fs = require("fs");
+const path = require("path");
+
+const updateVersion = () => {
+  const versionData = {
+    version: new Date().toISOString(),
+    build: process.env.BUILD_NUMBER || "local",
+    features: [
+      "Excel export with timestamps",
+      "Geocoding with OSM compliance",
+      "Mobile optimization",
+      "Audio notifications",
+    ],
+  };
+
+  fs.writeFileSync(
+    path.join("public", "version.json"),
+    JSON.stringify(versionData, null, 2)
+  );
+};
+```
+
+#### Sistema de Actualizaciones
+
+```javascript
+// src/utils/updateService.js
+export const checkForUpdates = async () => {
+  try {
+    const response = await fetch("/version.json");
+    const versionData = await response.json();
+
+    const lastCheck = localStorage.getItem("lastVersionCheck");
+    if (lastCheck !== versionData.version) {
+      localStorage.setItem("lastVersionCheck", versionData.version);
+      return { hasUpdates: true, version: versionData };
+    }
+
+    return { hasUpdates: false };
+  } catch (error) {
+    console.error("Error checking updates:", error);
+    return { hasUpdates: false };
+  }
+};
+```
+
+## Best Practices Implementadas
+
+### Geocodificación Responsable
+
+```javascript
+// ✅ CORRECTO: Rate limiting respetado
+const geocodeWithPolicy = async (lat, lng) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "FullControlGPS/1.0 (contact@fullcontrolgps.com.ar)",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return await response.json();
+  } finally {
+    // Rate limiting obligatorio
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+  }
+};
+
+// ❌ INCORRECTO: Sin rate limiting
+const geocodeBad = async (lat, lng) => {
+  return fetch(url); // Viola políticas OSM
+};
+```
+
+### Manejo de Errores Robusto
+
+```javascript
+// Manejo completo de errores con fallback
+const geocodeWithFallback = async (lat, lng) => {
+  const providers = [
+    { name: "Nominatim", fn: nominatimGeocode },
+    { name: "Photon", fn: photonGeocode },
+    { name: "BigDataCloud", fn: bigDataCloudGeocode },
+  ];
+
+  for (const provider of providers) {
+    try {
+      console.log(`Trying ${provider.name}...`);
+      const result = await provider.fn(lat, lng);
+      if (result && result.address) {
+        return result;
+      }
+    } catch (error) {
+      console.warn(`${provider.name} failed:`, error.message);
+      continue;
+    }
+  }
+
+  return { address: "Dirección no disponible" };
+};
+```
+
+### Performance Optimization
+
+```javascript
+// Batch processing optimizado
+const processBatch = async (units, batchSize = 10) => {
+  const results = [];
+
+  for (let i = 0; i < units.length; i += batchSize) {
+    const batch = units.slice(i, i + batchSize);
+    console.log(
+      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
+        units.length / batchSize
+      )}`
+    );
+
+    const batchResults = await Promise.allSettled(
+      batch.map((unit) => geocodeWithFallback(unit.lat, unit.lng))
+    );
+
+    results.push(
+      ...batchResults.map((result, index) => ({
+        ...batch[index],
+        address:
+          result.status === "fulfilled"
+            ? result.value.address
+            : "Error en geocodificación",
+      }))
+    );
+
+    // Progress update
+    onProgress?.(Math.min(100, ((i + batchSize) / units.length) * 100));
+  }
+
+  return results;
+};
+```
+
+### Seguridad de Datos
+
+```javascript
+// Sanitización de datos para Excel
+const sanitizeForExcel = (value) => {
+  if (typeof value === "string") {
+    // Remover caracteres peligrosos
+    return value.replace(/[=+\-@]/g, "").substring(0, 255);
+  }
+  return value;
+};
+
+// Validación de coordenadas
+const isValidCoordinate = (lat, lng) => {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    !isNaN(lat) &&
+    !isNaN(lng)
+  );
+};
+```
+
+### Deployment y Producción
+
+#### Build Process
+
+```bash
+# Scripts de build
+npm run prebuild    # Actualiza version.json
+npm run build      # Build de producción con Vite
+npm run preview    # Preview local del build
+```
+
+#### Configuración de Producción
+
+```javascript
+// vite.config.js - Optimizaciones
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          ui: ["@mui/material", "@mui/joy"],
+          maps: ["leaflet", "react-leaflet"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: process.env.VITE_APP_TARGET,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
+});
+```
+
+#### Monitoring y Analytics
+
+```javascript
+// Métricas de uso
+const trackExcelExport = (scope, unitCount) => {
+  console.log("Excel Export:", {
+    scope,
+    unitCount,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+  });
+};
+
+// Performance monitoring
+const trackGeocoding = (provider, duration, success) => {
+  console.log("Geocoding Performance:", {
+    provider,
+    duration: `${duration}ms`,
+    success,
+    timestamp: new Date().toISOString(),
+  });
+};
+```
+
+## Nuevas Funcionalidades Implementadas ⭐
+
+### LocationReportModal - Reporte de Posición
+
+**Archivo**: `src/components/common/LocationReportModal.jsx`
+
+#### Características Principales
+
+1. **Geocodificación Automática**
+
+   - Conversión de coordenadas GPS a direcciones legibles
+   - Múltiples proveedores con fallback automático
+   - Rate limiting para cumplimiento de políticas
+
+2. **Exportación Excel Avanzada**
+
+   - Timestamps en nombres de archivo
+   - Formato 24 horas obligatorio
+   - Protección de hojas con permisos granulares
+
+3. **Sistema de Notificaciones**
+
+   - Audio Web API para sonidos de finalización
+   - Notificaciones del navegador
+   - Gestión inteligente de permisos
+
+4. **Vista Móvil Optimizada**
+   - Diseño de tarjetas expandibles
+   - Interfaz táctil mejorada
+   - Responsive design completo
+
+#### Estructura del Componente
+
+```javascript
+const LocationReportModal = ({
+  open,
+  onClose,
+  processedData,
+  selectedUnits,
+}) => {
+  // Estados principales
+  const [reportType, setReportType] = useState("selected");
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodedData, setGeocodedData] = useState([]);
+  const [permissionStatus, setPermissionStatus] = useState("default");
+
+  // Funciones principales
+  const handleGeocoding = async () => {
+    /* ... */
+  };
+  const exportToExcel = () => {
+    /* ... */
+  };
+  const playCompletionSound = () => {
+    /* ... */
+  };
+
+  return <Modal>{/* Contenido del modal */}</Modal>;
+};
+```
+
+### Cumplimiento de Políticas OSM/Nominatim
+
+#### Rate Limiting Implementado
+
+```javascript
+const NOMINATIM_DELAY = 1100; // 1.1 segundos entre requests
+const MAX_RETRIES = 3;
+const TIMEOUT = 10000; // 10 segundos timeout
+
+// Procesamiento secuencial con delay
+const processUnitsSequentially = async (units) => {
+  const results = [];
+
+  for (const unit of units) {
+    try {
+      const address = await geocodeWithDelay(unit.lat, unit.lng);
+      results.push({ ...unit, address });
+
+      // Delay obligatorio entre requests
+      await new Promise((resolve) => setTimeout(resolve, NOMINATIM_DELAY));
+    } catch (error) {
+      console.error(`Geocoding failed for unit ${unit.id}:`, error);
+      results.push({ ...unit, address: "No disponible" });
+    }
+  }
+
+  return results;
+};
+```
+
+#### Headers Requeridos
+
+```javascript
+const headers = {
+  "User-Agent": "FullControlGPS/1.0 (contact@fullcontrolgps.com.ar)",
+  Accept: "application/json",
+  "Accept-Language": "es-AR,es;q=0.9",
+};
+```
+
+### Gestión de Estados y Context
+
+#### Estado Global de Notificaciones
+
+```javascript
+// useNotifications hook
+const useNotifications = () => {
+  const [permission, setPermission] = useState(Notification.permission);
+
+  const requestPermission = async () => {
+    if ("Notification" in window) {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      return result;
+    }
+    return "denied";
+  };
+
+  const showNotification = (title, options = {}) => {
+    if (permission === "granted") {
+      return new Notification(title, {
+        icon: "/favicon.ico",
+        badge: "/favicon-96x96.png",
+        ...options,
+      });
+    }
+  };
+
+  return { permission, requestPermission, showNotification };
+};
+```
 
 ---
 
-**Última actualización**: Diciembre 2024
+**Última actualización**: Junio 2025
 **Versión del proyecto**: Basado en package.json v0.0.0
+**Nuevas funcionalidades**: Exportación Excel con timestamps, geocodificación OSM, notificaciones audio

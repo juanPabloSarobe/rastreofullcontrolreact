@@ -217,12 +217,58 @@ Funciones adicionales:
 2. **Histórico avanzado**: Múltiples días en Excel
 3. **Informes parciales**: Por contrato y período
 4. **Certificados**: Documentos oficiales en PDF
+5. **Reporte de Posición Actual**: Ubicación actual de unidades con geocodificación
+
+### Reporte de Posición Actual ⭐ NUEVO
+
+Esta función permite generar un reporte Excel con la ubicación actual de todas las unidades:
+
+#### Cómo Generar el Reporte
+
+1. **Acceso**: Desde el menú principal ☰ → "Informes de Posición"
+2. **Selección**: Elija entre:
+   - **Unidades seleccionadas**: Solo las unidades que tiene marcadas
+   - **Toda la flota**: Todas las unidades de su cuenta
+3. **Geocodificación**: El sistema convertirá automáticamente las coordenadas GPS a direcciones legibles
+4. **Descarga**: Recibirá un archivo Excel completo
+
+#### Características del Archivo Excel
+
+**Nombre de archivo con timestamp:**
+
+- Formato: `Reporte_Posicion_Actual_[Tipo]_DD_MM_AAAA_HH_MM.xlsx`
+- Ejemplo: `Reporte_Posicion_Actual_Seleccionadas_20_06_2025_14_30.xlsx`
+
+**Contenido del reporte:**
+
+- Timestamp de generación en formato 24 horas (ej: "20/06/2025, 14:30:55")
+- Datos de cada unidad: patente, empresa, ubicación, dirección, coordenadas
+- Filtros y ordenamiento habilitados para análisis
+- Protección contra edición accidental (password: "password")
+
+#### Ventajas del Nuevo Sistema
+
+- ✅ **Organización temporal**: Archivos únicos por fecha y hora
+- ✅ **Formato 24 horas**: Sin ambigüedad AM/PM
+- ✅ **Protección de datos**: Previene modificaciones accidentales
+- ✅ **Geocodificación inteligente**: Direcciones completas automáticamente
+- ✅ **Análisis facilitado**: Ordenar y filtrar sin restricciones
 
 ### Formato de Archivos
 
-- **Excel (.xlsx)**: Para análisis de datos
+- **Excel (.xlsx)**: Para análisis de datos (con protección y timestamps)
 - **KML**: Para Google Earth y aplicaciones GIS
 - **PDF**: Para certificados oficiales
+
+### Notificaciones de Finalización
+
+Cuando genere reportes de posición, el sistema le notificará:
+
+- **Sonido de finalización**: Melodía distintiva al completar el proceso
+- **Notificación del navegador**: Si tiene permisos habilitados
+- **Mensaje en pantalla**: Confirmación visual del proceso
+
+> **Tip**: Para reportes grandes (más de 50 unidades), el proceso puede tomar varios minutos. Active las notificaciones para ser avisado cuando termine.
 
 ## Soporte y Ayuda
 
@@ -279,5 +325,6 @@ Funciones adicionales:
 
 ---
 
-**Manual actualizado**: Diciembre 2024  
-**Versión del sistema**: Consulte la aplicación para ver la versión actual
+**Manual actualizado**: Junio 2025  
+**Versión del sistema**: Consulte la aplicación para ver la versión actual  
+**Última actualización**: Agregadas mejoras en exportación Excel con timestamps y geocodificación

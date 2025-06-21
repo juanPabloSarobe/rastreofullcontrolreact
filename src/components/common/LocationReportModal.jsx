@@ -100,9 +100,6 @@ const LocationReportModal = ({ open, onClose }) => {
         const currentPermission = checkNotificationPermission();
         if (currentPermission !== notificationPermissionStatus) {
           setNotificationPermissionStatus(currentPermission);
-          console.log(
-            `🔔 Estado de permisos actualizado: ${currentPermission}`
-          );
         }
       }, 2000); // Verificar cada 2 segundos
 
@@ -194,15 +191,8 @@ const LocationReportModal = ({ open, onClose }) => {
       const provider = providers[providerIndex];
 
       try {
-        console.log(
-          `🌍 Intentando geocoding con ${provider.name} para ${lat},${lng}`
-        );
-
         // CUMPLIR POLÍTICA NOMINATIM: Rate limiting específico por proveedor
         if (provider.rateLimitMs) {
-          console.log(
-            `⏳ Aplicando rate limit de ${provider.rateLimitMs}ms para ${provider.name}`
-          );
           await new Promise((resolve) =>
             setTimeout(resolve, provider.rateLimitMs)
           );
@@ -272,11 +262,6 @@ const LocationReportModal = ({ open, onClose }) => {
               addressParts.length > 0
                 ? addressParts.join(", ")
                 : props.name || props.city || props.district || null;
-
-            console.log(
-              `🔍 Photon response procesada: ${JSON.stringify(props, null, 2)}`
-            );
-            console.log(`📍 Dirección construida: ${address}`);
           }
         } else if (provider.name === "BigDataCloud") {
           // BigDataCloud tiene una estructura diferente
@@ -292,12 +277,6 @@ const LocationReportModal = ({ open, onClose }) => {
         }
 
         if (address && address !== "Dirección no disponible") {
-          console.log(
-            `✅ Geocoding exitoso con ${provider.name}: ${address.substring(
-              0,
-              50
-            )}...`
-          );
           setAddresses((prev) => ({ ...prev, [key]: address }));
           return address;
         } else {
@@ -320,11 +299,6 @@ const LocationReportModal = ({ open, onClose }) => {
 
         // Si es el último proveedor y tenemos reintentos disponibles
         if (providerIndex === providers.length - 1 && retryCount < maxRetries) {
-          console.log(
-            `🔄 Reintentando geocoding (intento ${
-              retryCount + 1
-            }/${maxRetries})...`
-          );
           await new Promise((resolve) =>
             setTimeout(resolve, 1000 * (retryCount + 1))
           ); // Backoff exponencial
@@ -436,12 +410,6 @@ const LocationReportModal = ({ open, onClose }) => {
       const permission = await Notification.requestPermission();
       setNotificationPermissionStatus(permission);
 
-      if (permission === "granted") {
-        console.log("✅ Permisos de notificación otorgados");
-      } else if (permission === "denied") {
-        console.log("❌ Permisos de notificación denegados");
-      }
-
       setShowNotificationPermissionModal(false);
       return permission;
     } catch (error) {
@@ -504,8 +472,6 @@ const LocationReportModal = ({ open, onClose }) => {
         }
       }
     } catch (error) {
-      console.log("No se pudo reproducir el sonido de finalización:", error);
-
       // Como respaldo, verificar permisos y mostrar notificación si es posible
       const currentPermission = checkNotificationPermission();
       if (currentPermission === "granted") {
@@ -516,7 +482,7 @@ const LocationReportModal = ({ open, onClose }) => {
             badge: "/favicon.ico",
           });
         } catch (notificationError) {
-          console.log("No se pudo mostrar la notificación:", notificationError);
+          // Error silencioso en notificación
         }
       }
     }
@@ -544,10 +510,6 @@ const LocationReportModal = ({ open, onClose }) => {
     setAddressProgress({ current: 0, total: unitsWithValidCoords.length });
     geocodingCancelledRef.current = false;
 
-    console.log(
-      `🚀 Iniciando geocoding para ${unitsWithValidCoords.length} unidades...`
-    );
-
     // CUMPLIR POLÍTICA NOMINATIM: Procesar SECUENCIALMENTE (single thread)
     // Reducir tamaño de lote y aumentar delays para cumplir políticas OSM
     const batchSize = 1; // Procesar 1 unidad a la vez para cumplir "single thread"
@@ -557,16 +519,10 @@ const LocationReportModal = ({ open, onClose }) => {
     for (let i = 0; i < unitsWithValidCoords.length; i += batchSize) {
       // Verificar si el proceso fue cancelado
       if (geocodingCancelledRef.current) {
-        console.log("🛑 Proceso de geocoding cancelado por el usuario");
         break;
       }
 
       const batch = unitsWithValidCoords.slice(i, i + batchSize);
-      console.log(
-        `📦 Procesando lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(
-          unitsWithValidCoords.length / batchSize
-        )} (${batch.length} unidades)`
-      );
 
       // Procesar lote actual
       for (let j = 0; j < batch.length; j++) {
@@ -606,11 +562,6 @@ const LocationReportModal = ({ open, onClose }) => {
         i + batchSize < unitsWithValidCoords.length &&
         !geocodingCancelledRef.current
       ) {
-        console.log(
-          `⏳ Esperando ${
-            delayBetweenBatches / 1000
-          }s antes del siguiente lote...`
-        );
         await new Promise((resolve) =>
           setTimeout(resolve, delayBetweenBatches)
         );
@@ -622,9 +573,6 @@ const LocationReportModal = ({ open, onClose }) => {
     // Reproducir sonido de finalización solo si el proceso no fue cancelado
     if (!geocodingCancelledRef.current) {
       const processedCount = Object.keys(addresses).length;
-      console.log(
-        `✅ Proceso de geocoding completado exitosamente. ${processedCount} direcciones procesadas.`
-      );
       playCompletionSound();
     }
   };

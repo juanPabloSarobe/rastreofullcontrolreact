@@ -56,12 +56,6 @@ export class UpdateService {
       // Obtener la versión que tenía el usuario anteriormente
       const userStoredVersion = this.getStoredUserVersion();
 
-      console.log("🔍 Verificando versiones:", {
-        serverVersion: serverVersion,
-        userStoredVersion: userStoredVersion,
-        isFirstTime: userStoredVersion === null,
-      });
-
       // Verificar si es primera vez o hay nueva versión
       const isFirstTime = this.isFirstTimeUser();
       const hasNewVersion =
@@ -178,8 +172,6 @@ export class UpdateService {
   // Limpiar la caché del navegador y recargar la aplicación
   clearCacheAndReload() {
     try {
-      console.log("🔄 Actualizando a versión:", this.currentVersion);
-
       // Guardar la nueva versión como la versión actual del usuario
       this.storeUserVersion(this.currentVersion);
 
@@ -212,7 +204,6 @@ export class UpdateService {
 
   // Marcar la versión actual como vista (sin recargar)
   markCurrentVersionAsSeen() {
-    console.log("✅ Versión marcada como vista:", this.currentVersion);
     this.storeUserVersion(this.currentVersion);
   }
 
@@ -222,7 +213,6 @@ export class UpdateService {
       // Limpiar claves del sistema anterior
       localStorage.removeItem("fcgps_updated_versions");
       localStorage.removeItem("fcgps_first_version_run");
-      console.log("🧹 Datos de versiones anteriores limpiados");
     } catch (error) {
       console.error("Error al limpiar datos antiguos:", error);
     }

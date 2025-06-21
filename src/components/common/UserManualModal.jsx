@@ -96,6 +96,7 @@ const UserManualModal = ({ open, onClose }) => {
       hasChildren: true,
       children: [
         { id: "tipos-reportes", title: "Tipos de Reportes" },
+        { id: "reporte-posicion", title: "⭐ Reporte de Posición Actual" },
         { id: "historico-avanzado", title: "Histórico Avanzado" },
         { id: "informes-parciales", title: "Informes Parciales" },
         { id: "certificados", title: "Certificados" },
@@ -822,7 +823,364 @@ const UserManualModal = ({ open, onClose }) => {
                   </Typography>
                 </CardContent>
               </Card>
+
+              <Card
+                sx={{
+                  bgcolor: "rgba(76, 175, 80, 0.1)",
+                  border: "2px solid #4CAF50",
+                }}
+              >
+                <CardContent>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      color: "#2E7D32",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    📍 Reporte de Posición Actual ⭐ NUEVO
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    Ubicación actual de todas las unidades con direcciones
+                    automáticas
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    <strong>Incluye:</strong> Geocodificación automática,
+                    timestamps en archivos y protección Excel
+                  </Typography>
+                  <Typography variant="body2">
+                    Ideal para: Control instantáneo de flota, reportes
+                    ejecutivos, auditorías
+                  </Typography>
+                </CardContent>
+              </Card>
             </Box>
+          </Box>
+        );
+
+      case "reporte-posicion":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ fontWeight: "bold", color: "#2E7D32" }}
+            >
+              📍 Reporte de Posición Actual ⭐ NUEVO
+            </Typography>
+
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: "rgba(76, 175, 80, 0.1)",
+                border: "2px solid #4CAF50",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#2E7D32" }}>
+                  🚀 ¿Qué es el Reporte de Posición Actual?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Esta nueva función permite generar un reporte Excel completo
+                  con la ubicación actual de todas las unidades de su flota,
+                  incluyendo direcciones automáticas obtenidas mediante
+                  geocodificación inteligente.
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Es la herramienta perfecta para control instantáneo de flota,
+                  reportes ejecutivos y auditorías en tiempo real.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#2E7D32" }}>
+                  📋 Cómo Generar el Reporte
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Acceso:</strong> Desde el menú principal ☰ →
+                      "Informes de Posición"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Selección:</strong> Elija entre dos opciones:
+                    </Typography>
+                    <Box sx={{ ml: 2, mt: 1 }}>
+                      <Typography variant="body2" paragraph>
+                        • <strong>Unidades seleccionadas:</strong> Solo las
+                        unidades que tiene marcadas en el selector de unidades
+                        principal. Al combinarlo con el selector de flota,
+                        optimice los tiempos de ejecución.
+                      </Typography>
+                      <Typography variant="body2" paragraph>
+                        • <strong>Toda la flota:</strong> Todas las unidades de
+                        su cuenta
+                      </Typography>
+                    </Box>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Procesamiento:</strong> Haga clic en "Solicitar
+                      Informe"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Geocodificación:</strong> El sistema convertirá
+                      automáticamente las coordenadas GPS a direcciones legibles
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Descarga:</strong> Al finalizar, haga clic en
+                      "Exportar Excel"
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#2E7D32" }}>
+                  📊 Características del Archivo Excel
+                </Typography>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "#2E7D32", fontWeight: "bold" }}
+                  >
+                    🕒 Nombre con Timestamp:
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    Formato:{" "}
+                    <code>
+                      Reporte_Posicion_Actual_[Tipo]_DD_MM_AAAA_HH_MM.xlsx
+                    </code>
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    Ejemplo:{" "}
+                    <code>
+                      Reporte_Posicion_Actual_Seleccionadas_20_06_2025_14_30.xlsx
+                    </code>
+                  </Typography>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "#2E7D32", fontWeight: "bold" }}
+                  >
+                    📋 Contenido del Reporte:
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    • Timestamp de generación en formato 24 horas (ej:
+                    "20/06/2025, 14:30:55")
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    • Datos completos de cada unidad: patente, empresa,
+                    ubicación, dirección
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    • Coordenadas GPS exactas (latitud y longitud)
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    • Estado del motor, velocidad y geocerca
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    • Información del conductor asignado
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "#2E7D32", fontWeight: "bold" }}
+                  >
+                    🔒 Protección Inteligente:
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    • Filtros y ordenamiento habilitados para análisis
+                  </Typography>
+
+                  <Typography variant="body2" paragraph>
+                    • Permite copiar y analizar datos sin restricciones
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#2E7D32" }}>
+                  🔔 Sistema de Notificaciones
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Para mejorar su experiencia, el sistema incluye notificaciones
+                  de finalización:
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+                  <Chip
+                    label="🔊 Sonido de finalización"
+                    sx={{ bgcolor: "rgba(76, 175, 80, 0.2)" }}
+                    size="small"
+                  />
+                  <Chip
+                    label="🔔 Notificación del navegador"
+                    sx={{ bgcolor: "rgba(76, 175, 80, 0.2)" }}
+                    size="small"
+                  />
+                  <Chip
+                    label="✅ Confirmación visual"
+                    sx={{ bgcolor: "rgba(76, 175, 80, 0.2)" }}
+                    size="small"
+                  />
+                </Box>
+                <Typography variant="body2" paragraph>
+                  <strong>💡 Tip:</strong> Para reportes grandes (más de 50
+                  unidades), el proceso puede tomar varios minutos. Active las
+                  notificaciones del navegador para ser avisado cuando termine.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#2E7D32" }}>
+                  ⚡ Tiempos de Procesamiento
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: 2,
+                  }}
+                >
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: "#4CAF50",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        🚀 Flota Pequeña (≤20 unidades)
+                      </Typography>
+                      <Typography variant="body2">
+                        • Procesamiento: Automático
+                      </Typography>
+                      <Typography variant="body2">
+                        • Tiempo: 30 segundos - 2 minutos
+                      </Typography>
+                      <Typography variant="body2">
+                        • Experiencia: Rápida y fluida
+                      </Typography>
+                    </CardContent>
+                  </Card>
+
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: "#FF9800",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        ⏳ Flota Mediana (21-50 unidades)
+                      </Typography>
+                      <Typography variant="body2">
+                        • Procesamiento: Manual
+                      </Typography>
+                      <Typography variant="body2">
+                        • Tiempo: 3-8 minutos
+                      </Typography>
+                      <Typography variant="body2">
+                        • Experiencia: Con estimación de tiempo
+                      </Typography>
+                    </CardContent>
+                  </Card>
+
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: "#F44336",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        ⏰ Flota Grande ({">"}50 unidades)
+                      </Typography>
+                      <Typography variant="body2">
+                        • Procesamiento: Manual
+                      </Typography>
+                      <Typography variant="body2">
+                        • Tiempo: 10+ minutos
+                      </Typography>
+                      <Typography variant="body2">
+                        • Experiencia: Con progreso en tiempo real
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "rgba(76, 175, 80, 0.1)",
+                border: "1px solid #4CAF50",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#2E7D32" }}>
+                  ✨ Ventajas del Nuevo Sistema
+                </Typography>
+                <Box sx={{ display: "grid", gap: 1.5 }}>
+                  <Typography variant="body2">
+                    ✅ <strong>Organización temporal:</strong> Archivos únicos
+                    por fecha y hora
+                  </Typography>
+                  <Typography variant="body2">
+                    ✅ <strong>Formato 24 horas:</strong> Sin ambigüedad AM/PM
+                  </Typography>
+
+                  <Typography variant="body2">
+                    ✅ <strong>Geocodificación inteligente:</strong> Direcciones
+                    completas automáticamente
+                  </Typography>
+                  <Typography variant="body2">
+                    ✅ <strong>Análisis facilitado:</strong> Ordenar y filtrar
+                    sin restricciones
+                  </Typography>
+                  <Typography variant="body2">
+                    ✅ <strong>Vista móvil optimizada:</strong> Interfaz
+                    adaptada para dispositivos móviles
+                  </Typography>
+                  <Typography variant="body2">
+                    ✅ <strong>Notificaciones inteligentes:</strong> Sistema
+                    completo de alertas
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
           </Box>
         );
 
