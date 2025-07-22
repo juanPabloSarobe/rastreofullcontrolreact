@@ -459,7 +459,7 @@ const ContractReportsModal = ({ open, onClose }) => {
                             paddingRight: "8px",
                           },
                           width: { xs: "100%", sm: "auto" },
-                          maxHeight: "280px",
+                          maxHeight: "340px",
                         }}
                       />
                     </Box>
@@ -496,7 +496,7 @@ const ContractReportsModal = ({ open, onClose }) => {
                             paddingRight: "8px",
                           },
                           width: { xs: "100%", sm: "auto" },
-                          maxHeight: "280px",
+                          maxHeight: "340px",
                         }}
                       />
                     </Box>
