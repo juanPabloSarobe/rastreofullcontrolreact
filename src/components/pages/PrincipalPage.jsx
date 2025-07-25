@@ -20,6 +20,7 @@ import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
+import IdleUnitsAlert from "../common/IdleUnitsAlert";
 import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
@@ -262,6 +263,10 @@ const PrincipalPage = () => {
                     onUnitSelect={handleUnitSelect}
                   />
                   <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
+                  <IdleUnitsAlert
+                    markersData={markersData}
+                    onUnitSelect={handleUnitSelect}
+                  />
                   <UnitDetails unitData={selectedUnit} />
                 </>
               )}
