@@ -13,11 +13,13 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import SortIcon from "@mui/icons-material/Sort";
 import BaseExpandableAlert from "./BaseExpandableAlert";
+import { useContextValue } from "../../context/Context"; // Corregir la importación del contexto
 
 const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const [ignoredUnits, setIgnoredUnits] = useState(new Set());
   const [sortBy, setSortBy] = useState("time"); // Cambiar orden por defecto a tiempo
   const [idleTimers, setIdleTimers] = useState(new Map());
+  const { state } = useContextValue(); // Obtener el estado del contexto
 
   // Detectar unidades en ralentí
   const idleUnits = useMemo(() => {
@@ -217,7 +219,15 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   // Manejar selección de unidad
   const handleUnitSelect = (unit) => {
     if (onUnitSelect) {
-      onUnitSelect([unit.Movil_ID]);
+      // Si la unidad ya está seleccionada, solo posicionarla en el mapa
+      if (state.selectedUnits.includes(unit.Movil_ID)) {
+        // Solo llamar onUnitSelect con la lista actual para que posicione el mapa
+        onUnitSelect(state.selectedUnits);
+      } else {
+        // Si no está seleccionada, agregarla a la lista existente
+        const updatedUnits = [...state.selectedUnits, unit.Movil_ID];
+        onUnitSelect(updatedUnits);
+      }
     }
   };
 
