@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, IconButton, Tooltip, Typography, Grow } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import SortIcon from "@mui/icons-material/Sort";
 import useExpandableAlert from "../../hooks/useExpandableAlert";
 
 const BaseExpandableAlert = ({
@@ -13,6 +14,11 @@ const BaseExpandableAlert = ({
   children,
   verticalOffset,
   onUnitSelect,
+  // Nuevas props para ordenamiento
+  sortBy,
+  onSortChange,
+  showSortButton = false,
+  sortOptions = { option1: "Patente", option2: "Tiempo" }, // Configurable para reutilización
 }) => {
   const {
     anchorEl,
@@ -117,13 +123,13 @@ const BaseExpandableAlert = ({
                   textOverflow: "ellipsis",
                   display: "flex",
                   alignItems: "center",
-                  maxWidth: { xs: "120px", sm: "280px" },
+                  maxWidth: { xs: "120px", sm: "200px" }, // Reducido para dar espacio al botón de ordenar
                 }}
               >
-                {title}
+                {/* Badge a la izquierda del título */}
                 <Box
                   sx={{
-                    ml: 1,
+                    mr: 1,
                     backgroundColor: badgeColor,
                     color: "white",
                     borderRadius: "50%",
@@ -138,7 +144,38 @@ const BaseExpandableAlert = ({
                 >
                   {count}
                 </Box>
+                {title}
               </Typography>
+
+              {/* Botón de ordenamiento (solo cuando la lista está abierta) */}
+              {showSortButton && open && (
+                <Tooltip title="Ordenar listado">
+                  <IconButton
+                    size="small"
+                    onClick={onSortChange}
+                    sx={{
+                      color: "text.secondary",
+                      backgroundColor: "grey.100",
+                      borderRadius: "8px",
+                      px: 1,
+                      mr: 1,
+                      display: "flex",
+                      gap: 0.5,
+                      "&:hover": {
+                        backgroundColor: "grey.200",
+                        color: "text.primary",
+                      },
+                    }}
+                  >
+                    <SortIcon fontSize="small" />
+                    <Typography variant="caption" sx={{ fontSize: "10px" }}>
+                      {sortBy === "alphabetic"
+                        ? sortOptions.option1
+                        : sortOptions.option2}
+                    </Typography>
+                  </IconButton>
+                </Tooltip>
+              )}
 
               {/* Botón de cerrar cuando está abierto */}
               {open && (

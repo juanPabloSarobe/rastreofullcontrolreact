@@ -16,7 +16,7 @@ import BaseExpandableAlert from "./BaseExpandableAlert";
 
 const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const [ignoredUnits, setIgnoredUnits] = useState(new Set());
-  const [sortBy, setSortBy] = useState("alphabetic"); // 'alphabetic' or 'time'
+  const [sortBy, setSortBy] = useState("time"); // Cambiar orden por defecto a tiempo
   const [idleTimers, setIdleTimers] = useState(new Map());
 
   // Detectar unidades en ralentí
@@ -148,7 +148,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       units.sort((a, b) => {
         const timeA = idleTimers.get(a.Movil_ID)?.accumulatedTime || 0;
         const timeB = idleTimers.get(b.Movil_ID)?.accumulatedTime || 0;
-        return timeB - timeA; // Descendente (mayor tiempo primero)
+        return timeB - timeA; // Descendente (más tiempo en ralentí arriba)
       });
     }
 
@@ -180,90 +180,22 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     }
   };
 
+  // Manejar cambio de ordenamiento
+  const handleSortChange = () => {
+    setSortBy(sortBy === "alphabetic" ? "time" : "alphabetic");
+  };
+
   // Renderizar contenido específico de ralentí
   const renderIdleContent = ({
     onUnitSelect: onUnitSelectFromBase,
     handleClose,
   }) => (
     <>
-      {/* Controles de ordenamiento */}
-      <Box
-        sx={{
-          p: 2,
-          pb: 1,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          bgcolor: "grey.50",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{ color: "text.primary", fontWeight: "medium" }}
-        >
-          Unidades en ralentí ({idleUnits.length})
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton
-            size="small"
-            onClick={() => setSortBy("alphabetic")}
-            sx={{
-              color:
-                sortBy === "alphabetic" ? "primary.main" : "text.secondary",
-              backgroundColor:
-                sortBy === "alphabetic" ? "primary.100" : "rgba(0, 0, 0, 0.04)",
-              border: "1px solid",
-              borderColor:
-                sortBy === "alphabetic" ? "primary.main" : "grey.300",
-              borderRadius: "8px",
-              px: 1,
-              "&:hover": {
-                backgroundColor:
-                  sortBy === "alphabetic"
-                    ? "primary.200"
-                    : "rgba(0, 0, 0, 0.08)",
-              },
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{ fontSize: "11px", fontWeight: "bold" }}
-            >
-              ABC
-            </Typography>
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => setSortBy("time")}
-            sx={{
-              color: sortBy === "time" ? "primary.main" : "text.secondary",
-              backgroundColor:
-                sortBy === "time" ? "primary.100" : "rgba(0, 0, 0, 0.04)",
-              border: "1px solid",
-              borderColor: sortBy === "time" ? "primary.main" : "grey.300",
-              borderRadius: "8px",
-              px: 1,
-              display: "flex",
-              gap: 0.5,
-              "&:hover": {
-                backgroundColor:
-                  sortBy === "time" ? "primary.200" : "rgba(0, 0, 0, 0.08)",
-              },
-            }}
-          >
-            <SortIcon fontSize="small" />
-            <Typography variant="caption" sx={{ fontSize: "10px" }}>
-              Tiempo
-            </Typography>
-          </IconButton>
-        </Box>
-      </Box>
-
-      {/* Lista de unidades */}
+      {/* Eliminar el header duplicado - directamente la lista */}
       {sortedIdleUnits.length > 0 ? (
-        <List dense sx={{ maxHeight: "280px", overflow: "auto", p: 0 }}>
+        <List dense sx={{ maxHeight: "328px", overflow: "auto", p: 0 }}>
+          {" "}
+          {/* Aumentar altura al quitar header */}
           {sortedIdleUnits.map((unit, index) => {
             const isIgnored = ignoredUnits.has(unit.Movil_ID);
             const idleTime = getIdleTime(unit.Movil_ID);
@@ -426,6 +358,11 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       tooltipText={`Unidades en ralentí: ${idleUnits.length}`}
       verticalOffset={{ desktop: 300, mobile: 200 }}
       onUnitSelect={handleUnitSelect}
+      // Nuevas props para ordenamiento
+      sortBy={sortBy}
+      onSortChange={handleSortChange}
+      showSortButton={true}
+      sortOptions={{ option1: "Patente", option2: "Tiempo" }}
     >
       {renderIdleContent}
     </BaseExpandableAlert>
