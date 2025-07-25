@@ -25,24 +25,49 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
     const idleStates = [
       "inicio ralenti",
+      "inicio ralentí", // Con acento
       "fin de ralenti",
+      "fin de ralentí", // Con acento
       "reporte en ralenti",
+      "reporte en ralentí", // Con acento
       "ralentí",
+      "ralenti", // Sin acento
     ];
 
+    const currentTime = Date.now();
+    const twelveHoursMs = 12 * 60 * 60 * 1000; // 12 horas en milisegundos
+
     return markersData.filter((unit) => {
-      if (!unit.estado) return false;
+      if (!unit.estado || !unit.fechaHora) return false;
+
+      // Filtro por antigüedad: excluir reportes de más de 12 horas
+      const reportTime = new Date(unit.fechaHora).getTime();
+      const timeDifference = currentTime - reportTime;
+
+      if (timeDifference > twelveHoursMs) {
+        return false; // Excluir reportes antiguos
+      }
 
       const estado = unit.estado
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, ""); // Remover acentos
 
-      return idleStates.some((idleState) =>
+      const hasIdleState = idleStates.some((idleState) =>
         estado.includes(
           idleState.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         )
       );
+
+      // Si es "fin de ralentí/ralenti" y motor apagado, no incluir en la lista
+      if (hasIdleState && estado.includes("fin de ralenti")) {
+        const motorApagado = unit.estadoDeMotor
+          ?.toLowerCase()
+          .includes("motor apagado");
+        return !motorApagado; // Solo incluir si el motor NO está apagado
+      }
+
+      return hasIdleState;
     });
   }, [markersData]);
 
@@ -121,20 +146,36 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     return formatTime(timer.accumulatedTime);
   };
 
-  // Determinar color del estado
-  const getStateColor = (estado) => {
+  // Determinar color del estado basado en tiempo y condiciones
+  const getStateColor = (estado, unitId) => {
     if (!estado) return "inherit";
 
-    const estadoLower = estado.toLowerCase();
-    if (
-      estadoLower.includes("inicio ralenti") ||
-      estadoLower.includes("reporte en ralenti")
-    ) {
-      return "error.main";
+    const estadoLower = estado
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // Normalizar acentos
+
+    // Inicio de ralentí: siempre naranja
+    if (estadoLower.includes("inicio ralenti")) {
+      return "warning.main";
     }
+
+    // Fin de ralentí con motor encendido: gris
     if (estadoLower.includes("fin de ralenti")) {
       return "text.primary";
     }
+
+    // Reporte en ralentí: color basado en tiempo
+    if (estadoLower.includes("reporte en ralenti")) {
+      const timer = idleTimers.get(unitId);
+      if (timer) {
+        const totalMinutes = Math.floor(timer.accumulatedTime / (1000 * 60));
+        return totalMinutes >= 5 ? "error.main" : "warning.main"; // Rojo >= 5min, Naranja < 5min
+      }
+      return "warning.main"; // Por defecto naranja si no hay timer
+    }
+
+    // Ralentí genérico: naranja
     return "warning.main";
   };
 
@@ -199,7 +240,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
           {sortedIdleUnits.map((unit, index) => {
             const isIgnored = ignoredUnits.has(unit.Movil_ID);
             const idleTime = getIdleTime(unit.Movil_ID);
-            const stateColor = getStateColor(unit.estado);
+            const stateColor = getStateColor(unit.estado, unit.Movil_ID); // Agregar unitId aquí
 
             return (
               <ListItem
@@ -216,7 +257,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                     display: "flex",
                     width: "100%",
                     alignItems: "center",
-                    minHeight: "64px",
+                    minHeight: "50px", // Reducir altura mínima para menos espacio amarillo
                   }}
                 >
                   <IconButton
@@ -244,7 +285,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                     sx={{
                       opacity: isIgnored ? 0.5 : 1,
                       flex: 1,
-                      py: 1,
+                      py: 0.5, // Reducir padding vertical para menos espacio amarillo
                       "&:hover": {
                         backgroundColor: isIgnored
                           ? "rgba(0, 0, 0, 0.04)"
@@ -259,18 +300,47 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            mb: 0.5,
+                            mb: 0.75, // Ampliar margen rojo (separación entre filas internas)
                           }}
                         >
-                          <Typography
-                            variant="body2"
+                          <Box
                             sx={{
-                              fontWeight: "bold",
-                              fontSize: "0.9rem",
+                              display: "flex",
+                              alignItems: "center",
+                              flex: 1,
+                              minWidth: 0, // Permite que el texto se trunque
                             }}
                           >
-                            {unit.patente || "Sin patente"}
-                          </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: "bold",
+                                fontSize: "0.9rem",
+                                display: "flex",
+                                alignItems: "center",
+                                minWidth: 0,
+                              }}
+                            >
+                              {/* Patente primero */}
+                              <Box sx={{ marginRight: "8px", flexShrink: 0 }}>
+                                {unit.patente || "Sin patente"}
+                              </Box>
+                              <Box sx={{ marginRight: "8px", flexShrink: 0 }}>
+                                -
+                              </Box>
+                              {/* Empresa con más ancho (50% del espacio restante) */}
+                              <Box
+                                sx={{
+                                  maxWidth: "50%",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {unit.empresa || "Sin empresa"}
+                              </Box>
+                            </Typography>
+                          </Box>
                           <Box
                             sx={{
                               backgroundColor: "grey.100",
@@ -288,17 +358,15 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                         </Box>
                       }
                       secondary={
-                        <Box>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: "block",
-                              color: "text.secondary",
-                              mb: 0.25,
-                            }}
-                          >
-                            👤 {unit.nombre || "Conductor no identificado"}
-                          </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mt: 0.75, // Ampliar margen rojo (separación entre filas internas)
+                          }}
+                        >
+                          {/* Estado a la izquierda */}
                           <Box
                             sx={{
                               display: "inline-block",
@@ -318,8 +386,30 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                           >
                             {unit.estado}
                           </Box>
+
+                          {/* Conductor a la derecha */}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              fontSize: "0.75rem",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            👤 {unit.nombre || "Conductor no identificado"}
+                          </Typography>
                         </Box>
                       }
+                      sx={{
+                        // Ajustar márgenes para optimizar espacio
+                        "& .MuiListItemText-primary": {
+                          marginBottom: "0px", // Eliminar margen extra
+                        },
+                        "& .MuiListItemText-secondary": {
+                          marginTop: "0px", // Eliminar margen extra
+                        },
+                      }}
                     />
                   </ListItemButton>
                 </Box>

@@ -37,21 +37,51 @@ src/
 
 - Detección basada en campo "estado" del endpoint
 - Estados detectados:
-  - "Inicio Ralenti" → Color rojo
-  - "Fin de ralenti" → Color negro
-  - "Reporte en Ralenti" → Color rojo
-  - "ralentí" (con acento) → Color naranja
-- Detección insensible a mayúsculas/minúsculas y acentos
+  - "Inicio Ralenti" → Color naranja
+  - "Fin de ralenti" → Color gris (solo si motor encendido)
+  - "Reporte en Ralenti" → Color dinámico (naranja/rojo según tiempo)
+  - "ralentí" (con acento) → Color dinámico
+- **Detección insensible** a mayúsculas/minúsculas y acentos
+- **Filtro de antigüedad**: Excluye reportes de más de 12 horas automáticamente
+- **Filtro de motor**: Unidades con "fin de ralentí" + motor apagado desaparecen de la lista
 
-### 2. **Sistema de contador de tiempo avanzado:**
+### 2. **Sistema de colores inteligente basado en tiempo:**
+
+- **🟠 NARANJA**:
+  - Inicio de ralentí (cualquier tiempo)
+  - Reporte en ralentí **< 5 minutos**
+- **🔴 ROJO**:
+  - Reporte en ralentí **≥ 5 minutos**
+- **🔘 GRIS**:
+  - Fin de ralentí + motor encendido
+- **❌ DESAPARECEN**:
+  - Fin de ralentí + motor apagado
+  - Reportes de más de 12 horas de antigüedad
+
+### 3. **Sistema de contador de tiempo avanzado:**
 
 - **Basado exclusivamente en `fechaHora`** del endpoint (nunca hora actual)
 - **Acumulación correcta** de tiempo entre actualizaciones
 - **Timeout automático** de 1 hora sin actualizaciones
 - **Formato reloj** (HH:MM:SS) en cada ítem
 - **Persistencia** durante la sesión de usuario
+- **Cambio dinámico de color** cuando se superan los 5 minutos
 
-### 3. **Interface de usuario con 3 estados visuales:**
+### 4. **Interface de usuario optimizada (2 renglones):**
+
+#### **Estructura visual optimizada:**
+
+```
+AF-162-EE - OPS SRL                    [00:17:12]
+[Reporte en Ralentí]          👤 Luccioni Jesus
+```
+
+#### **Distribución de información:**
+
+- **Línea superior**: `Patente - Empresa` + tiempo en badge
+- **Línea inferior**: `Estado` (con fondo de color) + `👤 Conductor`
+- **Empresa truncada**: Máximo 50% del ancho con ellipsis
+- **Márgenes optimizados**: Reducidos 50% para mayor densidad
 
 #### **Estado 1: Ícono contraído**
 
@@ -69,25 +99,33 @@ src/
 
 - Panel desplegable integrado (no flotante)
 - Título con badge + botón de ordenamiento + botón cerrar
-- Lista detallada con información completa
+- Lista detallada con información optimizada
 - Controles de interacción avanzados
 
-### 4. **Sistema de ordenamiento dual:**
+### 5. **Sistema de ordenamiento dual mejorado:**
 
 - **Por defecto**: Tiempo descendente (más tiempo en ralentí arriba)
 - **Alternativo**: Alfabético por patente
 - **Controles**: Botón integrado en título `[📊 Tiempo]` / `[📊 Patente]`
 - **UX**: Botón aparece solo cuando la lista está abierta
 - **Tooltip**: "Ordenar listado" en hover
+- **Estilo discreto**: Fondo gris sin bordes
 
-### 5. **Sistema de ignorados temporal:**
+### 6. **Sistema de ignorados temporal:**
 
 - Iconos de ojo/ojo tachado para marcar/desmarcar
 - Unidades ignoradas aparecen al final en gris
 - Limpieza automática cuando la unidad sale de ralentí
 - No persiste entre sesiones (temporal)
 
-### 6. **Posicionamiento inteligente y responsive:**
+### 7. **Filtros inteligentes de limpieza:**
+
+- **Filtro de antigüedad**: Reportes de más de 12 horas se excluyen automáticamente
+- **Filtro de motor**: "Fin de ralentí" + motor apagado desaparecen
+- **Filtro de timeout**: Unidades sin actualizaciones por 1+ hora se remueven
+- **Prevención de datos históricos**: Evita alertas por equipos que cargan información antigua
+
+### 8. **Posicionamiento inteligente y responsive:**
 
 #### **Desktop:**
 
@@ -104,7 +142,7 @@ src/
 - Mobile: 75% del ancho disponible
 - Desktop: 400px fijo (igual que UnitSelector y UnitDetails)
 
-### 7. **Integración con sistema existente:**
+### 9. **Integración con sistema existente:**
 
 - Compatible con contexto de unidades seleccionadas
 - Integración con función `onUnitSelect` para selección en mapa
@@ -201,7 +239,7 @@ import NuevaAlert from "../common/NuevaAlert";
 - ✅ Sistema de ignorados temporal
 - ✅ Posicionamiento responsive correcto
 - ✅ Integración con selección de unidades
-- ✅ No interferencia con otros componentes
+- ✅ No interfiere con otros componentes
 - ✅ Persistencia de temporizadores durante sesión
 - ✅ Limpieza automática de unidades inactivas
 
