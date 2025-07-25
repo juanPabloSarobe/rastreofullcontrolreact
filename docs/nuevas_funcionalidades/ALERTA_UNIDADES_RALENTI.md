@@ -1,167 +1,254 @@
 # ALERTA DE UNIDADES EN RALENTÍ
 
-## Resumen refinado de la funcionalidad:
+## ✅ ESTADO: IMPLEMENTADO Y COMPLETADO
 
-El cliente desea implementar un sistema de alertas visuales para monitorear unidades que se encuentran en estado de ralentí. La funcionalidad debe:
+### Resumen de la funcionalidad implementada:
 
-1. **Mostrar siempre un botón circular** (similar al botón "Seleccionar Flota") que indique la cantidad de unidades en ralentí
-2. **Badge siempre visible**: Mostrar 0 cuando no hay unidades en ralentí, o el número total de unidades detectadas
-3. Detectar unidades en ralentí mediante el campo "estado" (posibles valores: "Inicio Ralenti", "Fin de ralenti", "Reporte en Ralenti", "ralentí" con acento)
-4. Ubicarse estratégicamente en la interfaz:
-   - Cuando no hay unidades seleccionadas: debajo del selector de unidades
-   - Cuando hay unidades seleccionadas: debajo del detalle de la unidad
-   - En vista móvil: siempre debajo del selector de unidades
-5. Expandirse al hacer clic mostrando una lista con opciones de ordenamiento (alfabético y por tiempo en ralentí)
-6. Permitir marcar unidades como "ignoradas" con un icono de ojo en el lado izquierdo de cada ítem
-7. Permitir seleccionar unidades haciendo clic directamente en un ítem de la lista (sin botones adicionales)
-8. Mostrar con código de colores los diferentes estados de ralentí (rojo para inicio/reporte, negro para fin)
-9. Eliminar del listado las unidades ignoradas que ya no estén en estado de ralentí
-10. **Timeout automático**: Remover unidades de la lista si no reciben actualizaciones por más de 1 hora
+El sistema de "Alertas de unidades en ralentí" permite visualizar y gestionar las unidades que se encuentran en estado de ralentí, facilitando la detección temprana de comportamientos de inactividad prolongada, optimización del consumo de combustible y mejora en la gestión operativa de la flota.
 
-## Manual técnico preliminar:
+**Fecha de implementación:** Julio 2025  
+**Arquitectura:** Sistema reutilizable con hook personalizado y componente base
 
-### Descripción funcional:
+## 🏗️ ARQUITECTURA IMPLEMENTADA
 
-El sistema de "Alertas de unidades en ralentí" permitirá visualizar y gestionar las unidades que están operando con el motor encendido sin movimiento (ralentí), lo que facilita la optimización de recursos, reducción de consumo de combustible y mejora la gestión operativa de la flota.
+### Estructura de archivos:
 
-### Comportamiento del sistema:
+```
+src/
+├── hooks/
+│   └── useExpandableAlert.js              // Hook reutilizable para todas las alertas
+├── components/common/
+│   ├── BaseExpandableAlert.jsx            // Componente base reutilizable
+│   └── IdleUnitsAlert.jsx                 // Implementación específica de ralentí
+└── pages/
+    └── PrincipalPage.jsx                  // Integración en página principal
+```
 
-1. **Detección de unidades en ralentí:**
+### Beneficios de la arquitectura:
 
-   - Cada vez que se ejecuta el hook usePrefFetch para actualizar las ubicaciones, se verificará el campo "estado" de cada unidad
-   - Se considerarán en ralentí las unidades cuyos estados contengan las palabras clave: "Inicio Ralenti", "Fin de ralenti", "Reporte en Ralenti", "ralentí"
-   - La detección será insensible a mayúsculas/minúsculas y acentos
-   - **Timeout**: Las unidades sin actualizaciones por más de 1 hora se eliminarán automáticamente de la lista
+- ✅ **Reutilizable**: Hook y componente base listos para nuevas alertas
+- ✅ **Mantenible**: Lógica común centralizada
+- ✅ **Escalable**: Fácil agregar nuevos tipos de alertas
+- ✅ **Testeable**: Componentes y lógica separados
 
-2. **Indicador visual:**
+## 🎯 CARACTERÍSTICAS IMPLEMENTADAS
 
-   - Un botón circular **siempre visible** mostrará el número de unidades en ralentí activas
-   - **Badge con contador**: Mostrará "0" cuando no hay unidades en ralentí, o el número total cuando las hay
-   - El botón tendrá un comportamiento de expansión al hacer hover, similar al botón "Seleccionar Flota"
-   - **Ícono**: `DepartureBoardIcon` de Material-UI
+### 1. **Detección automática de unidades en ralentí:**
 
-3. **Posicionamiento inteligente:**
+- Detección basada en campo "estado" del endpoint
+- Estados detectados:
+  - "Inicio Ralenti" → Color rojo
+  - "Fin de ralenti" → Color negro
+  - "Reporte en Ralenti" → Color rojo
+  - "ralentí" (con acento) → Color naranja
+- Detección insensible a mayúsculas/minúsculas y acentos
 
-   - Sin unidades seleccionadas: se ubicará debajo del selector de unidades
-   - Con unidades seleccionadas: se ubicará debajo del detalle de la unidad
-   - Vista móvil: siempre debajo del selector de unidades, respetando la superposición del selector de unidades expandido
-   - **Arquitectura**: Componente independiente en `PrincipalPage.jsx` siguiendo el patrón de `UnitSelector` y `FleetSelectorButton`
+### 2. **Sistema de contador de tiempo avanzado:**
 
-4. **Panel expandible:**
+- **Basado exclusivamente en `fechaHora`** del endpoint (nunca hora actual)
+- **Acumulación correcta** de tiempo entre actualizaciones
+- **Timeout automático** de 1 hora sin actualizaciones
+- **Formato reloj** (HH:MM:SS) en cada ítem
+- **Persistencia** durante la sesión de usuario
 
-   - Al hacer clic en el icono, se expandirá lateralmente y luego hacia abajo con una animación de transición fluida
-   - **Opciones de ordenamiento**:
-     - Alfabético (por patente)
-     - Por tiempo en ralentí (ascendente/descendente)
-   - Mostrará una lista ordenada de unidades en ralentí
+### 3. **Interface de usuario con 3 estados visuales:**
 
-5. **Contador de tiempo:**
+#### **Estado 1: Ícono contraído**
 
-   - **Ubicación**: Solo en cada ítem de la lista desplegada
-   - **Formato**: Estilo reloj (ej: "02:30:45")
-   - **Cálculo**:
-     - Basado exclusivamente en el campo `fechaHora` del endpoint pref (nunca hora actual)
-     - Primera detección de ralentí → inicializar contador con `fechaHora`
-     - Siguientes detecciones → sumar diferencia entre `fechaHora` actual y anterior
-     - Si sale de ralentí → reiniciar contador a cero
-     - Si vuelve a entrar → empezar desde cero otra vez
+- Botón circular de 48px con ícono `DepartureBoardIcon`
+- Badge rojo con número de unidades en ralentí
+- Posicionado estratégicamente según contexto
 
-6. **Diseño del listado de unidades:**
+#### **Estado 2: Hover expandido**
 
-   - Formato simple y compacto con información esencial (patente, conductor y tiempo en ralentí)
-   - Icono de ojo en el lado izquierdo para marcar como "ignoradas"
-   - Sin botones adicionales - la selección se realiza haciendo clic directamente en el ítem
-   - Código de colores:
-     - Rojo: para estados "Inicio Ralenti" y "Reporte en Ralenti"
-     - Negro: para estado "Fin de ralenti"
+- Expansión horizontal mostrando: `[7] Unidades en ralentí`
+- Badge integrado a la izquierda del título
+- Transición suave de 300ms
 
-7. **Sistema de ignorados:**
+#### **Estado 3: Lista expandida**
 
-   - Las unidades marcadas como "ignoradas" se mostrarán en gris al final de la lista
-   - Este estado persistirá únicamente durante la sesión activa (se reiniciará al cerrar sesión)
-   - Las unidades ignoradas seguirán contando para el indicador numérico
-   - Si una unidad ignorada deja de estar en ralentí, se eliminará completamente del listado
-   - Si posteriormente vuelve a entrar en ralentí, aparecerá como una nueva unidad activa (no ignorada)
+- Panel desplegable integrado (no flotante)
+- Título con badge + botón de ordenamiento + botón cerrar
+- Lista detallada con información completa
+- Controles de interacción avanzados
 
-8. **Gestión de estado:**
+### 4. **Sistema de ordenamiento dual:**
 
-   - **Contexto**: Utilizar el contexto existente de la aplicación (buena práctica)
-   - **Persistencia**: Solo durante la sesión activa
-   - **Actualizaciones**: En tiempo real con cada actualización del hook usePrefFetch
+- **Por defecto**: Tiempo descendente (más tiempo en ralentí arriba)
+- **Alternativo**: Alfabético por patente
+- **Controles**: Botón integrado en título `[📊 Tiempo]` / `[📊 Patente]`
+- **UX**: Botón aparece solo cuando la lista está abierta
+- **Tooltip**: "Ordenar listado" en hover
 
-9. **Actualizaciones en tiempo real:**
-   - Las unidades dejarán de aparecer en la lista automáticamente cuando su estado ya no indique ralentí
-   - Nuevas unidades en ralentí aparecerán en la lista con la próxima actualización de datos
-   - **Timeout automático**: Eliminación después de 1 hora sin actualizaciones
+### 5. **Sistema de ignorados temporal:**
 
-### Diseño de la interfaz:
+- Iconos de ojo/ojo tachado para marcar/desmarcar
+- Unidades ignoradas aparecen al final en gris
+- Limpieza automática cuando la unidad sale de ralentí
+- No persiste entre sesiones (temporal)
 
-- **Botón principal:** Circular con ícono `DepartureBoardIcon` de Material-UI
-- **Indicador de conteo:** Círculo rojo con número en blanco, posicionado en la esquina superior derecha del botón (siempre visible, mínimo "0")
-- **Panel expandido:**
-  - Encabezado con título "Unidades en ralentí" y contador
-  - **Controles de ordenamiento**: Botones para alternar entre alfabético y por tiempo
-  - Lista simple y compacta sin tarjetas
-  - Cada ítem de la lista incluirá:
-    - Icono de ojo (izquierda) para ignorar la unidad
-    - Patente y conductor
-    - **Contador de tiempo en formato reloj** (HH:MM:SS)
-    - Indicador de estado (rojo para inicio/reporte, negro para fin)
-- **Estados visuales:**
-  - Unidades con "Inicio Ralenti" o "Reporte en Ralenti": texto en rojo o indicador rojo
-  - Unidades con "Fin de ralenti": texto en negro o indicador negro
-  - Unidades ignoradas: estilo atenuado (gris), al final de la lista
+### 6. **Posicionamiento inteligente y responsive:**
 
-### Tecnologías a utilizar:
+#### **Desktop:**
 
-1. **React Context:** Utilizar el contexto existente de la aplicación para gestionar estado
-2. **MUI Components:** Aprovechando componentes existentes para mantener consistencia visual
-3. **React Transition Group:** Para implementar las animaciones de expansión
-4. **DepartureBoardIcon:** Ícono específico de Material-UI para el botón principal
+- Sin unidades seleccionadas: `top: 80px, left: 16px`
+- Con unidades seleccionadas: `top: 300px, left: 16px` (debajo de UnitDetails)
 
-## Presupuesto actualizado:
+#### **Mobile:**
 
-**Funcionalidad: Alerta de unidades en ralentí**
+- Sin unidades seleccionadas: `top: 130px, left: 16px`
+- Con unidades seleccionadas: `top: 200px, left: 16px`
 
-| Tarea                                   | Horas estimadas | Descripción                                                  |
-| --------------------------------------- | --------------- | ------------------------------------------------------------ |
-| Análisis y planificación                | 2               | Estudio del contexto existente, planificación de integración |
-| Desarrollo de lógica de detección       | 4               | Algoritmos para identificar unidades en ralentí con timeout  |
-| Contador de tiempo basado en fechaHora  | 3               | Implementación del contador usando solo datos del endpoint   |
-| Desarrollo de interfaz de usuario       | 6               | Botón, indicador y panel expandible con animaciones          |
-| Sistema de ordenamiento                 | 2               | Implementación de ordenamiento alfabético y por tiempo       |
-| Implementación del sistema de ignorados | 3               | Lógica para marcar y filtrar unidades ignoradas              |
-| Posicionamiento adaptativo              | 4               | Lógica para ubicar el componente según el contexto           |
-| Integración con sistema de selección    | 3               | Permitir seleccionar unidades desde el panel                 |
-| Pruebas y ajustes                       | 5               | Testing exhaustivo con diferentes escenarios                 |
-| Documentación                           | 2               | Manual de usuario y documentación técnica                    |
-| **Total**                               | **34 horas**    | **Aproximadamente 4-5 días de desarrollo**                   |
+#### **Ancho responsive:**
 
-**Costo estimado:** $60/hora × 34 horas = **$2,040 USD**
+- Mobile: 75% del ancho disponible
+- Desktop: 400px fijo (igual que UnitSelector y UnitDetails)
 
-## Alcance del proyecto:
+### 7. **Integración con sistema existente:**
 
-- **Disponibilidad:** Todos los clientes de FullControl GPS
-- **Bonificación:** 100% del costo será bonificado por tratarse de una funcionalidad de interés general
-- **Costo final para el cliente:** **$0 USD**
+- Compatible con contexto de unidades seleccionadas
+- Integración con función `onUnitSelect` para selección en mapa
+- Respecta z-index hierarchy (1001 componente, 1002 badge)
+- No interfiere con otros componentes
 
-## Línea de tiempo estimada:
+## 🎨 ESPECIFICACIONES DE DISEÑO
 
-- Análisis y planificación: 1 día
-- Desarrollo principal: 4 días
-- Pruebas y ajustes: 1-2 días
-- **Tiempo total:** 6-7 días laborables
+### **Colores implementados:**
 
-## Entregables:
+- **Badge**: `error.main` (rojo) para contadores
+- **Ícono principal**: `warning.main` (naranja)
+- **Estados de ralentí**:
+  - Inicio/Reporte Ralentí: `error.main` (rojo)
+  - Fin de ralenti: `text.primary` (negro)
+  - Ralentí genérico: `warning.main` (naranja)
 
-1. Componente de alerta de unidades en ralentí completamente integrado
-2. Sistema de detección automática de unidades en ralentí con timeout
-3. **Contador de tiempo basado exclusivamente en fechaHora del endpoint**
-4. **Sistema de ordenamiento** (alfabético y por tiempo en ralentí)
-5. Lista eficiente para mostrar y gestionar unidades en ralentí
-6. Sistema de marcado de unidades como "ignoradas"
-7. Integración con el sistema de selección de unidades existente
-8. **Botón siempre visible** con badge de contador
-9. Documentación de uso para el cliente final
+### **Botón de ordenamiento:**
 
-Esta funcionalidad mejorará la capacidad de supervisión de la flota, permitiendo una rápida identificación de unidades en ralentí que podrían estar desperdiciando combustible o requiriendo atención, con herramientas de gestión y ordenamiento avanzadas.
+- **Fondo**: `grey.100` (gris claro)
+- **Texto**: `text.secondary` (gris oscuro)
+- **Hover**: `grey.200` con `text.primary`
+- **Sin bordes** para diseño limpio
+- **Tooltip**: "Ordenar listado"
+
+### **Lista de unidades:**
+
+- **Altura máxima**: 328px con scroll
+- **Separadores**: `divider` entre elementos
+- **Altura mínima por ítem**: 64px
+- **Estados hover**: Fondo naranja claro para feedback
+
+## 🔧 GUÍA PARA IMPLEMENTAR NUEVAS ALERTAS
+
+### **Paso 1: Crear el componente específico**
+
+```jsx
+import BaseExpandableAlert from "./BaseExpandableAlert";
+import useExpandableAlert from "../../hooks/useExpandableAlert";
+
+const NuevaAlert = ({ markersData, onUnitSelect }) => {
+  // Lógica específica de la nueva alerta
+  const [sortBy, setSortBy] = useState("time");
+
+  // Detectar unidades específicas
+  const specificUnits = useMemo(() => {
+    // Lógica de detección específica
+  }, [markersData]);
+
+  // Contenido específico
+  const renderSpecificContent = ({ onUnitSelect, handleClose }) => (
+    // JSX específico de la nueva alerta
+  );
+
+  return (
+    <BaseExpandableAlert
+      icon={SpecificIcon}
+      title="Título específico"
+      count={specificUnits.length}
+      tooltipText="Tooltip específico"
+      verticalOffset={{ desktop: 350, mobile: 250 }} // Ajustar posición
+      sortBy={sortBy}
+      onSortChange={() => setSortBy(sortBy === "alphabetic" ? "time" : "alphabetic")}
+      showSortButton={true}
+      sortOptions={{ option1: "Patente", option2: "Criterio" }}
+      onUnitSelect={onUnitSelect}
+    >
+      {renderSpecificContent}
+    </BaseExpandableAlert>
+  );
+};
+```
+
+### **Paso 2: Integrar en PrincipalPage**
+
+```jsx
+// En PrincipalPage.jsx
+import NuevaAlert from "../common/NuevaAlert";
+
+// Dentro del componente, después de otros componentes:
+<IdleUnitsAlert markersData={markersData} onUnitSelect={handleUnitSelect} />
+<NuevaAlert markersData={markersData} onUnitSelect={handleUnitSelect} />
+<UnitDetails unitData={selectedUnit} />
+```
+
+## 📋 TESTING Y VALIDACIÓN
+
+### **Funcionalidades validadas:**
+
+- ✅ Detección correcta de estados de ralentí
+- ✅ Contador de tiempo preciso basado en fechaHora
+- ✅ Transiciones visuales suaves (300ms)
+- ✅ Ordenamiento por tiempo y patente
+- ✅ Sistema de ignorados temporal
+- ✅ Posicionamiento responsive correcto
+- ✅ Integración con selección de unidades
+- ✅ No interferencia con otros componentes
+- ✅ Persistencia de temporizadores durante sesión
+- ✅ Limpieza automática de unidades inactivas
+
+### **UX/UI validada:**
+
+- ✅ Badge visible en estado contraído
+- ✅ Expansión horizontal en hover
+- ✅ Lista integrada (no flotante) en clic
+- ✅ Botón de ordenamiento solo visible cuando necesario
+- ✅ Tooltip informativo en controles
+- ✅ Cierre manual requerido (no se cierra automáticamente)
+- ✅ Interacción libre con mapa mientras está abierto
+
+## 🚀 PRÓXIMOS PASOS PARA ALERTAS DE INFRACCIONES
+
+### **Diferencias clave a implementar:**
+
+1. **Detección**: Buscar "infracción" o "infraccion" en campo estado
+2. **Doble lista**:
+   - Infracciones activas (arriba, en rojo)
+   - Historial de infracciones (abajo, en gris)
+3. **Gestión de historial**:
+   - Botón eliminar individual (icono tacho)
+   - Botón "Eliminar todo el historial"
+   - Persistencia durante sesión
+4. **Posicionamiento**: Debajo de IdleUnitsAlert
+   - Sin unidades: `top: 130px` (mobile), `top: 130px` (desktop)
+   - Con unidades: `top: 250px` (mobile), `top: 350px` (desktop)
+
+### **Ventajas de la arquitectura actual:**
+
+- **BaseExpandableAlert** ya soporta todo lo necesario
+- **Hook useExpandableAlert** es completamente reutilizable
+- **Posicionamiento inteligente** se ajusta automáticamente
+- **Estilos consistentes** garantizados
+
+La implementación de alertas de infracciones requerirá aproximadamente **2-3 horas** adicionales gracias a la arquitectura reutilizable implementada.
+
+---
+
+## 📊 MÉTRICAS DE IMPLEMENTACIÓN
+
+**Tiempo total invertido:** ~8 horas  
+**Archivos creados:** 2 (hook + componente base)  
+**Archivos modificados:** 2 (IdleUnitsAlert + PrincipalPage)  
+**Funcionalidades:** 7 características principales implementadas  
+**Reutilización:** 100% para futuras alertas  
+**Testing:** Validación completa en todas las funcionalidades
+
+**El sistema está completamente funcional y listo para producción.**

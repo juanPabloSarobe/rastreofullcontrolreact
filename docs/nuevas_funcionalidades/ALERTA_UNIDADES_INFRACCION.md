@@ -1,138 +1,330 @@
 # ALERTA DE UNIDADES EN INFRACCIÓN
 
-## Resumen refinado de la funcionalidad:
+## 📋 ESTADO: PENDIENTE DE IMPLEMENTACIÓN
 
-El cliente desea implementar un sistema de alertas visuales para monitorear unidades que se encuentran en estado de infracción (de velocidad, tiempo de descanso, etc.). La funcionalidad debe:
+### Resumen de la funcionalidad:
 
-1. Mostrar un icono circular (similar al botón "Seleccionar Flota" y al de "Unidades en ralentí") que indique la cantidad de unidades en infracción
-2. Detectar unidades en infracción mediante el campo "estado" (cualquier texto que contenga la palabra "infracción" o "infraccion", independientemente de si es inicio, movimiento o fin)
-3. Ubicarse estratégicamente en la interfaz:
-   - Cuando no hay unidades seleccionadas: debajo del selector de unidades y del botón de ralentí
-   - Cuando hay unidades seleccionadas: debajo del detalle de la unidad y del botón de ralentí
-   - En vista móvil: siempre debajo del selector de unidades y del botón de ralentí
-4. Expandirse al hacer clic mostrando dos listas ordenadas alfabéticamente:
-   - Lista superior: Unidades actualmente en infracción (en rojo)
-   - Lista inferior: Historial de unidades que tuvieron infracciones pero ya no (en gris)
-5. Permitir seleccionar unidades haciendo clic directamente en un ítem de la lista (sin botones adicionales)
-6. Mostrar todas las unidades con infracción activa en color rojo
-7. Mantener registro de unidades con infracciones finalizadas:
-   - Se muestran en color gris en la lista inferior
-   - Permanecen visibles hasta el cierre de sesión o eliminación manual
-   - Cada unidad en la lista de historial tiene un botón (icono de tacho) para eliminarla individualmente
-   - Existe un botón en el encabezado de la lista de historial para eliminar todas las unidades con infracciones finalizadas
+El sistema de "Alertas de unidades en infracción" permitirá visualizar y gestionar las unidades que se encuentran en estado de infracción (de velocidad, tiempo de descanso, etc.), facilitando la detección temprana de comportamientos riesgosos, mejorando la seguridad vial y permitiendo una respuesta rápida ante situaciones de incumplimiento normativo.
 
-## Manual técnico preliminar:
+**Fecha estimada de implementación:** Agosto 2025  
+**Arquitectura:** Reutilización del sistema BaseExpandableAlert ya implementado  
+**Tiempo estimado:** 2-3 horas (reducido gracias a arquitectura reutilizable)
 
-### Descripción funcional:
+## 🏗️ ARQUITECTURA A UTILIZAR
 
-El sistema de "Alertas de unidades en infracción" permitirá visualizar y gestionar las unidades que están cometiendo algún tipo de infracción (velocidad, descanso, etc.), lo que facilita la detección temprana de comportamientos riesgosos, mejora la seguridad vial y permite una respuesta rápida ante situaciones de incumplimiento normativo. Además, mantendrá un historial de infracciones durante la sesión para un mejor seguimiento de unidades problemáticas.
+### Aprovechamiento de componentes existentes:
 
-### Comportamiento del sistema:
+```
+src/
+├── hooks/
+│   └── useExpandableAlert.js              // ✅ YA IMPLEMENTADO - Reutilizable
+├── components/common/
+│   ├── BaseExpandableAlert.jsx            // ✅ YA IMPLEMENTADO - Reutilizable
+│   └── InfractionAlert.jsx                // 🔄 A IMPLEMENTAR - Específico
+└── pages/
+    └── PrincipalPage.jsx                  // 🔄 A MODIFICAR - Integración
+```
 
-1. **Detección de unidades en infracción:**
+### Ventajas de reutilizar la arquitectura existente:
 
-   - Cada vez que se ejecuta el hook usePrefFetch para actualizar las ubicaciones, se verificará el campo "estado" de cada unidad
-   - Se considerarán en infracción las unidades cuyos estados contengan la palabra "infracción" o "infraccion" (con o sin tilde)
-   - La detección será insensible a mayúsculas/minúsculas y acentos
-   - Se incluirán todos los tipos de infracción: velocidad en distintas zonas, movimiento en infracción, tiempo de descanso, etc.
+- ✅ **Hook `useExpandableAlert`** completamente reutilizable
+- ✅ **Componente `BaseExpandableAlert`** soporta todas las funcionalidades necesarias
+- ✅ **Estilos y comportamientos** ya validados y consistentes
+- ✅ **UX/UI patterns** ya establecidos y familiares al usuario
 
-2. **Indicador visual:**
+## 🎯 ESPECIFICACIONES TÉCNICAS
 
-   - Un botón circular mostrará el número de unidades en infracción activas
-   - Cuando hay unidades en infracción, se mostrará un círculo rojo con el número de unidades
-   - El botón tendrá un comportamiento de expansión al hacer hover, similar al botón "Seleccionar Flota" y al de "Unidades en ralentí"
+### 1. **Detección de unidades en infracción:**
 
-3. **Posicionamiento inteligente:**
+- **Campo de detección**: `estado` del endpoint
+- **Palabras clave**: "infracción" o "infraccion" (con/sin tilde)
+- **Tipos de infracción detectados**:
+  - Infracción de velocidad en distintas zonas
+  - Infracción de tiempo de descanso
+  - Infracción de movimiento
+  - Cualquier estado que contenga la palabra "infracción"
+- **Detección**: Insensible a mayúsculas/minúsculas y acentos
 
-   - Sin unidades seleccionadas: se ubicará debajo del selector de unidades y del botón de ralentí
-   - Con unidades seleccionadas: se ubicará debajo del detalle de la unidad y del botón de ralentí
-   - Vista móvil: siempre debajo del selector de unidades y del botón de ralentí, respetando la superposición del selector de unidades expandido
+### 2. **Sistema de doble lista (diferencia clave con ralentí):**
 
-4. **Panel expandible:**
+#### **Lista superior: Infracciones activas**
 
-   - Al hacer clic en el icono, se expandirá lateralmente y luego hacia abajo con una animación de transición fluida
-   - Mostrará dos listas de unidades claramente separadas:
-     - Lista superior: Unidades actualmente en infracción
-     - Lista inferior: Historial de unidades que ya no están en infracción
+- Unidades actualmente en infracción
+- **Color**: Rojo (`error.main`)
+- **Orden por defecto**: Por tiempo (más recientes arriba)
+- **Icono indicativo**: ⚠️ o similar
 
-5. **Diseño del listado de unidades:**
+#### **Lista inferior: Historial de infracciones**
 
-   - Formato simple y compacto con información esencial (patente y conductor)
-   - Sin botones adicionales para selección - la selección se realiza haciendo clic directamente en el ítem
-   - Unidades actualmente en infracción: texto en rojo
-   - Unidades con infracciones finalizadas: texto en gris
+- Unidades que ya no están en infracción pero tuvieron infracciones
+- **Color**: Gris (`text.disabled`)
+- **Gestión de historial**:
+  - Botón individual de eliminación (🗑️ icono tacho)
+  - Botón "Eliminar todo el historial" en encabezado
+- **Persistencia**: Durante la sesión hasta eliminación manual
 
-6. **Sistema de historial de infracciones:**
+### 3. **Interface de usuario (mismo patrón que ralentí):**
 
-   - Cuando una unidad deja de estar en infracción, se mueve automáticamente a la lista de historial
-   - Las unidades en la lista de historial permanecen hasta el cierre de sesión o eliminación manual
-   - Cada unidad en el historial tiene un botón de eliminación (icono de tacho)
-   - El encabezado de la lista de historial incluye un botón para "Eliminar todo el historial"
+#### **Estado 1: Ícono contraído**
 
-7. **Actualizaciones en tiempo real:**
-   - Las unidades se mueven automáticamente entre la lista activa y la lista de historial según su estado actual
-   - Nuevas unidades en infracción aparecerán en la lista activa con la próxima actualización de datos
+- Botón circular de 48px con ícono `WarningIcon` o `SpeedIcon`
+- Badge rojo con número de infracciones activas
+- **Posicionamiento**: Debajo de IdleUnitsAlert
 
-### Diseño de la interfaz:
+#### **Estado 2: Hover expandido**
 
-- **Botón principal:** Circular con ícono representativo (posiblemente un símbolo de exclamación o velocímetro)
-- **Indicador de conteo:** Círculo rojo con número en blanco, posicionado en la esquina superior derecha del botón
-- **Panel expandido:**
-  - Encabezado con título "Unidades en infracción" y contador de infracciones activas
-  - Lista activa: unidades actualmente en infracción, con texto en rojo
+- Expansión horizontal: `[4] Unidades en infracción`
+- Badge integrado a la izquierda del título
+
+#### **Estado 3: Lista expandida**
+
+- **Header**: `[4] Unidades en infracción [📊 Tiempo] [X]`
+- **Lista dual**:
+  - Sección superior: Infracciones activas
   - Separador visual
-  - Encabezado secundario "Historial de infracciones" con botón de "Eliminar todo"
-  - Lista de historial: unidades que ya no están en infracción, con texto en gris y botón de eliminación individual
-- **Elementos de interacción:**
-  - Clic en ítem de cualquier lista: selecciona la unidad en el mapa
-  - Botón de tacho en ítems del historial: elimina esa unidad del historial
-  - Botón "Eliminar todo" en encabezado del historial: limpia toda la lista de historial
+  - Sección inferior: Historial con controles de eliminación
 
-### Tecnologías a utilizar:
+### 4. **Posicionamiento inteligente:**
 
-1. **React Context:** Para gestionar el estado de las unidades en infracción y el historial durante la sesión
-2. **MUI Components:** Aprovechando componentes existentes para mantener consistencia visual
-3. **React Transition Group:** Para implementar las animaciones de expansión
-4. **Local Storage:** Para mantener el historial de unidades con infracciones durante la sesión
+#### **Desktop:**
 
-## Presupuesto simple:
+- Sin unidades seleccionadas: `top: 130px, left: 16px` (debajo de IdleUnitsAlert)
+- Con unidades seleccionadas: `top: 350px, left: 16px` (debajo de IdleUnitsAlert)
 
-**Funcionalidad: Alerta de unidades en infracción**
+#### **Mobile:**
 
-| Tarea                                   | Horas estimadas | Descripción                                                   |
-| --------------------------------------- | --------------- | ------------------------------------------------------------- |
-| Análisis y planificación                | 3               | Estudio del código existente, planificación de la integración |
-| Desarrollo de lógica de detección       | 4               | Algoritmos para identificar unidades en infracción            |
-| Desarrollo de interfaz de usuario       | 6               | Botón, indicador y panel expandible con animaciones           |
-| Implementación del sistema de historial | 4               | Lógica para gestionar unidades activas y en historial         |
-| Posicionamiento adaptativo              | 4               | Lógica para ubicar el componente según el contexto            |
-| Integración con sistema de selección    | 3               | Permitir seleccionar unidades desde el panel                  |
-| Pruebas y ajustes                       | 5               | Testing exhaustivo con diferentes escenarios                  |
-| Documentación                           | 2               | Manual de usuario y documentación técnica                     |
-| **Total**                               | **31 horas**    | **Aproximadamente 4 días de desarrollo**                      |
+- Sin unidades seleccionadas: `top: 180px, left: 16px`
+- Con unidades seleccionadas: `top: 250px, left: 16px`
 
-**Costo estimado:** $60/hora × 31 horas = **$1,860 USD**
+#### **Ajuste de z-index:**
 
-## Alcance del proyecto:
+- Componente principal: `1000` (debajo de IdleUnitsAlert)
+- Badge: `1001`
 
-- **Disponibilidad:** Todos los clientes de FullControl GPS
-- **Bonificación:** 100% del costo será bonificado por tratarse de una funcionalidad de interés general
-- **Costo final para el cliente:** **$0 USD**
+### 5. **Sistema de ordenamiento:**
 
-## Línea de tiempo estimada:
+- **Opciones**: "Patente" / "Tiempo"
+- **Por defecto**: Tiempo (más recientes arriba)
+- **Aplicación**: Solo a lista activa, historial mantiene orden cronológico
 
-- Análisis y planificación: 1 día
-- Desarrollo principal: 3 días
-- Pruebas y ajustes: 1-2 días
-- **Tiempo total:** 5-6 días laborables
+## 🎨 ESPECIFICACIONES DE DISEÑO
 
-## Entregables:
+### **Colores específicos:**
 
-1. Componente de alerta de unidades en infracción completamente integrado
-2. Sistema de detección automática de unidades en infracción
-3. Sistema de doble lista: infracciones activas e historial de infracciones
-4. Mecanismo para eliminar entradas individuales o completas del historial
-5. Integración con el sistema de selección de unidades existente
-6. Documentación de uso para el cliente final
+- **Badge**: `error.main` (rojo) para contadores
+- **Ícono principal**: `error.main` (rojo) - más crítico que ralentí
+- **Infracciones activas**: `error.main` con fondo `error.50`
+- **Historial**: `text.disabled` con fondo `grey.50`
 
-Esta funcionalidad mejorará significativamente la capacidad de supervisión de la flota, permitiendo detectar rápidamente comportamientos de riesgo, mejorar la seguridad vial y asegurar el cumplimiento de normativas de tránsito y descanso de conductores, mientras mantiene un registro histórico de las infracciones ocurridas durante la sesión.
+### **Iconografía:**
+
+- **Ícono principal**: `WarningIcon` o `SpeedIcon`
+- **Infracciones activas**: ⚠️ o 🚨
+- **Historial**: 📋 o 🕒
+- **Eliminar individual**: 🗑️ (`DeleteIcon`)
+- **Eliminar todo**: 🗑️ con texto "Limpiar historial"
+
+### **Estructura de lista dual:**
+
+```jsx
+// Estructura visual propuesta:
+<>
+  {/* Infracciones activas */}
+  <Box>
+    <Typography>🚨 Infracciones activas ({activeCount})</Typography>
+    <List>
+      {activeInfractions.map((unit) => (
+        <InfractionItem />
+      ))}
+    </List>
+  </Box>
+
+  {/* Separador */}
+  <Divider />
+
+  {/* Historial */}
+  <Box>
+    <Box display="flex" justifyContent="space-between">
+      <Typography>📋 Historial ({historyCount})</Typography>
+      <Button onClick={clearAllHistory}>🗑️ Limpiar todo</Button>
+    </Box>
+    <List>
+      {historyInfractions.map((unit) => (
+        <InfractionItem showDeleteButton={true} />
+      ))}
+    </List>
+  </Box>
+</>
+```
+
+## 🔧 GUÍA DE IMPLEMENTACIÓN
+
+### **Paso 1: Crear InfractionAlert.jsx**
+
+```jsx
+import React, { useState, useMemo } from "react";
+import { Box, Typography, List, Divider, IconButton } from "@mui/material";
+import WarningIcon from "@mui/icons-material/Warning";
+import DeleteIcon from "@mui/icons-material/Delete";
+import BaseExpandableAlert from "./BaseExpandableAlert";
+
+const InfractionAlert = ({ markersData, onUnitSelect }) => {
+  const [sortBy, setSortBy] = useState("time");
+  const [historyInfractions, setHistoryInfractions] = useState([]);
+
+  // Detectar infracciones activas
+  const activeInfractions = useMemo(() => {
+    // Lógica de detección similar a IdleUnitsAlert
+    // Buscar "infracción" o "infraccion" en campo estado
+  }, [markersData]);
+
+  // Gestionar historial automáticamente
+  useEffect(() => {
+    // Mover unidades que ya no están en infracción al historial
+    // Evitar duplicados en historial
+  }, [activeInfractions]);
+
+  // Renderizar contenido específico de infracciones
+  const renderInfractionContent = ({ onUnitSelect, handleClose }) => (
+    <Box sx={{ maxHeight: "328px", overflow: "auto" }}>
+      {/* Lista activas */}
+      {/* Separador */}
+      {/* Lista historial */}
+    </Box>
+  );
+
+  return (
+    <BaseExpandableAlert
+      icon={WarningIcon}
+      title="Unidades en infracción"
+      count={activeInfractions.length}
+      badgeColor="error.main"
+      iconColor="error.main"
+      tooltipText={`Infracciones activas: ${activeInfractions.length}`}
+      verticalOffset={{ desktop: 350, mobile: 250 }}
+      sortBy={sortBy}
+      onSortChange={() =>
+        setSortBy(sortBy === "alphabetic" ? "time" : "alphabetic")
+      }
+      showSortButton={true}
+      sortOptions={{ option1: "Patente", option2: "Tiempo" }}
+      onUnitSelect={onUnitSelect}
+    >
+      {renderInfractionContent}
+    </BaseExpandableAlert>
+  );
+};
+```
+
+### **Paso 2: Integrar en PrincipalPage.jsx**
+
+```jsx
+// Agregar después de IdleUnitsAlert
+<IdleUnitsAlert markersData={markersData} onUnitSelect={handleUnitSelect} />
+<InfractionAlert markersData={markersData} onUnitSelect={handleUnitSelect} />
+<UnitDetails unitData={selectedUnit} />
+```
+
+### **Paso 3: Ajustar posicionamiento dinámico**
+
+El hook `useExpandableAlert` ya maneja el posicionamiento inteligente. Solo se necesita:
+
+- Ajustar `verticalOffset` para posicionar debajo de IdleUnitsAlert
+- Verificar que no se superponga con otros componentes
+
+## 📋 FUNCIONALIDADES ESPECÍFICAS A IMPLEMENTAR
+
+### **1. Gestión de historial:**
+
+```jsx
+const [historyInfractions, setHistoryInfractions] = useState([]);
+
+// Eliminar individual
+const removeFromHistory = (unitId) => {
+  setHistoryInfractions((prev) =>
+    prev.filter((unit) => unit.Movil_ID !== unitId)
+  );
+};
+
+// Eliminar todo
+const clearAllHistory = () => {
+  setHistoryInfractions([]);
+};
+```
+
+### **2. Detección y movimiento automático:**
+
+```jsx
+useEffect(() => {
+  // Detectar unidades que ya no están en infracción
+  const currentActiveIds = new Set(activeInfractions.map((u) => u.Movil_ID));
+  const historyIds = new Set(historyInfractions.map((u) => u.Movil_ID));
+
+  // Encontrar unidades que salieron de infracción
+  const unitsToMoveToHistory = historyInfractions.filter(
+    (unit) =>
+      !currentActiveIds.has(unit.Movil_ID) && !historyIds.has(unit.Movil_ID)
+  );
+
+  if (unitsToMoveToHistory.length > 0) {
+    setHistoryInfractions((prev) => [...prev, ...unitsToMoveToHistory]);
+  }
+}, [activeInfractions, historyInfractions]);
+```
+
+### **3. Componente de ítem con eliminación:**
+
+```jsx
+const InfractionItem = ({ unit, isHistory, onDelete }) => (
+  <ListItem>
+    <ListItemText
+      primary={unit.patente}
+      secondary={unit.estado}
+      sx={{ opacity: isHistory ? 0.6 : 1 }}
+    />
+    {isHistory && (
+      <IconButton onClick={() => onDelete(unit.Movil_ID)}>
+        <DeleteIcon fontSize="small" />
+      </IconButton>
+    )}
+  </ListItem>
+);
+```
+
+## 📊 ESTIMACIÓN DE IMPLEMENTACIÓN
+
+### **Tareas específicas:**
+
+| Tarea                        | Tiempo estimado | Nota                               |
+| ---------------------------- | --------------- | ---------------------------------- |
+| Crear InfractionAlert.jsx    | 1 hora          | Reutiliza BaseExpandableAlert      |
+| Implementar doble lista      | 30 minutos      | Estructura JSX                     |
+| Sistema de historial         | 45 minutos      | Estados y efectos                  |
+| Integración en PrincipalPage | 15 minutos      | Una línea de código                |
+| Testing y ajustes            | 30 minutos      | Validación funcional               |
+| **Total**                    | **3 horas**     | **Reducido 75% por reutilización** |
+
+### **Comparación con estimación original:**
+
+- **Estimación original**: 31 horas
+- **Estimación con arquitectura reutilizable**: 3 horas
+- **Ahorro**: 28 horas (90% reducción)
+
+## 🚀 BENEFICIOS DE LA ARQUITECTURA REUTILIZABLE
+
+1. **Tiempo de desarrollo**: Reducido de 31h a 3h
+2. **Consistencia UX**: Comportamiento idéntico entre alertas
+3. **Mantenimiento**: Cambios en BaseExpandableAlert afectan todas las alertas
+4. **Testing**: Hook y componente base ya validados
+5. **Escalabilidad**: Futuras alertas tomarán 2-3 horas cada una
+
+---
+
+## 📝 NOTAS PARA IMPLEMENTACIÓN
+
+- **Prioridad**: Media (después de optimizaciones de ralentí)
+- **Dependencias**: Ninguna (arquitectura ya implementada)
+- **Testing**: Reutilizar casos de prueba de IdleUnitsAlert
+- **Documentación**: Actualizar CONTEXTO_IA.md con nueva alerta
+
+**La implementación está completamente planificada y lista para ejecutar cuando se requiera.**
