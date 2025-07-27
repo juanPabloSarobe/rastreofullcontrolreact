@@ -21,6 +21,7 @@ import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
 import IdleUnitsAlert from "../common/IdleUnitsAlert";
+import InfractionAlert from "../common/InfractionAlert";
 import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
@@ -263,6 +264,10 @@ const PrincipalPage = () => {
                     onUnitSelect={handleUnitSelect}
                   />
                   <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
+                  <InfractionAlert
+                    markersData={markersData}
+                    onUnitSelect={handleUnitSelect}
+                  />
                   <IdleUnitsAlert
                     markersData={markersData}
                     onUnitSelect={handleUnitSelect}

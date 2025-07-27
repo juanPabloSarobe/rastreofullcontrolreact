@@ -328,3 +328,371 @@ const InfractionItem = ({ unit, isHistory, onDelete }) => (
 - **Documentación**: Actualizar CONTEXTO_IA.md con nueva alerta
 
 **La implementación está completamente planificada y lista para ejecutar cuando se requiera.**
+
+---
+
+## 🔧 APLICACIÓN DE OPTIMIZACIONES CRÍTICAS (BASADO EN RALENTÍ)
+
+### **1. PREVENCIÓN DE BUCLES INFINITOS EN useEffect**
+
+#### **Patrón crítico a aplicar:**
+
+```jsx
+// ✅ CORRECTO - Sin dependencias circulares
+useEffect(() => {
+  // Procesar infracciones activas y mover al historial
+  const processInfractions = () => {
+    // Lógica de procesamiento
+  };
+  processInfractions();
+}, [
+  activeInfractions,
+  // NO incluir historyInfractions si se modifica dentro del efecto
+  dispatch,
+  // ... otras dependencias seguras
+]);
+```
+
+#### **Regla aplicada:**
+
+> **Nunca incluir en dependencias de useEffect el estado que el mismo efecto va a modificar**
+
+### **2. VALIDACIÓN HTML CORRECTA**
+
+#### **Componentes Typography configurados correctamente:**
+
+```jsx
+// ✅ En InfractionAlert.jsx
+<Typography variant="h6" component="div">
+  <div>Contenido con elementos div anidados</div>
+</Typography>
+
+// ✅ En InfractionItem.jsx
+<ListItemText
+  primaryTypographyProps={{ component: "div" }}
+  secondaryTypographyProps={{ component: "div" }}
+  primary={<div>Contenido de patente</div>}
+  secondary={<div>Contenido de estado</div>}
+/>
+```
+
+### **3. MEMOIZACIÓN COMPLETA PARA RENDIMIENTO ÓPTIMO**
+
+#### **Arrays y objetos memoizados:**
+
+```jsx
+const InfractionAlert = ({ markersData, onUnitSelect }) => {
+  // ✅ Arrays constantes memoizados
+  const infractionStates = useMemo(
+    () => [
+      "infracción",
+      "infraccion",
+      "violación",
+      "violacion",
+      "exceso de velocidad",
+      "infracción de velocidad",
+      "infracción tiempo",
+      "infracción movimiento"
+    ],
+    []
+  );
+
+  // ✅ Sets memoizados para comparaciones rápidas
+  const activeInfractionIds = useMemo(
+    () => new Set(activeInfractions.map((unit) => unit.Movil_ID)),
+    [activeInfractions]
+  );
+
+  const historyInfractionIds = useMemo(
+    () => new Set(historyInfractions.map((unit) => unit.Movil_ID)),
+    [historyInfractions]
+  );
+```
+
+#### **Funciones utilitarias memoizadas:**
+
+```jsx
+// ✅ Función de normalización memoizada
+const normalizeString = useCallback(
+  (str) =>
+    str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim(),
+  []
+);
+
+// ✅ Función de determinación de severidad memoizada
+const determineInfractionSeverity = useCallback(
+  (estado) => {
+    const estadoLower = normalizeString(estado);
+
+    if (estadoLower.includes("velocidad") || estadoLower.includes("exceso")) {
+      return "high"; // error.main
+    }
+    if (estadoLower.includes("tiempo") || estadoLower.includes("descanso")) {
+      return "medium"; // warning.main
+    }
+    return "low"; // info.main
+  },
+  [normalizeString]
+);
+
+// ✅ Función de formateo de tiempo memoizada
+const formatInfractionTime = useCallback((fechaHora) => {
+  const date = new Date(fechaHora);
+  return date.toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}, []);
+```
+
+#### **Handlers de eventos memoizados:**
+
+```jsx
+// ✅ Handler de eliminación individual memoizado
+const handleRemoveFromHistory = useCallback((unitId, event) => {
+  event.stopPropagation();
+  setHistoryInfractions((prev) =>
+    prev.filter((unit) => unit.Movil_ID !== unitId)
+  );
+}, []);
+
+// ✅ Handler de limpiar historial memoizado
+const handleClearAllHistory = useCallback((event) => {
+  event.stopPropagation();
+  setHistoryInfractions([]);
+}, []);
+
+// ✅ Handler de selección de unidad memoizado
+const handleUnitSelect = useCallback(
+  (unit) => {
+    if (onUnitSelect) {
+      const currentUnits = [...state.selectedUnits];
+      const filteredUnits = currentUnits.filter((id) => id !== unit.Movil_ID);
+      const updatedUnits = [...filteredUnits, unit.Movil_ID];
+      onUnitSelect(updatedUnits);
+    }
+  },
+  [onUnitSelect, state.selectedUnits]
+);
+
+// ✅ Handler de ordenamiento memoizado
+const handleSortChange = useCallback(() => {
+  setSortBy(sortBy === "alphabetic" ? "time" : "alphabetic");
+}, [sortBy]);
+```
+
+#### **Componente InfractionItem memoizado:**
+
+```jsx
+// ✅ Componente completamente memoizado
+const InfractionItem = React.memo(
+  ({
+    unit,
+    index,
+    isLast,
+    isHistory,
+    severityColor,
+    formattedTime,
+    onDelete,
+    onUnitSelect,
+  }) => (
+    <ListItem
+      key={unit.Movil_ID}
+      disablePadding
+      sx={{
+        borderBottom: !isLast ? "1px solid" : "none",
+        borderColor: "divider",
+        opacity: isHistory ? 0.6 : 1,
+      }}
+    >
+      {/* JSX del componente */}
+    </ListItem>
+  )
+);
+```
+
+### **4. LÓGICA DE DETECCIÓN OPTIMIZADA**
+
+#### **Detección de infracciones activas memoizada:**
+
+```jsx
+const activeInfractions = useMemo(() => {
+  if (!markersData) return [];
+
+  const currentTime = Date.now();
+  const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+
+  return markersData.filter((unit) => {
+    if (!unit.estado || !unit.fechaHora) return false;
+
+    // Filtro por antigüedad
+    const reportTime = new Date(unit.fechaHora).getTime();
+    const timeDifference = currentTime - reportTime;
+
+    if (timeDifference > TWELVE_HOURS_MS) {
+      return false;
+    }
+
+    const estado = normalizeString(unit.estado);
+
+    // Verificar si contiene palabras de infracción
+    const hasInfractionState = infractionStates.some((infractionState) => {
+      const normalizedInfractionState = normalizeString(infractionState);
+      return estado.includes(normalizedInfractionState);
+    });
+
+    return hasInfractionState;
+  });
+}, [markersData, infractionStates, normalizeString]);
+```
+
+#### **Lógica de historial automático optimizada:**
+
+```jsx
+useEffect(() => {
+  // Detectar unidades que salieron de infracción y moverlas al historial
+  const processHistoryMovement = () => {
+    // Obtener IDs de unidades actualmente en infracción
+    const currentActiveIds = activeInfractionIds;
+
+    // Encontrar unidades que estaban en infracción pero ya no están
+    const previousActiveUnits = /* lógica para obtener unidades previas */;
+
+    const unitsToMoveToHistory = previousActiveUnits.filter(
+      (unit) => !currentActiveIds.has(unit.Movil_ID) &&
+                !historyInfractionIds.has(unit.Movil_ID)
+    );
+
+    if (unitsToMoveToHistory.length > 0) {
+      setHistoryInfractions((prev) => {
+        // Evitar duplicados y limitar historial a 50 elementos
+        const newHistory = [...prev, ...unitsToMoveToHistory];
+        return newHistory.slice(0, 50); // Límite para rendimiento
+      });
+    }
+  };
+
+  processHistoryMovement();
+}, [
+  activeInfractions,
+  activeInfractionIds,
+  historyInfractionIds,
+  // NO incluir historyInfractions - evita bucle infinito
+]);
+```
+
+### **5. ORDENAMIENTO OPTIMIZADO**
+
+#### **Ordenamiento de infracciones activas memoizado:**
+
+```jsx
+const sortedActiveInfractions = useMemo(() => {
+  const units = [...activeInfractions];
+
+  if (sortBy === "alphabetic") {
+    units.sort((a, b) => (a.patente || "").localeCompare(b.patente || ""));
+  } else if (sortBy === "time") {
+    units.sort((a, b) => {
+      const timeA = new Date(a.fechaHora).getTime();
+      const timeB = new Date(b.fechaHora).getTime();
+      return timeB - timeA; // Más recientes arriba
+    });
+  }
+
+  return units;
+}, [activeInfractions, sortBy]);
+```
+
+### **6. GESTIÓN DE ESTADOS CON CLEANUP**
+
+#### **Cleanup automático de historial:**
+
+```jsx
+useEffect(() => {
+  // Limpiar historial antiguo automáticamente
+  const cleanupOldHistory = () => {
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const currentTime = Date.now();
+
+    setHistoryInfractions((prev) =>
+      prev.filter((unit) => {
+        const unitTime = new Date(unit.fechaHora).getTime();
+        return currentTime - unitTime < ONE_DAY_MS;
+      })
+    );
+  };
+
+  // Ejecutar limpieza cada 30 minutos
+  const interval = setInterval(cleanupOldHistory, 30 * 60 * 1000);
+
+  return () => clearInterval(interval);
+}, []);
+```
+
+---
+
+## 📊 MÉTRICAS DE RENDIMIENTO ESTIMADAS
+
+### **Con optimizaciones aplicadas:**
+
+- **Renders por segundo:** ~2-3 (vs 15-20 sin optimización)
+- **Función recreations:** Solo cuando cambian dependencias
+- **Gestión de memoria:** Historial limitado a 50 elementos
+- **Cleanup automático:** Cada 30 minutos
+
+### **Tiempo de implementación optimizado:**
+
+- **Estimación original:** 3 horas
+- **Con patrones optimizados:** 2-2.5 horas
+- **Ahorro adicional:** 15-30% por aplicar patrones desde el inicio
+
+---
+
+## ✅ CHECKLIST DE IMPLEMENTACIÓN OPTIMIZADA
+
+### **Estructura base:**
+
+- [ ] Crear `InfractionAlert.jsx` con estructura memoizada
+- [ ] Implementar `InfractionItem.jsx` con React.memo
+- [ ] Configurar imports con `useCallback`, `useMemo`, `React.memo`
+
+### **Optimizaciones críticas:**
+
+- [ ] Memoizar arrays constantes (`infractionStates`)
+- [ ] Memoizar funciones utilitarias (`normalizeString`, `determineInfractionSeverity`)
+- [ ] Memoizar handlers (`handleRemoveFromHistory`, `handleClearAllHistory`)
+- [ ] Memoizar Sets para comparaciones (`activeInfractionIds`, `historyInfractionIds`)
+
+### **Validaciones HTML:**
+
+- [ ] Usar `component="div"` en Typography necesarios
+- [ ] Configurar `primaryTypographyProps` y `secondaryTypographyProps`
+- [ ] Validar anidamiento correcto de elementos
+
+### **useEffect sin bucles:**
+
+- [ ] Verificar dependencias de useEffect de gestión de historial
+- [ ] NO incluir `historyInfractions` en dependencias si se modifica
+- [ ] Implementar cleanup de intervalos
+
+### **Testing con patrones de ralentí:**
+
+- [ ] Validar detección de infracciones
+- [ ] Verificar movimiento automático al historial
+- [ ] Probar eliminación individual y masiva
+- [ ] Confirmar ordenamiento correcto
+- [ ] Validar cleanup automático
+
+**Tiempo estimado con optimizaciones: 2-2.5 horas**
+
+---
+
+**El sistema está listo para implementación optimizada aplicando todos los patrones aprendidos en ralentí.**
+
+```
+
+```

@@ -1,5 +1,12 @@
 import React from "react";
-import { Box, IconButton, Tooltip, Typography, Grow } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Typography,
+  Grow,
+  useTheme,
+} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SortIcon from "@mui/icons-material/Sort";
 import useExpandableAlert from "../../hooks/useExpandableAlert";
@@ -8,18 +15,34 @@ const BaseExpandableAlert = ({
   icon: Icon,
   title,
   count,
-  badgeColor = "error.main",
-  iconColor = "warning.main",
   tooltipText,
   children,
+  badgeColor = "warning.main",
+  iconColor = "warning.main",
   verticalOffset,
+  noUnitsOffset, // Nueva prop para posición sin unidades
   onUnitSelect,
   // Nuevas props para ordenamiento
   sortBy,
   onSortChange,
   showSortButton = false,
   sortOptions = { option1: "Patente", option2: "Tiempo" }, // Configurable para reutilización
+  // Nueva prop para indicador de historial
+  showHistoryDot = false,
+  historyTooltip = "",
+  // Nueva prop para zIndex configurable
+  zIndex = 1001,
 }) => {
+  const theme = useTheme();
+
+  // Resolver colores del tema usando las props pasadas
+  const resolvedBadgeColor = badgeColor.includes(".")
+    ? badgeColor.split(".").reduce((obj, key) => obj[key], theme.palette)
+    : theme.palette[badgeColor];
+
+  const resolvedIconColor = iconColor.includes(".")
+    ? iconColor.split(".").reduce((obj, key) => obj[key], theme.palette)
+    : theme.palette[iconColor];
   const {
     anchorEl,
     isHovered,
@@ -34,18 +57,18 @@ const BaseExpandableAlert = ({
   return (
     <>
       {/* Badge independiente cuando está contraído */}
-      {!isHovered && !open && count > 0 && (
+      {!isHovered && !open && (
         <Box
           position="absolute"
           sx={{
-            ...getBadgePosition(verticalOffset),
-            zIndex: 1002,
+            ...getBadgePosition(verticalOffset, noUnitsOffset),
+            zIndex: zIndex + 1,
             pointerEvents: "none",
           }}
         >
           <Box
             sx={{
-              backgroundColor: badgeColor,
+              backgroundColor: resolvedBadgeColor,
               color: "white",
               borderRadius: "50%",
               minWidth: "20px",
@@ -67,7 +90,7 @@ const BaseExpandableAlert = ({
       <Box
         position="absolute"
         sx={{
-          ...getPosition(verticalOffset),
+          ...getPosition(verticalOffset, noUnitsOffset),
           height: "48px",
           transition: "all 0.3s ease",
           borderRadius: open ? "24px 24px 0px 0px" : "24px",
@@ -75,7 +98,7 @@ const BaseExpandableAlert = ({
           backgroundColor: "white",
           display: "flex",
           alignItems: "center",
-          zIndex: 1001,
+          zIndex: zIndex,
           overflow: "hidden",
           width: isHovered || open ? { xs: "75%", sm: "400px" } : "48px",
         }}
@@ -86,7 +109,7 @@ const BaseExpandableAlert = ({
           <IconButton
             onClick={handleClick}
             sx={{
-              color: iconColor,
+              color: resolvedIconColor,
               height: "48px",
               width: "48px",
               "&:hover": {
@@ -131,7 +154,7 @@ const BaseExpandableAlert = ({
                 <Box
                   sx={{
                     mr: 1,
-                    backgroundColor: badgeColor,
+                    backgroundColor: resolvedBadgeColor,
                     color: "white",
                     borderRadius: "50%",
                     minWidth: "20px",
@@ -193,22 +216,67 @@ const BaseExpandableAlert = ({
         )}
       </Box>
 
+      {/* Dot indicator para historial - completamente fuera del contenedor principal */}
+      {showHistoryDot && (
+        <Tooltip title={historyTooltip} placement="bottom">
+          <Box
+            sx={{
+              position: "absolute",
+              ...getPosition(verticalOffset, noUnitsOffset),
+              bottom: "auto",
+              top: {
+                xs: `${
+                  parseInt(getPosition(verticalOffset, noUnitsOffset).top.xs) +
+                  32
+                }px`,
+                sm: `${
+                  parseInt(getPosition(verticalOffset, noUnitsOffset).top.sm) +
+                  32
+                }px`,
+              },
+              left: {
+                xs: `${
+                  parseInt(getPosition(verticalOffset, noUnitsOffset).left.xs) +
+                  32
+                }px`,
+                sm: `${
+                  parseInt(getPosition(verticalOffset, noUnitsOffset).left.sm) +
+                  32
+                }px`,
+              },
+              width: 20,
+              height: 20,
+              backgroundColor: "grey.400",
+              borderRadius: "50%",
+              border: "2px solid white",
+              boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.2)",
+              zIndex: zIndex + 2,
+              pointerEvents: "none",
+            }}
+          />
+        </Tooltip>
+      )}
+
       {/* Contenido expandido (children) */}
       {open && (
         <Box
           position="absolute"
           sx={{
-            ...getPosition(verticalOffset),
+            ...getPosition(verticalOffset, noUnitsOffset),
             top: {
-              xs: `${parseInt(getPosition(verticalOffset).top.xs) + 48}px`,
-              sm: `${parseInt(getPosition(verticalOffset).top.sm) + 48}px`,
+              xs: `${
+                parseInt(getPosition(verticalOffset, noUnitsOffset).top.xs) + 48
+              }px`,
+              sm: `${
+                parseInt(getPosition(verticalOffset, noUnitsOffset).top.sm) + 48
+              }px`,
             },
             width: "400px",
             maxHeight: "400px",
             backgroundColor: "white",
             borderRadius: "0px 0px 24px 24px",
             boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
-            zIndex: 1000,
+            zIndex: zIndex - 1,
             overflow: "hidden",
           }}
         >

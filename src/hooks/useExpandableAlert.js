@@ -18,7 +18,10 @@ const useExpandableAlert = () => {
   };
 
   // Determinar posición según el contexto (reutilizable)
-  const getPosition = (verticalOffset = { desktop: 300, mobile: 200 }) => {
+  const getPosition = (
+    verticalOffset = { desktop: 300, mobile: 200 },
+    noUnitsOffset = null
+  ) => {
     if (state.selectedUnits.length > 0) {
       // Con unidades seleccionadas: debajo del detalle de la unidad
       return {
@@ -29,27 +32,45 @@ const useExpandableAlert = () => {
         left: { xs: "16px", sm: "16px" },
       };
     } else {
-      // Sin unidades seleccionadas: debajo del selector de unidades
+      // Sin unidades seleccionadas: posición personalizable o por defecto
+      const defaultPositions = { xs: "130px", sm: "80px" };
+      const positions = noUnitsOffset
+        ? {
+            xs: `${noUnitsOffset.mobile}px`,
+            sm: `${noUnitsOffset.desktop}px`,
+          }
+        : defaultPositions;
+
       return {
-        top: { xs: "130px", sm: "80px" },
+        top: positions,
         left: { xs: "16px", sm: "16px" },
       };
     }
   };
 
   // Posición del badge (reutilizable)
-  const getBadgePosition = (verticalOffset = { desktop: 300, mobile: 200 }) => {
+  const getBadgePosition = (
+    verticalOffset = { desktop: 300, mobile: 200 },
+    noUnitsOffset = null
+  ) => {
+    const baseTop =
+      state.selectedUnits.length > 0
+        ? {
+            xs: `${verticalOffset.mobile - 8}px`,
+            sm: `${verticalOffset.desktop - 8}px`,
+          }
+        : noUnitsOffset
+        ? {
+            xs: `${noUnitsOffset.mobile - 8}px`,
+            sm: `${noUnitsOffset.desktop - 8}px`,
+          }
+        : {
+            xs: "122px",
+            sm: "72px",
+          };
+
     return {
-      top: {
-        xs:
-          state.selectedUnits.length > 0
-            ? `${verticalOffset.mobile - 8}px`
-            : "122px",
-        sm:
-          state.selectedUnits.length > 0
-            ? `${verticalOffset.desktop - 8}px`
-            : "72px",
-      },
+      top: baseTop,
       left: {
         xs: "48px",
         sm: "48px",
