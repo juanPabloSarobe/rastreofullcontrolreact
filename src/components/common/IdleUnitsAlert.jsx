@@ -16,6 +16,201 @@ import SortIcon from "@mui/icons-material/Sort";
 import BaseExpandableAlert from "./BaseExpandableAlert";
 import { useContextValue } from "../../context/Context"; // Corregir la importación del contexto
 
+// Componente memoizado para cada item de la lista de ralentí
+const IdleUnitItem = React.memo(
+  ({
+    unit,
+    index,
+    isLast,
+    isIgnored,
+    idleTime,
+    stateColor,
+    isLoadingHistorical,
+    onToggleIgnore,
+    onUnitSelect,
+  }) => (
+    <ListItem
+      key={unit.Movil_ID}
+      disablePadding
+      sx={{
+        borderBottom: !isLast ? "1px solid" : "none",
+        borderColor: "divider",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          width: "100%",
+          alignItems: "center",
+          minHeight: "50px",
+        }}
+      >
+        <IconButton
+          size="small"
+          onClick={(e) => onToggleIgnore(unit.Movil_ID, e)}
+          sx={{
+            color: isIgnored ? "text.disabled" : "text.secondary",
+            mx: 1,
+            "&:hover": {
+              backgroundColor: isIgnored
+                ? "rgba(0, 0, 0, 0.04)"
+                : "rgba(255, 152, 0, 0.1)",
+            },
+          }}
+        >
+          {isIgnored ? (
+            <VisibilityOffIcon fontSize="small" />
+          ) : (
+            <VisibilityIcon fontSize="small" />
+          )}
+        </IconButton>
+
+        <ListItemButton
+          onClick={() => onUnitSelect(unit)}
+          sx={{
+            opacity: isIgnored ? 0.5 : 1,
+            flex: 1,
+            py: 0.5,
+            "&:hover": {
+              backgroundColor: isIgnored
+                ? "rgba(0, 0, 0, 0.04)"
+                : "rgba(255, 152, 0, 0.08)",
+            },
+          }}
+        >
+          <ListItemText
+            primaryTypographyProps={{ component: "div" }}
+            secondaryTypographyProps={{ component: "div" }}
+            primary={
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 0.75,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{
+                      fontWeight: "bold",
+                      fontSize: "0.9rem",
+                      display: "flex",
+                      alignItems: "center",
+                      minWidth: 0,
+                    }}
+                  >
+                    <Box sx={{ marginRight: "8px", flexShrink: 0 }}>
+                      {unit.patente || "Sin patente"}
+                    </Box>
+                    <Box sx={{ marginRight: "8px", flexShrink: 0 }}>-</Box>
+                    <Box
+                      sx={{
+                        maxWidth: "50%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {unit.empresa || "Sin empresa"}
+                    </Box>
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "grey.100",
+                    color: "text.primary",
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: "12px",
+                    fontFamily: "monospace",
+                    fontSize: "0.75rem",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  {idleTime}
+                  {isLoadingHistorical && (
+                    <CircularProgress
+                      size={12}
+                      thickness={4}
+                      sx={{
+                        color: "primary.main",
+                        ml: 0.25,
+                      }}
+                    />
+                  )}
+                </Box>
+              </Box>
+            }
+            secondary={
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 0.75,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "inline-block",
+                    backgroundColor:
+                      stateColor === "error.main"
+                        ? "error.50"
+                        : stateColor === "text.primary"
+                        ? "grey.100"
+                        : "warning.50",
+                    color: stateColor,
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: "8px",
+                    fontSize: "0.7rem",
+                    fontWeight: "medium",
+                  }}
+                >
+                  {unit.estado}
+                </Box>
+
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    fontSize: "0.75rem",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  👤 {unit.nombre || "Conductor no identificado"}
+                </Typography>
+              </Box>
+            }
+            sx={{
+              "& .MuiListItemText-primary": {
+                marginBottom: "0px",
+              },
+              "& .MuiListItemText-secondary": {
+                marginTop: "0px",
+              },
+            }}
+          />
+        </ListItemButton>
+      </Box>
+    </ListItem>
+  )
+);
+
 const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const [ignoredUnits, setIgnoredUnits] = useState(new Set());
   const [sortBy, setSortBy] = useState("time"); // Cambiar orden por defecto a tiempo
@@ -26,6 +221,27 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const STORAGE_KEY = "idleTimers";
   const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
   const ONE_HOUR_MS = 60 * 60 * 1000;
+
+  // Memoizar array de estados idle para evitar recrearlo en cada render
+  const idleStates = useMemo(
+    () => [
+      "inicio ralenti",
+      "inicio ralentí",
+      "inicio de ralenti",
+      "inicio de ralentí",
+      "fin de ralenti",
+      "fin de ralentí",
+      "fin ralenti",
+      "fin ralentí",
+      "reporte en ralenti",
+      "reporte en ralentí",
+      "reporte de ralenti",
+      "reporte de ralentí",
+      "ralentí",
+      "ralenti",
+    ],
+    []
+  );
 
   // Función para cargar timers desde localStorage
   const loadTimersFromStorage = useCallback(() => {
@@ -203,24 +419,6 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const idleUnits = useMemo(() => {
     if (!markersData) return [];
 
-    // Estados de ralentí más exhaustivos - incluye variaciones con y sin acentos
-    const idleStates = [
-      "inicio ralenti",
-      "inicio ralentí",
-      "inicio de ralenti",
-      "inicio de ralentí",
-      "fin de ralenti",
-      "fin de ralentí",
-      "fin ralenti",
-      "fin ralentí",
-      "reporte en ralenti",
-      "reporte en ralentí",
-      "reporte de ralenti",
-      "reporte de ralentí",
-      "ralentí",
-      "ralenti",
-    ];
-
     const currentTime = Date.now();
 
     return markersData.filter((unit) => {
@@ -260,7 +458,13 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
       return hasIdleState;
     });
-  }, [markersData, TWELVE_HOURS_MS]);
+  }, [markersData, TWELVE_HOURS_MS, idleStates]);
+
+  // Memoizar set de unidades activas para optimizar rendimiento
+  const activeUnitIds = useMemo(
+    () => new Set(idleUnits.map((unit) => unit.Movil_ID)),
+    [idleUnits]
+  );
 
   // Gestionar contadores de tiempo con estrategia híbrida mejorada
   useEffect(() => {
@@ -384,8 +588,6 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       });
 
       // Remover unidades que ya no están en ralentí o que han expirado
-      const activeUnitIds = new Set(idleUnits.map((unit) => unit.Movil_ID));
-
       for (const [unitId, timer] of newTimers.entries()) {
         const timeSinceLastUpdate = currentTime - timer.lastUpdate;
 
@@ -414,6 +616,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     processTimers();
   }, [
     idleUnits,
+    activeUnitIds,
     // state.idleTimers, // ← REMOVIDO: Esta dependencia causa bucle infinito
     dispatch,
     saveTimersToStorage,
@@ -549,204 +752,28 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       {/* Eliminar el header duplicado - directamente la lista */}
       {sortedIdleUnits.length > 0 ? (
         <List dense sx={{ maxHeight: "328px", overflow: "auto", p: 0 }}>
-          {" "}
-          {/* Aumentar altura al quitar header */}
           {sortedIdleUnits.map((unit, index) => {
             const isIgnored = ignoredUnits.has(unit.Movil_ID);
             const idleTime = getIdleTime(unit.Movil_ID);
-            const stateColor = getStateColor(unit.estado, unit.Movil_ID); // Agregar unitId aquí
+            const stateColor = getStateColor(unit.estado, unit.Movil_ID);
             const isLoadingHistorical = loadingHistoricalData.has(
               unit.Movil_ID
-            ); // Verificar si está cargando
+            );
+            const isLast = index === sortedIdleUnits.length - 1;
 
             return (
-              <ListItem
+              <IdleUnitItem
                 key={unit.Movil_ID}
-                disablePadding
-                sx={{
-                  borderBottom:
-                    index < sortedIdleUnits.length - 1 ? "1px solid" : "none",
-                  borderColor: "divider",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    width: "100%",
-                    alignItems: "center",
-                    minHeight: "50px", // Reducir altura mínima para menos espacio amarillo
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={(e) => toggleIgnoreUnit(unit.Movil_ID, e)}
-                    sx={{
-                      color: isIgnored ? "text.disabled" : "text.secondary",
-                      mx: 1,
-                      "&:hover": {
-                        backgroundColor: isIgnored
-                          ? "rgba(0, 0, 0, 0.04)"
-                          : "rgba(255, 152, 0, 0.1)",
-                      },
-                    }}
-                  >
-                    {isIgnored ? (
-                      <VisibilityOffIcon fontSize="small" />
-                    ) : (
-                      <VisibilityIcon fontSize="small" />
-                    )}
-                  </IconButton>
-
-                  <ListItemButton
-                    onClick={() => handleUnitSelect(unit)}
-                    sx={{
-                      opacity: isIgnored ? 0.5 : 1,
-                      flex: 1,
-                      py: 0.5, // Reducir padding vertical para menos espacio amarillo
-                      "&:hover": {
-                        backgroundColor: isIgnored
-                          ? "rgba(0, 0, 0, 0.04)"
-                          : "rgba(255, 152, 0, 0.08)",
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primaryTypographyProps={{ component: "div" }}
-                      secondaryTypographyProps={{ component: "div" }}
-                      primary={
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            mb: 0.75, // Ampliar margen rojo (separación entre filas internas)
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              flex: 1,
-                              minWidth: 0, // Permite que el texto se trunque
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              component="div"
-                              sx={{
-                                fontWeight: "bold",
-                                fontSize: "0.9rem",
-                                display: "flex",
-                                alignItems: "center",
-                                minWidth: 0,
-                              }}
-                            >
-                              {/* Patente primero */}
-                              <Box sx={{ marginRight: "8px", flexShrink: 0 }}>
-                                {unit.patente || "Sin patente"}
-                              </Box>
-                              <Box sx={{ marginRight: "8px", flexShrink: 0 }}>
-                                -
-                              </Box>
-                              {/* Empresa con más ancho (50% del espacio restante) */}
-                              <Box
-                                sx={{
-                                  maxWidth: "50%",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {unit.empresa || "Sin empresa"}
-                              </Box>
-                            </Typography>
-                          </Box>
-                          <Box
-                            sx={{
-                              backgroundColor: "grey.100",
-                              color: "text.primary",
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: "12px",
-                              fontFamily: "monospace",
-                              fontSize: "0.75rem",
-                              fontWeight: "bold",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5, // Espacio entre el tiempo y el loading
-                            }}
-                          >
-                            {idleTime}
-                            {isLoadingHistorical && (
-                              <CircularProgress
-                                size={12}
-                                thickness={4}
-                                sx={{
-                                  color: "primary.main",
-                                  ml: 0.25,
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </Box>
-                      }
-                      secondary={
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            mt: 0.75, // Ampliar margen rojo (separación entre filas internas)
-                          }}
-                        >
-                          {/* Estado a la izquierda */}
-                          <Box
-                            sx={{
-                              display: "inline-block",
-                              backgroundColor:
-                                stateColor === "error.main"
-                                  ? "error.50"
-                                  : stateColor === "text.primary"
-                                  ? "grey.100"
-                                  : "warning.50",
-                              color: stateColor,
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: "8px",
-                              fontSize: "0.7rem",
-                              fontWeight: "medium",
-                            }}
-                          >
-                            {unit.estado}
-                          </Box>
-
-                          {/* Conductor a la derecha */}
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "text.secondary",
-                              fontSize: "0.75rem",
-                              display: "flex",
-                              alignItems: "center",
-                            }}
-                          >
-                            👤 {unit.nombre || "Conductor no identificado"}
-                          </Typography>
-                        </Box>
-                      }
-                      sx={{
-                        // Ajustar márgenes para optimizar espacio
-                        "& .MuiListItemText-primary": {
-                          marginBottom: "0px", // Eliminar margen extra
-                        },
-                        "& .MuiListItemText-secondary": {
-                          marginTop: "0px", // Eliminar margen extra
-                        },
-                      }}
-                    />
-                  </ListItemButton>
-                </Box>
-              </ListItem>
+                unit={unit}
+                index={index}
+                isLast={isLast}
+                isIgnored={isIgnored}
+                idleTime={idleTime}
+                stateColor={stateColor}
+                isLoadingHistorical={isLoadingHistorical}
+                onToggleIgnore={toggleIgnoreUnit}
+                onUnitSelect={handleUnitSelect}
+              />
             );
           })}
         </List>
