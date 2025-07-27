@@ -113,6 +113,7 @@ const BaseExpandableAlert = ({
             >
               <Typography
                 variant="body1"
+                component="div"
                 sx={{
                   marginLeft: "4px",
                   marginRight: "8px",

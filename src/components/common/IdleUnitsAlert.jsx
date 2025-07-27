@@ -414,7 +414,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     processTimers();
   }, [
     idleUnits,
-    state.idleTimers,
+    // state.idleTimers, // ← REMOVIDO: Esta dependencia causa bucle infinito
     dispatch,
     saveTimersToStorage,
     loadTimersFromStorage,
@@ -611,6 +611,8 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                     }}
                   >
                     <ListItemText
+                      primaryTypographyProps={{ component: "div" }}
+                      secondaryTypographyProps={{ component: "div" }}
                       primary={
                         <Box
                           sx={{
@@ -630,6 +632,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                           >
                             <Typography
                               variant="body2"
+                              component="div"
                               sx={{
                                 fontWeight: "bold",
                                 fontSize: "0.9rem",
