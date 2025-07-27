@@ -146,29 +146,50 @@ const BaseExpandableAlert = ({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   display: "flex",
-                  alignItems: "center",
-                  maxWidth: { xs: "120px", sm: "200px" }, // Reducido para dar espacio al botón de ordenar
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  maxWidth: { xs: "120px", sm: "200px" },
                 }}
               >
-                {/* Badge a la izquierda del título */}
-                <Box
-                  sx={{
-                    mr: 1,
-                    backgroundColor: resolvedBadgeColor,
-                    color: "white",
-                    borderRadius: "50%",
-                    minWidth: "20px",
-                    height: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.75rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {count}
+                {/* Línea principal con badge y título */}
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      mr: 1,
+                      backgroundColor: resolvedBadgeColor,
+                      color: "white",
+                      borderRadius: "50%",
+                      minWidth: "20px",
+                      height: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.75rem",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {count}
+                  </Box>
+                  {title}
                 </Box>
-                {title}
+
+                {/* Subtítulo para historial */}
+                {showHistoryDot && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: "10px",
+                      color: "text.secondary",
+                      fontWeight: "normal",
+                      ml: "28px", // Alineado con el texto principal
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {historyTooltip}
+                  </Typography>
+                )}
               </Typography>
 
               {/* Botón de ordenamiento (solo cuando la lista está abierta) */}
@@ -217,7 +238,7 @@ const BaseExpandableAlert = ({
       </Box>
 
       {/* Dot indicator para historial - completamente fuera del contenedor principal */}
-      {showHistoryDot && (
+      {showHistoryDot && !isHovered && !open && (
         <Tooltip title={historyTooltip} placement="bottom">
           <Box
             sx={{
@@ -250,7 +271,7 @@ const BaseExpandableAlert = ({
               borderRadius: "50%",
               border: "2px solid white",
               boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.2)",
-              zIndex: zIndex + 2,
+              zIndex: zIndex + 1,
               pointerEvents: "none",
             }}
           />

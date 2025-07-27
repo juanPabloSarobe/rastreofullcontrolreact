@@ -76,13 +76,28 @@ src/
 - Expansión horizontal: `[4] Unidades en infracción`
 - Badge integrado a la izquierda del título
 
-#### **Estado 3: Lista expandida**
+#### **Estado 3: Lista expandida (Fase 1 - Vista rápida)**
 
-- **Header**: `[4] Unidades en infracción [📊 Tiempo] [X]`
+- **Header**: `[4] Unidades en infracción [📊 Tiempo] [🔍 Expandir] [X]`
 - **Lista dual**:
   - Sección superior: Infracciones activas
   - Separador visual
   - Sección inferior: Historial con controles de eliminación
+- **Nuevo botón**: `🔍 Expandir` para abrir modal detallado
+
+#### **Estado 4: Modal expandido con mini-mapa (Fase 2 - Vista detallada)**
+
+- **Propósito**: Análisis exhaustivo de patrones de infracción
+- **Tamaño**: Modal de pantalla completa (o 90% del viewport)
+- **Componentes principales**:
+  - **Mini-mapa interactivo** (50% del ancho)
+  - **Panel de análisis** (50% del ancho)
+  - **Timeline de eventos** (parte inferior)
+- **Funcionalidades avanzadas**:
+  - Filtros por tipo de infracción, conductor, fecha
+  - Visualización de recorridos con puntos de infracción
+  - Estadísticas y métricas detalladas
+  - Exportación de reportes
 
 ### 4. **Posicionamiento inteligente:**
 
@@ -159,18 +174,28 @@ src/
 
 ## 🔧 GUÍA DE IMPLEMENTACIÓN
 
-### **Paso 1: Crear InfractionAlert.jsx**
+### **Paso 1: Crear InfractionAlert.jsx (Fase 1 - Lista rápida)**
 
 ```jsx
 import React, { useState, useMemo } from "react";
-import { Box, Typography, List, Divider, IconButton } from "@mui/material";
+import {
+  Box,
+  Typography,
+  List,
+  Divider,
+  IconButton,
+  Button,
+} from "@mui/material";
 import WarningIcon from "@mui/icons-material/Warning";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SearchIcon from "@mui/icons-material/Search";
 import BaseExpandableAlert from "./BaseExpandableAlert";
+import InfractionDetailModal from "./InfractionDetailModal"; // Nueva importación
 
 const InfractionAlert = ({ markersData, onUnitSelect }) => {
   const [sortBy, setSortBy] = useState("time");
   const [historyInfractions, setHistoryInfractions] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false); // Nuevo estado
 
   // Detectar infracciones activas
   const activeInfractions = useMemo(() => {
@@ -187,6 +212,19 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
   // Renderizar contenido específico de infracciones
   const renderInfractionContent = ({ onUnitSelect, handleClose }) => (
     <Box sx={{ maxHeight: "328px", overflow: "auto" }}>
+      {/* Header con botón expandir */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", p: 1 }}>
+        <Typography variant="subtitle2">Vista rápida</Typography>
+        <Button
+          size="small"
+          startIcon={<SearchIcon />}
+          onClick={() => setIsModalOpen(true)}
+          sx={{ minWidth: "auto" }}
+        >
+          Expandir
+        </Button>
+      </Box>
+
       {/* Lista activas */}
       {/* Separador */}
       {/* Lista historial */}
@@ -194,10 +232,435 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
   );
 
   return (
-    <BaseExpandableAlert
-      icon={WarningIcon}
-      title="Unidades en infracción"
-      count={activeInfractions.length}
+    <>
+      <BaseExpandableAlert
+        icon={WarningIcon}
+        title="Unidades en infracción"
+        count={activeInfractions.length}
+        badgeColor="error.main"
+        iconColor="error.main"
+        tooltipText={`Infracciones activas: ${activeInfractions.length}`}
+        verticalOffset={{ desktop: 350, mobile: 250 }}
+        sortBy={sortBy}
+        onSortChange={() =>
+          setSortBy(sortBy === "alphabetic" ? "time" : "alphabetic")
+        }
+        showSortButton={true}
+        sortOptions={{ option1: "Patente", option2: "Tiempo" }}
+        onUnitSelect={onUnitSelect}
+      >
+        {renderInfractionContent}
+      </BaseExpandableAlert>
+
+      {/* Modal expandido (Fase 2) */}
+      <InfractionDetailModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        activeInfractions={activeInfractions}
+        historyInfractions={historyInfractions}
+        markersData={markersData}
+        onUnitSelect={onUnitSelect}
+      />
+    </>
+  );
+};
+```
+
+### **Paso 2: Crear InfractionDetailModal.jsx (Fase 2 - Modal con mini-mapa)**
+
+```jsx
+import React, { useState, useMemo } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Grid,
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  Chip,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  IconButton,
+  Tabs,
+  Tab,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import DownloadIcon from "@mui/icons-material/Download";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+} from "react-leaflet";
+
+const InfractionDetailModal = ({
+  open,
+  onClose,
+  activeInfractions,
+  historyInfractions,
+  markersData,
+  onUnitSelect,
+}) => {
+  const [activeTab, setActiveTab] = useState(0);
+  const [selectedTimeRange, setSelectedTimeRange] = useState("today");
+  const [selectedInfractionType, setSelectedInfractionType] = useState("all");
+  const [selectedUnit, setSelectedUnit] = useState(null);
+
+  // Datos filtrados según criterios
+  const filteredData = useMemo(() => {
+    // Aplicar filtros de tiempo, tipo, etc.
+    return combineActiveAndHistory();
+  }, [
+    activeInfractions,
+    historyInfractions,
+    selectedTimeRange,
+    selectedInfractionType,
+  ]);
+
+  // Generar rutas para el mini-mapa
+  const mapRoutes = useMemo(() => {
+    // Procesar datos para mostrar recorridos con puntos de infracción
+    return generateRouteData(filteredData);
+  }, [filteredData]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xl"
+      fullWidth
+      sx={{ "& .MuiDialog-paper": { height: "90vh", maxHeight: "90vh" } }}
+    >
+      <DialogTitle>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6">
+            📊 Análisis Detallado de Infracciones
+          </Typography>
+          <IconButton onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent>
+        {/* Filtros superiores */}
+        <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center" }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Período</InputLabel>
+            <Select
+              value={selectedTimeRange}
+              onChange={(e) => setSelectedTimeRange(e.target.value)}
+            >
+              <MenuItem value="today">Hoy</MenuItem>
+              <MenuItem value="week">Esta semana</MenuItem>
+              <MenuItem value="month">Este mes</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Tipo de infracción</InputLabel>
+            <Select
+              value={selectedInfractionType}
+              onChange={(e) => setSelectedInfractionType(e.target.value)}
+            >
+              <MenuItem value="all">Todas</MenuItem>
+              <MenuItem value="speed">Velocidad</MenuItem>
+              <MenuItem value="rest">Descanso</MenuItem>
+              <MenuItem value="zone">Geo-cerca</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button startIcon={<DownloadIcon />} variant="outlined" size="small">
+            Exportar
+          </Button>
+        </Box>
+
+        {/* Contenido principal */}
+        <Grid container spacing={2} sx={{ height: "calc(100% - 100px)" }}>
+          {/* Panel izquierdo: Mini-mapa */}
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🗺️ Mapa de Infracciones
+                </Typography>
+
+                <Box sx={{ height: "400px", width: "100%" }}>
+                  <MapContainer
+                    center={[-34.6037, -58.3816]} // Buenos Aires como centro
+                    zoom={11}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+                    {/* Marcadores de infracciones */}
+                    {filteredData.map((infraction, index) => (
+                      <Marker
+                        key={index}
+                        position={[infraction.lat, infraction.lng]}
+                        eventHandlers={{
+                          click: () => setSelectedUnit(infraction),
+                        }}
+                      >
+                        <Popup>
+                          <div>
+                            <strong>{infraction.patente}</strong>
+                            <br />
+                            {infraction.tipo_infraccion}
+                            <br />
+                            {infraction.timestamp}
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+
+                    {/* Rutas de recorrido */}
+                    {mapRoutes.map((route, index) => (
+                      <Polyline
+                        key={index}
+                        positions={route.coordinates}
+                        color={route.color}
+                        weight={3}
+                        opacity={0.7}
+                      />
+                    ))}
+                  </MapContainer>
+                </Box>
+
+                {/* Leyenda del mapa */}
+                <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Chip
+                    size="small"
+                    icon={
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          backgroundColor: "red",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    }
+                    label="Infracción de velocidad"
+                  />
+                  <Chip
+                    size="small"
+                    icon={
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          backgroundColor: "orange",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    }
+                    label="Infracción de descanso"
+                  />
+                  <Chip
+                    size="small"
+                    icon={
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          backgroundColor: "purple",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    }
+                    label="Geo-cerca"
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Panel derecho: Análisis y listas */}
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: "100%" }}>
+              <CardContent>
+                <Tabs
+                  value={activeTab}
+                  onChange={(e, newValue) => setActiveTab(newValue)}
+                  sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+                >
+                  <Tab label="📋 Lista detallada" />
+                  <Tab label="📊 Estadísticas" />
+                  <Tab label="⏱️ Timeline" />
+                </Tabs>
+
+                {/* Tab 1: Lista detallada */}
+                {activeTab === 0 && (
+                  <Box sx={{ height: "400px", overflow: "auto" }}>
+                    <List>
+                      {filteredData.map((infraction, index) => (
+                        <ListItem
+                          key={index}
+                          button
+                          onClick={() => {
+                            onUnitSelect(infraction);
+                            setSelectedUnit(infraction);
+                          }}
+                          selected={
+                            selectedUnit?.Movil_ID === infraction.Movil_ID
+                          }
+                        >
+                          <ListItemText
+                            primary={
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                              >
+                                <Typography variant="subtitle2">
+                                  {infraction.patente}
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  label={infraction.tipo_infraccion}
+                                  color={getInfractionColor(
+                                    infraction.tipo_infraccion
+                                  )}
+                                />
+                              </Box>
+                            }
+                            secondary={
+                              <>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  📍 {infraction.ubicacion}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  🕒 {infraction.timestamp}
+                                </Typography>
+                                {infraction.velocidad && (
+                                  <Typography variant="caption" color="error">
+                                    🚗 {infraction.velocidad} km/h
+                                  </Typography>
+                                )}
+                              </>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
+
+                {/* Tab 2: Estadísticas */}
+                {activeTab === 1 && (
+                  <Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h4" color="error">
+                              {filteredData.length}
+                            </Typography>
+                            <Typography variant="caption">
+                              Total infracciones
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h4" color="warning.main">
+                              {
+                                new Set(filteredData.map((i) => i.Movil_ID))
+                                  .size
+                              }
+                            </Typography>
+                            <Typography variant="caption">
+                              Unidades involucradas
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      {/* Más estadísticas... */}
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          📊 Por tipo de infracción:
+                        </Typography>
+                        {/* Gráfico de barras o lista de tipos */}
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* Tab 3: Timeline */}
+                {activeTab === 2 && (
+                  <Box sx={{ height: "400px", overflow: "auto" }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      ⏱️ Cronología de eventos:
+                    </Typography>
+                    {/* Timeline vertical de infracciones */}
+                    {filteredData
+                      .sort(
+                        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                      )
+                      .map((infraction, index) => (
+                        <Box
+                          key={index}
+                          sx={{ mb: 2, pl: 2, borderLeft: "2px solid #ddd" }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {infraction.timestamp}
+                          </Typography>
+                          <Typography variant="subtitle2">
+                            {infraction.patente} - {infraction.tipo_infraccion}
+                          </Typography>
+                          <Typography variant="caption">
+                            📍 {infraction.ubicacion}
+                          </Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Función auxiliar para colores de infracción
+const getInfractionColor = (tipo) => {
+  switch (tipo) {
+    case "velocidad":
+      return "error";
+    case "descanso":
+      return "warning";
+    case "geocerca":
+      return "info";
+    default:
+      return "default";
+  }
+};
+
+export default InfractionDetailModal;
+```
+
       badgeColor="error.main"
       iconColor="error.main"
       tooltipText={`Infracciones activas: ${activeInfractions.length}`}
@@ -212,11 +675,48 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
     >
       {renderInfractionContent}
     </BaseExpandableAlert>
-  );
-};
-```
 
-### **Paso 2: Integrar en PrincipalPage.jsx**
+);
+};
+
+````
+
+### **Paso 3: Actualizar BaseExpandableAlert para soportar botón expandir**
+
+```jsx
+// En BaseExpandableAlert.jsx - Agregar nueva prop
+const BaseExpandableAlert = ({
+  // ... props existentes
+  showExpandButton = false,
+  onExpandClick,
+  expandButtonText = "Expandir",
+  // ... resto de props
+}) => {
+  // En la sección del header expandido, después del botón de ordenamiento:
+  {showExpandButton && open && (
+    <Tooltip title={`Abrir vista detallada`}>
+      <IconButton
+        size="small"
+        onClick={onExpandClick}
+        sx={{
+          color: "primary.main",
+          backgroundColor: "primary.50",
+          borderRadius: "8px",
+          px: 1,
+          mr: 1,
+          "&:hover": {
+            backgroundColor: "primary.100",
+          },
+        }}
+      >
+        <SearchIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  )}
+};
+````
+
+### **Paso 4: Integrar en PrincipalPage.jsx**
 
 ```jsx
 // Agregar después de IdleUnitsAlert
@@ -225,14 +725,49 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
 <UnitDetails unitData={selectedUnit} />
 ```
 
-### **Paso 3: Ajustar posicionamiento dinámico**
+## 📋 ROADMAP DE IMPLEMENTACIÓN
 
-El hook `useExpandableAlert` ya maneja el posicionamiento inteligente. Solo se necesita:
+### **🎯 FASE 1: Lista rápida (Implementación inmediata)**
 
-- Ajustar `verticalOffset` para posicionar debajo de IdleUnitsAlert
-- Verificar que no se superponga con otros componentes
+**Objetivo**: Proporcionar funcionalidad básica y familiar
+**Tiempo estimado**: 3 horas
+**Prioridad**: Alta
 
-## 📋 FUNCIONALIDADES ESPECÍFICAS A IMPLEMENTAR
+**Funcionalidades:**
+
+- ✅ Lista expandible con infracciones activas e historial
+- ✅ Sistema de ordenamiento (patente/tiempo)
+- ✅ Gestión de historial con eliminación individual/masiva
+- ✅ Integración con BaseExpandableAlert existente
+- ✅ zIndex y posicionamiento correctos
+
+### **🚀 FASE 2: Modal expandido (Mejora estratégica)**
+
+**Objetivo**: Análisis profundo y gestión avanzada
+**Tiempo estimado**: 16 horas
+**Prioridad**: Media-Alta
+
+**Funcionalidades:**
+
+- 🗺️ Mini-mapa interactivo con React-Leaflet
+- 📊 Panel de análisis con múltiples tabs
+- 🔍 Sistema de filtros avanzados
+- 📈 Estadísticas y métricas detalladas
+- ⏱️ Timeline cronológico de eventos
+- 💾 Exportación de reportes
+
+### **🔮 FASE 3: Funcionalidades avanzadas (Futuro)**
+
+**Objetivo**: IA y automatización
+**Tiempo estimado**: Por definir
+**Prioridad**: Baja
+
+**Funcionalidades:**
+
+- 🤖 Detección automática de patrones
+- 🎯 Alertas predictivas
+- 📱 Notificaciones push
+- 🔄 Integración con sistemas externos
 
 ### **1. Gestión de historial:**
 
@@ -291,18 +826,97 @@ const InfractionItem = ({ unit, isHistory, onDelete }) => (
 );
 ```
 
-## 📊 ESTIMACIÓN DE IMPLEMENTACIÓN
+## 📊 ESTIMACIÓN DE IMPLEMENTACIÓN (ACTUALIZADA)
 
-### **Tareas específicas:**
+### **FASE 1: Lista rápida (tareas originales):**
 
-| Tarea                        | Tiempo estimado | Nota                               |
-| ---------------------------- | --------------- | ---------------------------------- |
-| Crear InfractionAlert.jsx    | 1 hora          | Reutiliza BaseExpandableAlert      |
-| Implementar doble lista      | 30 minutos      | Estructura JSX                     |
-| Sistema de historial         | 45 minutos      | Estados y efectos                  |
-| Integración en PrincipalPage | 15 minutos      | Una línea de código                |
-| Testing y ajustes            | 30 minutos      | Validación funcional               |
-| **Total**                    | **3 horas**     | **Reducido 75% por reutilización** |
+| Tarea                     | Tiempo estimado | Nota                                        |
+| ------------------------- | --------------- | ------------------------------------------- |
+| Crear InfractionAlert.jsx | 1 hora          | Reutiliza BaseExpandableAlert               |
+| Integrar en PrincipalPage | 30 minutos      | Simple importación y posicionamiento        |
+| Gestión de historial      | 1 hora          | Lógica de detección y movimiento automático |
+| Testing y ajustes finales | 30 minutos      | Verificar funcionamiento y posicionamiento  |
+| **TOTAL FASE 1**          | **3 horas**     | **Lista funcional básica**                  |
+
+### **FASE 2: Modal con mini-mapa (nueva funcionalidad):**
+
+| Tarea                           | Tiempo estimado | Nota                                 |
+| ------------------------------- | --------------- | ------------------------------------ |
+| Crear InfractionDetailModal.jsx | 4 horas         | Modal completo con tabs y filtros    |
+| Integración de mini-mapa        | 3 horas         | React-Leaflet con marcadores y rutas |
+| Sistema de filtros avanzados    | 2 horas         | Filtros por tiempo, tipo, unidad     |
+| Panel de estadísticas           | 2 horas         | Gráficos y métricas de infracciones  |
+| Timeline de eventos             | 1.5 horas       | Cronología visual de infracciones    |
+| Funcionalidad de exportación    | 1.5 horas       | Exportar reportes en Excel/PDF       |
+| Testing del modal completo      | 2 horas         | Testing de todas las funcionalidades |
+| **TOTAL FASE 2**                | **16 horas**    | **Modal avanzado completo**          |
+
+### **FUNCIONALIDADES DEL MODAL EXPANDIDO:**
+
+#### **🗺️ Mini-mapa interactivo:**
+
+- ✅ Marcadores de infracciones por tipo y severidad
+- ✅ Rutas de recorrido con puntos problemáticos
+- ✅ Clusters para zonas con alta densidad de infracciones
+- ✅ Capas toggleables (velocidad, descanso, geo-cercas)
+- ✅ Zoom automático a infracción seleccionada
+
+#### **📊 Panel de análisis:**
+
+- ✅ **Tab 1 - Lista detallada**: Infracciones con contexto completo
+- ✅ **Tab 2 - Estadísticas**: KPIs, gráficos, tendencias
+- ✅ **Tab 3 - Timeline**: Cronología de eventos con filtros
+
+#### **🔍 Sistema de filtros:**
+
+- ✅ Filtro temporal: Hoy, semana, mes, rango personalizado
+- ✅ Filtro por tipo: Velocidad, descanso, geo-cerca, etc.
+- ✅ Filtro por unidad/conductor específico
+- ✅ Filtro por severidad: Crítica, alta, media, baja
+
+#### **📈 Métricas y estadísticas:**
+
+- ✅ Total de infracciones en período seleccionado
+- ✅ Unidades más problemáticas (ranking)
+- ✅ Tipos de infracción más frecuentes
+- ✅ Zonas geográficas con mayor incidencia
+- ✅ Tendencias por horario/día de semana
+- ✅ Comparativas entre períodos
+
+#### **💾 Funcionalidades de exportación:**
+
+- ✅ Reporte PDF con mapa y estadísticas
+- ✅ Excel con datos detallados para análisis
+- ✅ Imágenes del mapa con marcadores
+- ✅ Configuración de reportes automáticos
+
+### **🎯 VALOR AGREGADO DEL MODAL:**
+
+#### **Para Operadores:**
+
+- 🔍 **Contexto visual** de las infracciones en el mapa
+- 📊 **Patrones identificables** para toma de decisiones
+- ⏱️ **Timeline claro** de eventos secuenciales
+- 📱 **Interfaz intuitiva** con tabs organizados
+
+#### **Para Supervisores:**
+
+- 📈 **Métricas de gestión** para evaluación de desempeño
+- 🎯 **Identificación de zonas problemáticas** para entrenamiento
+- 📊 **Reportes ejecutivos** con datos procesados
+- 🔄 **Análisis de tendencias** para mejora continua
+
+#### **Para Gerencia:**
+
+- 💰 **ROI de seguridad** mediante reducción de infracciones
+- 📊 **Dashboard ejecutivo** con KPIs clave
+- 📈 **Análisis predictivo** para planificación
+- 🎯 **Compliance normativo** con reportes detallados
+  | Implementar doble lista | 30 minutos | Estructura JSX |
+  | Sistema de historial | 45 minutos | Estados y efectos |
+  | Integración en PrincipalPage | 15 minutos | Una línea de código |
+  | Testing y ajustes | 30 minutos | Validación funcional |
+  | **Total** | **3 horas** | **Reducido 75% por reutilización** |
 
 ### **Comparación con estimación original:**
 
@@ -691,7 +1305,61 @@ useEffect(() => {
 
 ---
 
+## ✅ RESUMEN DE PROPUESTA ACTUALIZADA
+
+### **🎯 ENFOQUE DE DOS FASES:**
+
+#### **FASE 1: Vista rápida (Lista actual)**
+
+- **Propósito**: Gestión inmediata y eficiente de infracciones activas
+- **Funcionalidad**: Lista expandible similar a IdleUnitsAlert con historial
+- **Tiempo**: 3 horas de implementación
+- **Beneficio**: Funcionalidad operativa inmediata
+
+#### **FASE 2: Vista detallada (Modal con mini-mapa)**
+
+- **Propósito**: Análisis profundo y gestión estratégica
+- **Funcionalidad**: Modal completo con mapa interactivo, estadísticas y filtros
+- **Tiempo**: 16 horas de implementación
+- **Beneficio**: Herramienta de análisis y reporting avanzada
+
+### **🔄 FLUJO DE USO PROPUESTO:**
+
+```
+1. Operador ve infracciones en lista rápida (Fase 1)
+   ↓
+2. Para casos simples: Gestiona desde la lista
+   ↓
+3. Para análisis profundo: Hace clic en "🔍 Expandir"
+   ↓
+4. Se abre modal con mini-mapa y herramientas avanzadas (Fase 2)
+   ↓
+5. Realiza análisis detallado, filtra, exporta reportes
+   ↓
+6. Cierra modal y vuelve a operación normal
+```
+
+### **💡 VALOR DIFERENCIAL:**
+
+- **Flexibilidad**: Dos niveles de interacción según necesidad
+- **Escalabilidad**: Sistema que crece con las necesidades del usuario
+- **Usabilidad**: No sobrecarga la interfaz principal
+- **Análisis**: Capacidades avanzadas cuando se requieren
+
+### **🚀 PRÓXIMOS PASOS:**
+
+1. **Implementar Fase 1** (lista rápida) para operación inmediata
+2. **Validar UX** con usuarios reales
+3. **Desarrollar Fase 2** (modal) basado en feedback
+4. **Iterar y mejorar** según uso y necesidades
+
+---
+
 **El sistema está listo para implementación optimizada aplicando todos los patrones aprendidos en ralentí.**
+
+_Documento actualizado: 27 de julio de 2025_  
+_Versión: 2.0 - Incluye propuesta de modal expandido_  
+_Estado: Listo para implementación por fases_
 
 ```
 

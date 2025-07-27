@@ -9,6 +9,7 @@ import {
   Typography,
   Divider,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import WarningIcon from "@mui/icons-material/Warning";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -27,6 +28,7 @@ const InfractionItem = React.memo(
     formattedTime,
     onDelete,
     onUnitSelect,
+    isLoadingDetails = false,
   }) => (
     <ListItem
       key={unit.Movil_ID}
@@ -45,6 +47,25 @@ const InfractionItem = React.memo(
           minHeight: "50px",
         }}
       >
+        {/* Botón de eliminar del lado izquierdo para historial */}
+        {isHistory && onDelete && (
+          <IconButton
+            size="small"
+            onClick={(e) => onDelete(unit.Movil_ID, e)}
+            sx={{
+              color: "text.disabled",
+              ml: 1,
+              mr: 0.5,
+              "&:hover": {
+                backgroundColor: "rgba(244, 67, 54, 0.1)",
+                color: "error.main",
+              },
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        )}
+
         <ListItemButton
           onClick={() => onUnitSelect(unit)}
           sx={{
@@ -107,7 +128,7 @@ const InfractionItem = React.memo(
                 <Box
                   sx={{
                     backgroundColor: isHistory ? "grey.100" : "error.50",
-                    color: isHistory ? "text.secondary" : "error.main",
+                    color: isHistory ? "text.disabled" : "error.main",
                     px: 1,
                     py: 0.25,
                     borderRadius: "12px",
@@ -132,36 +153,117 @@ const InfractionItem = React.memo(
                   mt: 0.75,
                 }}
               >
-                <Box
-                  sx={{
-                    display: "inline-block",
-                    backgroundColor: isHistory
-                      ? "grey.100"
-                      : severityColor + ".50",
-                    color: isHistory
-                      ? "text.disabled"
-                      : severityColor + ".main",
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: "8px",
-                    fontSize: "0.7rem",
-                    fontWeight: "medium",
-                  }}
-                >
-                  {unit.estado}
-                </Box>
+                {/* Información diferente para historial vs activas */}
+                {isHistory ? (
+                  // Para historial: velocidad máxima y duración (placeholders por ahora)
+                  <>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        alignItems: "center",
+                      }}
+                    >
+                      {isLoadingDetails ? (
+                        // Mostrar loading mientras se obtienen los datos
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            px: 1,
+                            py: 0.25,
+                          }}
+                        >
+                          <CircularProgress size={16} thickness={4} />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              fontSize: "0.7rem",
+                            }}
+                          >
+                            Obteniendo detalles...
+                          </Typography>
+                        </Box>
+                      ) : (
+                        // Mostrar datos de la infracción
+                        <>
+                          <Box
+                            sx={{
+                              display: "inline-block",
+                              backgroundColor: "grey.100",
+                              color: "text.disabled",
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: "8px",
+                              fontSize: "0.7rem",
+                              fontWeight: "medium",
+                            }}
+                          >
+                            🚗 {unit.maxVelocidad || "-- km/h"}
+                          </Box>
+                          <Box
+                            sx={{
+                              display: "inline-block",
+                              backgroundColor: "grey.100",
+                              color: "text.disabled",
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: "8px",
+                              fontSize: "0.7rem",
+                              fontWeight: "medium",
+                            }}
+                          >
+                            ⏱️ {unit.duracion || "--:--"}
+                          </Box>
+                        </>
+                      )}
+                    </Box>
 
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: isHistory ? "text.disabled" : "text.secondary",
-                    fontSize: "0.75rem",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  👤 {unit.nombre || "Conductor no identificado"}
-                </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.disabled",
+                        fontSize: "0.75rem",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      👤 {unit.nombre || "Conductor no identificado"}
+                    </Typography>
+                  </>
+                ) : (
+                  // Para infracciones activas: mantener el estado actual
+                  <>
+                    <Box
+                      sx={{
+                        display: "inline-block",
+                        backgroundColor: severityColor + ".50",
+                        color: severityColor + ".main",
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: "8px",
+                        fontSize: "0.7rem",
+                        fontWeight: "medium",
+                      }}
+                    >
+                      {unit.estado}
+                    </Box>
+
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontSize: "0.75rem",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      👤 {unit.nombre || "Conductor no identificado"}
+                    </Typography>
+                  </>
+                )}
               </Box>
             }
             sx={{
@@ -174,24 +276,6 @@ const InfractionItem = React.memo(
             }}
           />
         </ListItemButton>
-
-        {/* Botón de eliminar solo para historial */}
-        {isHistory && onDelete && (
-          <IconButton
-            size="small"
-            onClick={(e) => onDelete(unit.Movil_ID, e)}
-            sx={{
-              color: "text.disabled",
-              mx: 1,
-              "&:hover": {
-                backgroundColor: "rgba(244, 67, 54, 0.1)",
-                color: "error.main",
-              },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        )}
       </Box>
     </ListItem>
   )
@@ -203,24 +287,25 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
   const [previousActiveInfractions, setPreviousActiveInfractions] = useState(
     []
   );
+  const [loadingUnits, setLoadingUnits] = useState(new Set()); // Estado para unidades cargando
   const { state } = useContextValue();
 
   // Constantes memoizadas
   const TWELVE_HOURS_MS = useMemo(() => 12 * 60 * 60 * 1000, []);
 
-  // Array de estados de infracción memoizado
+  // Array de estados de infracción memoizado - Solo términos explícitos
   const infractionStates = useMemo(
     () => [
       "infracción",
       "infraccion",
-      "violación",
-      "violacion",
-      "exceso de velocidad",
       "infracción de velocidad",
+      "infraccion de velocidad",
       "infracción tiempo",
+      "infraccion tiempo",
       "infracción movimiento",
-      "velocidad excedida",
-      "límite de velocidad",
+      "infraccion movimiento",
+      "infracción de descanso",
+      "infraccion de descanso",
     ],
     []
   );
@@ -241,15 +326,27 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
     (estado) => {
       const estadoLower = normalizeString(estado);
 
+      // Solo evaluar severidad si ya confirmamos que es una infracción
       // Infracciones de alta severidad (velocidad)
-      if (estadoLower.includes("velocidad") || estadoLower.includes("exceso")) {
+      if (
+        estadoLower.includes("velocidad") ||
+        estadoLower.includes("infraccion de velocidad") ||
+        estadoLower.includes("infracción de velocidad") ||
+        estadoLower.includes("violacion de velocidad") ||
+        estadoLower.includes("violación de velocidad")
+      ) {
         return "error"; // Rojo
       }
-      // Infracciones de media severidad (tiempo)
-      if (estadoLower.includes("tiempo") || estadoLower.includes("descanso")) {
+      // Infracciones de media severidad (tiempo/descanso)
+      if (
+        estadoLower.includes("tiempo") ||
+        estadoLower.includes("descanso") ||
+        estadoLower.includes("infraccion tiempo") ||
+        estadoLower.includes("infracción tiempo")
+      ) {
         return "warning"; // Naranja
       }
-      // Infracciones de baja severidad (otras)
+      // Infracciones de baja severidad (movimiento y otras)
       return "info"; // Azul
     },
     [normalizeString]
@@ -261,8 +358,146 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
     return date.toLocaleTimeString("es-AR", {
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
+      hour12: false, // Formato 24 horas
     });
   }, []);
+
+  // Función para formatear duración en formato mm:ss
+  const formatDuration = useCallback((seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  }, []);
+
+  // Función para obtener detalles completos de la infracción
+  const fetchInfractionDetails = useCallback(async (unit) => {
+    try {
+      const endDate = new Date(unit.fechaHora);
+      // Buscar en las últimas 2 horas para asegurar que capturamos toda la infracción
+      const startDate = new Date(endDate.getTime() - 2 * 60 * 60 * 1000);
+
+      const fechaInicial = startDate
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+      const fechaFinal = endDate.toISOString().slice(0, 19).replace("T", " ");
+
+      const url = `/api/servicio/historico.php/historico?movil=${unit.Movil_ID}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
+
+      console.log(
+        `Consultando detalles de infracción para ${unit.patente}:`,
+        url
+      );
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Procesar los datos para encontrar la secuencia de infracción
+      const infractionDetails = processInfractionSequence(data, unit);
+
+      return infractionDetails;
+    } catch (error) {
+      console.error(
+        `Error obteniendo detalles de infracción para ${unit.patente}:`,
+        error
+      );
+      return null;
+    }
+  }, []);
+
+  // Función para procesar la secuencia de infracción y calcular detalles
+  const processInfractionSequence = useCallback(
+    (historicalData, unit) => {
+      if (!historicalData || !Array.isArray(historicalData)) {
+        return null;
+      }
+
+      // Buscar la secuencia de infracción más reciente
+      const infractionEvents = [];
+      let startEvent = null;
+      let endEvent = null;
+
+      // Recorrer en orden cronológico inverso para encontrar la última infracción
+      for (let i = historicalData.length - 1; i >= 0; i--) {
+        const event = historicalData[i];
+        const eventType = (event.evn || "").toLowerCase();
+
+        // Buscar fin de infracción primero (yendo hacia atrás)
+        if (
+          !endEvent &&
+          (eventType.includes("fin de infracción") ||
+            eventType.includes("fin de infraccion"))
+        ) {
+          endEvent = event;
+          infractionEvents.unshift(event);
+          continue;
+        }
+
+        // Si ya encontramos el fin, buscar movimientos en infracción
+        if (endEvent && eventType.includes("movimiento en infracción")) {
+          infractionEvents.unshift(event);
+          continue;
+        }
+
+        // Buscar inicio de infracción
+        if (
+          endEvent &&
+          (eventType.includes("inicio de infracción") ||
+            eventType.includes("inicio de infraccion"))
+        ) {
+          startEvent = event;
+          infractionEvents.unshift(event);
+          break; // Secuencia completa encontrada
+        }
+
+        // Si encontramos otro evento que no es parte de la secuencia, parar
+        if (
+          endEvent &&
+          !eventType.includes("infracción") &&
+          !eventType.includes("infraccion")
+        ) {
+          break;
+        }
+      }
+
+      if (!startEvent || !endEvent || infractionEvents.length === 0) {
+        console.log(
+          `No se encontró secuencia completa de infracción para ${unit.patente}`
+        );
+        return null;
+      }
+
+      // Calcular velocidad máxima
+      const maxVelocidad = Math.max(
+        ...infractionEvents.map((event) => parseInt(event.vel) || 0)
+      );
+
+      // Calcular duración
+      const startTime = new Date(`${startEvent.fec} ${startEvent.hor}`);
+      const endTime = new Date(`${endEvent.fec} ${endEvent.hor}`);
+      const durationInSeconds = Math.floor((endTime - startTime) / 1000);
+
+      console.log(`Infracción procesada para ${unit.patente}:`, {
+        maxVelocidad,
+        duracion: formatDuration(durationInSeconds),
+        eventos: infractionEvents.length,
+      });
+
+      return {
+        maxVelocidad: `${maxVelocidad} km/h`,
+        duracion: formatDuration(durationInSeconds),
+        infractionEvents,
+      };
+    },
+    [formatDuration]
+  );
 
   // Detectar infracciones activas - Memoizado para optimizar rendimiento
   const activeInfractions = useMemo(() => {
@@ -363,7 +598,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
   // Gestión automática del historial - Detectar unidades que salen de infracción
   useEffect(() => {
     // Encontrar unidades que estaban en infracción previamente pero ya no están activas
-    const processHistoryMovement = () => {
+    const processHistoryMovement = async () => {
       const currentActiveIds = new Set(
         activeInfractions.map((unit) => unit.Movil_ID)
       );
@@ -380,13 +615,46 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
           "Moviendo al historial:",
           unitsToMoveToHistory.map((u) => u.patente)
         );
-        setHistoryInfractions((prev) => {
-          // Agregar nuevas unidades al historial
-          const newHistory = [...prev, ...unitsToMoveToHistory];
 
-          // Limitar a 50 elementos para rendimiento
+        // Agregar unidades al historial inmediatamente (sin detalles)
+        setHistoryInfractions((prev) => {
+          const newHistory = [...prev, ...unitsToMoveToHistory];
           return newHistory.slice(0, 50);
         });
+
+        // Obtener detalles para cada unidad que se movió al historial
+        for (const unit of unitsToMoveToHistory) {
+          // Marcar como cargando
+          setLoadingUnits((prev) => new Set([...prev, unit.Movil_ID]));
+
+          try {
+            // Obtener detalles de la infracción
+            const details = await fetchInfractionDetails(unit);
+
+            if (details) {
+              // Actualizar la unidad en el historial con los detalles
+              setHistoryInfractions((prev) =>
+                prev.map((historyUnit) =>
+                  historyUnit.Movil_ID === unit.Movil_ID
+                    ? { ...historyUnit, ...details }
+                    : historyUnit
+                )
+              );
+            }
+          } catch (error) {
+            console.error(
+              `Error obteniendo detalles para ${unit.patente}:`,
+              error
+            );
+          } finally {
+            // Remover del estado de carga
+            setLoadingUnits((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(unit.Movil_ID);
+              return newSet;
+            });
+          }
+        }
       }
     };
 
@@ -400,6 +668,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
   }, [
     activeInfractions,
     historyInfractionIds,
+    fetchInfractionDetails,
     // NO incluir historyInfractions ni previousActiveInfractions para evitar bucle infinito
   ]);
 
@@ -514,7 +783,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
                 gap: 1,
               }}
             >
-              📋 Historial ({historyInfractions.length})
+              📋 Historial de infracciones ({historyInfractions.length})
             </Typography>
 
             <Button
@@ -540,6 +809,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
               const severityColor = determineInfractionSeverity(unit.estado);
               const formattedTime = formatInfractionTime(unit.fechaHora);
               const isLast = index === historyInfractions.length - 1;
+              const isLoadingDetails = loadingUnits.has(unit.Movil_ID);
 
               return (
                 <InfractionItem
@@ -552,6 +822,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
                   formattedTime={formattedTime}
                   onDelete={handleRemoveFromHistory}
                   onUnitSelect={handleUnitSelect}
+                  isLoadingDetails={isLoadingDetails}
                 />
               );
             })}
@@ -604,8 +875,8 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       badgeColor="error.main"
       iconColor="error.main"
       showHistoryDot={historyInfractions.length > 0}
-      historyTooltip={`Historial: ${historyInfractions.length} infracciones resueltas`}
-      zIndex={1001}
+      historyTooltip={`Historial: ${historyInfractions.length} infracciones concluidas`}
+      zIndex={1100}
     >
       {renderInfractionContent}
     </BaseExpandableAlert>

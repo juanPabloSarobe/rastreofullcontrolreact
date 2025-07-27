@@ -824,7 +824,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       sortOptions={{ option1: "Patente", option2: "Tiempo" }}
       badgeColor="warning.main"
       iconColor="warning.main"
-      zIndex={1002}
+      zIndex={1200}
     >
       {renderIdleContent}
     </BaseExpandableAlert>
