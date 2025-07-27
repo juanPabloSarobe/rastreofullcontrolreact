@@ -7,6 +7,7 @@ import {
   ListItemText,
   ListItemButton,
   Typography,
+  CircularProgress,
 } from "@mui/material";
 import DepartureBoardIcon from "@mui/icons-material/DepartureBoard";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -18,6 +19,7 @@ import { useContextValue } from "../../context/Context"; // Corregir la importac
 const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const [ignoredUnits, setIgnoredUnits] = useState(new Set());
   const [sortBy, setSortBy] = useState("time"); // Cambiar orden por defecto a tiempo
+  const [loadingHistoricalData, setLoadingHistoricalData] = useState(new Set()); // Nuevo estado para trackear cargas
   const { state, dispatch } = useContextValue(); // Obtener estado y dispatch del contexto
 
   // Constantes
@@ -58,6 +60,117 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     return new Map();
   }, []);
 
+  // Función para obtener datos históricos de una unidad
+  const fetchHistoricalData = useCallback(async (unitId) => {
+    try {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const fechaInicial = today.toISOString().split("T")[0]; // YYYY-MM-DD
+      const fechaFinal = tomorrow.toISOString().split("T")[0]; // YYYY-MM-DD
+
+      const url = `/api/servicio/historico.php/historico?movil=${unitId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.Historico || [];
+    } catch (error) {
+      console.warn(`Error fetching historical data for unit ${unitId}:`, error);
+      return [];
+    }
+  }, []);
+
+  // Función para analizar datos históricos y encontrar inicio de ralentí
+  const analyzeHistoricalIdleData = useCallback((historicalData) => {
+    if (!historicalData || historicalData.length === 0) {
+      return { hasIdleStart: false, idleStartTime: null };
+    }
+
+    // Empezar desde el final (último reporte) e ir hacia atrás
+    let idleStartTime = null;
+    let hasIdleStart = false;
+
+    for (let i = historicalData.length - 1; i >= 0; i--) {
+      const record = historicalData[i];
+      const event = (record.evn || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim(); // Normalizar acentos y espacios
+
+      // Verificar si es "Inicio Ralenti" (punto exacto) - con y sin acentos
+      if (event === "inicio ralenti" || event === "inicio de ralenti") {
+        const datetime = `${record.fec}T${record.hor}`;
+        idleStartTime = new Date(datetime).getTime();
+        hasIdleStart = true;
+        break; // Encontramos el inicio exacto, no necesitamos seguir
+      }
+
+      // Si es "Reporte en Ralenti", guardarlo como candidato (fallback) - con y sin acentos
+      else if (
+        event === "reporte en ralenti" ||
+        event === "reporte de ralenti"
+      ) {
+        if (!idleStartTime) {
+          // Solo si no hemos encontrado uno ya
+          const datetime = `${record.fec}T${record.hor}`;
+          idleStartTime = new Date(datetime).getTime();
+          // No marcamos hasIdleStart como true porque es un fallback
+        }
+      }
+
+      // Si encontramos "Fin de ralenti", significa que hemos pasado el período actual - con y sin acentos
+      else if (event === "fin de ralenti" || event === "fin ralenti") {
+        break; // Salir del loop, no hay ralentí activo antes de este punto
+      }
+    }
+
+    return {
+      hasIdleStart,
+      idleStartTime,
+    };
+  }, []);
+
+  // Función para cargar y procesar datos históricos para unidades específicas
+  const loadHistoricalIdleData = useCallback(
+    async (unitsToProcess) => {
+      const promises = unitsToProcess.map(async (unitId) => {
+        try {
+          const historicalData = await fetchHistoricalData(unitId);
+          const analysis = analyzeHistoricalIdleData(historicalData);
+
+          return {
+            unitId,
+            ...analysis,
+          };
+        } catch (error) {
+          console.warn(
+            `Error processing historical data for unit ${unitId}:`,
+            error
+          );
+          return {
+            unitId,
+            hasIdleStart: false,
+            idleStartTime: null,
+          };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      return results;
+    },
+    [fetchHistoricalData, analyzeHistoricalIdleData]
+  );
+
   // Función para guardar timers en localStorage
   const saveTimersToStorage = useCallback((timersMap) => {
     try {
@@ -90,15 +203,22 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const idleUnits = useMemo(() => {
     if (!markersData) return [];
 
+    // Estados de ralentí más exhaustivos - incluye variaciones con y sin acentos
     const idleStates = [
       "inicio ralenti",
-      "inicio ralentí", // Con acento
+      "inicio ralentí",
+      "inicio de ralenti",
+      "inicio de ralentí",
       "fin de ralenti",
-      "fin de ralentí", // Con acento
+      "fin de ralentí",
+      "fin ralenti",
+      "fin ralentí",
       "reporte en ralenti",
-      "reporte en ralentí", // Con acento
+      "reporte en ralentí",
+      "reporte de ralenti",
+      "reporte de ralentí",
       "ralentí",
-      "ralenti", // Sin acento
+      "ralenti",
     ];
 
     const currentTime = Date.now();
@@ -117,16 +237,21 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       const estado = unit.estado
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, ""); // Remover acentos
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim(); // Normalizar acentos y espacios
 
-      const hasIdleState = idleStates.some((idleState) =>
-        estado.includes(
-          idleState.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        )
-      );
+      const hasIdleState = idleStates.some((idleState) => {
+        const normalizedIdleState = idleState
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        return estado.includes(normalizedIdleState);
+      });
 
       // Si es "fin de ralentí/ralenti" y motor apagado, no incluir en la lista
-      if (hasIdleState && estado.includes("fin de ralenti")) {
+      if (
+        hasIdleState &&
+        (estado.includes("fin de ralenti") || estado.includes("fin ralenti"))
+      ) {
         const motorApagado = unit.estadoDeMotor
           ?.toLowerCase()
           .includes("motor apagado");
@@ -173,6 +298,63 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
               fechaHora - 5 * 60 * 1000,
               fechaHora
             ); // Máximo 5 min hacia atrás
+
+            // Crear timer temporal y marcar para búsqueda histórica
+            const tempTimer = {
+              startTime: estimatedStartTime,
+              accumulatedTime: currentTime - estimatedStartTime,
+              lastUpdate: fechaHora,
+              isTemporary: true,
+            };
+
+            newTimers.set(unitId, tempTimer);
+
+            // Buscar datos históricos en background
+            setLoadingHistoricalData((prev) => new Set([...prev, unitId])); // Marcar como cargando
+
+            loadHistoricalIdleData([unitId])
+              .then((results) => {
+                const result = results[0];
+                if (result && result.hasIdleStart && result.idleStartTime) {
+                  // Actualizar con datos históricos precisos
+                  const preciseAccumulatedTime =
+                    Date.now() - result.idleStartTime;
+
+                  const updatedTimer = {
+                    startTime: result.idleStartTime,
+                    accumulatedTime: Math.max(0, preciseAccumulatedTime),
+                    lastUpdate: fechaHora,
+                    isHistoricallyLoaded: true,
+                  };
+
+                  // Actualizar en el contexto
+                  dispatch({
+                    type: "UPDATE_IDLE_TIMER",
+                    payload: { unitId, timer: updatedTimer },
+                  });
+
+                  console.log(
+                    `Timer actualizado con datos históricos para unidad ${unitId}: ${Math.floor(
+                      preciseAccumulatedTime / (1000 * 60)
+                    )} minutos`
+                  );
+                }
+              })
+              .catch((error) => {
+                console.warn(
+                  `Error cargando datos históricos para unidad ${unitId}:`,
+                  error
+                );
+              })
+              .finally(() => {
+                // Remover del estado de loading cuando termine (éxito o error)
+                setLoadingHistoricalData((prev) => {
+                  const newSet = new Set(prev);
+                  newSet.delete(unitId);
+                  return newSet;
+                });
+              });
+
             newTimers.set(unitId, {
               startTime: estimatedStartTime,
               accumulatedTime: currentTime - estimatedStartTime,
@@ -266,20 +448,30 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     const estadoLower = estado
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, ""); // Normalizar acentos
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim(); // Normalizar acentos y espacios
 
-    // Inicio de ralentí: siempre naranja
-    if (estadoLower.includes("inicio ralenti")) {
+    // Inicio de ralentí: siempre naranja - con variaciones
+    if (
+      estadoLower.includes("inicio ralenti") ||
+      estadoLower.includes("inicio de ralenti")
+    ) {
       return "warning.main";
     }
 
-    // Fin de ralentí con motor encendido: gris
-    if (estadoLower.includes("fin de ralenti")) {
+    // Fin de ralentí con motor encendido: gris - con variaciones
+    if (
+      estadoLower.includes("fin de ralenti") ||
+      estadoLower.includes("fin ralenti")
+    ) {
       return "text.primary";
     }
 
-    // Reporte en ralentí: color basado en tiempo
-    if (estadoLower.includes("reporte en ralenti")) {
+    // Reporte en ralentí: color basado en tiempo - con variaciones
+    if (
+      estadoLower.includes("reporte en ralenti") ||
+      estadoLower.includes("reporte de ralenti")
+    ) {
       const timer = state.idleTimers.get(unitId);
       if (timer) {
         const totalMinutes = Math.floor(timer.accumulatedTime / (1000 * 60));
@@ -363,6 +555,9 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
             const isIgnored = ignoredUnits.has(unit.Movil_ID);
             const idleTime = getIdleTime(unit.Movil_ID);
             const stateColor = getStateColor(unit.estado, unit.Movil_ID); // Agregar unitId aquí
+            const isLoadingHistorical = loadingHistoricalData.has(
+              unit.Movil_ID
+            ); // Verificar si está cargando
 
             return (
               <ListItem
@@ -473,9 +668,22 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                               fontFamily: "monospace",
                               fontSize: "0.75rem",
                               fontWeight: "bold",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5, // Espacio entre el tiempo y el loading
                             }}
                           >
                             {idleTime}
+                            {isLoadingHistorical && (
+                              <CircularProgress
+                                size={12}
+                                thickness={4}
+                                sx={{
+                                  color: "primary.main",
+                                  ml: 0.25,
+                                }}
+                              />
+                            )}
                           </Box>
                         </Box>
                       }
