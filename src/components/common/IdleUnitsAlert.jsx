@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   IconButton,
@@ -18,8 +18,73 @@ import { useContextValue } from "../../context/Context"; // Corregir la importac
 const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const [ignoredUnits, setIgnoredUnits] = useState(new Set());
   const [sortBy, setSortBy] = useState("time"); // Cambiar orden por defecto a tiempo
-  const [idleTimers, setIdleTimers] = useState(new Map());
-  const { state } = useContextValue(); // Obtener el estado del contexto
+  const { state, dispatch } = useContextValue(); // Obtener estado y dispatch del contexto
+
+  // Constantes
+  const STORAGE_KEY = "idleTimers";
+  const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+
+  // Función para cargar timers desde localStorage
+  const loadTimersFromStorage = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsedTimers = JSON.parse(stored);
+        const timersMap = new Map();
+
+        // Convertir y validar datos almacenados
+        Object.entries(parsedTimers).forEach(([unitId, timer]) => {
+          if (
+            timer &&
+            typeof timer === "object" &&
+            timer.startTime &&
+            timer.lastUpdate
+          ) {
+            timersMap.set(unitId, {
+              startTime: timer.startTime,
+              accumulatedTime: timer.accumulatedTime || 0,
+              lastUpdate: timer.lastUpdate,
+              isFromStorage: true, // Marcar como cargado desde storage
+            });
+          }
+        });
+
+        return timersMap;
+      }
+    } catch (error) {
+      console.warn("Error cargando timers desde localStorage:", error);
+    }
+    return new Map();
+  }, []);
+
+  // Función para guardar timers en localStorage
+  const saveTimersToStorage = useCallback((timersMap) => {
+    try {
+      const timersObject = {};
+      timersMap.forEach((timer, unitId) => {
+        timersObject[unitId] = {
+          startTime: timer.startTime,
+          accumulatedTime: timer.accumulatedTime,
+          lastUpdate: timer.lastUpdate,
+        };
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(timersObject));
+    } catch (error) {
+      console.warn("Error guardando timers en localStorage:", error);
+    }
+  }, []);
+
+  // Inicializar timers al montar el componente
+  useEffect(() => {
+    const storedTimers = loadTimersFromStorage();
+    if (storedTimers.size > 0) {
+      dispatch({
+        type: "SET_IDLE_TIMERS",
+        payload: storedTimers,
+      });
+    }
+  }, [loadTimersFromStorage, dispatch]);
 
   // Detectar unidades en ralentí
   const idleUnits = useMemo(() => {
@@ -37,7 +102,6 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     ];
 
     const currentTime = Date.now();
-    const twelveHoursMs = 12 * 60 * 60 * 1000; // 12 horas en milisegundos
 
     return markersData.filter((unit) => {
       if (!unit.estado || !unit.fechaHora) return false;
@@ -46,7 +110,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       const reportTime = new Date(unit.fechaHora).getTime();
       const timeDifference = currentTime - reportTime;
 
-      if (timeDifference > twelveHoursMs) {
+      if (timeDifference > TWELVE_HOURS_MS) {
         return false; // Excluir reportes antiguos
       }
 
@@ -71,62 +135,109 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
       return hasIdleState;
     });
-  }, [markersData]);
+  }, [markersData, TWELVE_HOURS_MS]);
 
-  // Gestionar contadores de tiempo
+  // Gestionar contadores de tiempo con estrategia híbrida mejorada
   useEffect(() => {
-    const newTimers = new Map(idleTimers);
-    const currentTime = Date.now();
-    const oneHourMs = 60 * 60 * 1000; // 1 hora en milisegundos
+    if (idleUnits.length === 0) return;
 
-    idleUnits.forEach((unit) => {
-      const unitId = unit.Movil_ID;
-      const fechaHora = new Date(unit.fechaHora).getTime();
+    const processTimers = () => {
+      const newTimers = new Map(state.idleTimers);
+      const currentTime = Date.now();
 
-      if (!newTimers.has(unitId)) {
-        // Primera detección de esta unidad en ralentí
-        newTimers.set(unitId, {
-          startTime: fechaHora,
-          accumulatedTime: 0,
-          lastUpdate: fechaHora,
-        });
-      } else {
-        // Actualizar tiempo acumulado
-        const timer = newTimers.get(unitId);
-        const timeDiff = fechaHora - timer.lastUpdate;
+      // Procesar cada unidad en ralentí
+      idleUnits.forEach((unit) => {
+        const unitId = unit.Movil_ID;
+        const fechaHora = new Date(unit.fechaHora).getTime();
 
-        // Solo sumar tiempo si la diferencia es positiva y razonable (menos de 1 hora)
-        if (timeDiff > 0 && timeDiff < oneHourMs) {
-          timer.accumulatedTime += timeDiff;
+        if (!newTimers.has(unitId)) {
+          // Nueva unidad en ralentí detectada
+          // Buscar si hay datos persistidos para calcular tiempo más preciso
+          const storedTimer = loadTimersFromStorage().get(unitId);
+
+          if (
+            storedTimer &&
+            currentTime - storedTimer.lastUpdate < ONE_HOUR_MS
+          ) {
+            // Usar datos almacenados si son recientes (menos de 1 hora)
+            const timeSinceStorage = currentTime - storedTimer.lastUpdate;
+            newTimers.set(unitId, {
+              startTime: storedTimer.startTime,
+              accumulatedTime: storedTimer.accumulatedTime + timeSinceStorage,
+              lastUpdate: fechaHora,
+              isPersisted: true,
+            });
+          } else {
+            // Calcular basándose en el timestamp del GPS
+            const estimatedStartTime = Math.max(
+              fechaHora - 5 * 60 * 1000,
+              fechaHora
+            ); // Máximo 5 min hacia atrás
+            newTimers.set(unitId, {
+              startTime: estimatedStartTime,
+              accumulatedTime: currentTime - estimatedStartTime,
+              lastUpdate: fechaHora,
+              isNewDetection: true,
+            });
+          }
+        } else {
+          // Actualizar unidad existente
+          const timer = newTimers.get(unitId);
+          const timeDiff = fechaHora - timer.lastUpdate;
+
+          // Solo sumar tiempo si la diferencia es positiva y razonable (menos de 1 hora)
+          if (timeDiff > 0 && timeDiff < ONE_HOUR_MS) {
+            timer.accumulatedTime += timeDiff;
+          } else if (timeDiff < 0) {
+            // Si el timestamp es anterior, usar tiempo actual como base
+            timer.accumulatedTime = Math.max(
+              timer.accumulatedTime,
+              currentTime - timer.startTime
+            );
+          }
+
+          timer.lastUpdate = fechaHora;
+          newTimers.set(unitId, timer);
         }
+      });
 
-        timer.lastUpdate = fechaHora;
-        newTimers.set(unitId, timer);
-      }
-    });
+      // Remover unidades que ya no están en ralentí o que han expirado
+      const activeUnitIds = new Set(idleUnits.map((unit) => unit.Movil_ID));
 
-    // Remover unidades que ya no están en ralentí o que han expirado (1 hora sin actualizaciones)
-    const activeUnitIds = new Set(idleUnits.map((unit) => unit.Movil_ID));
+      for (const [unitId, timer] of newTimers.entries()) {
+        const timeSinceLastUpdate = currentTime - timer.lastUpdate;
 
-    for (const [unitId, timer] of newTimers.entries()) {
-      const timeSinceLastUpdate = currentTime - timer.lastUpdate;
-
-      // Remover si la unidad ya no está en ralentí o si han pasado más de 1 hora sin actualizaciones
-      if (!activeUnitIds.has(unitId) || timeSinceLastUpdate > oneHourMs) {
-        newTimers.delete(unitId);
-        // También remover de ignorados si ya no está en ralentí
-        if (!activeUnitIds.has(unitId)) {
-          setIgnoredUnits((prev) => {
-            const newIgnored = new Set(prev);
-            newIgnored.delete(unitId);
-            return newIgnored;
-          });
+        // Remover si la unidad ya no está en ralentí o si han pasado más de 1 hora sin actualizaciones
+        if (!activeUnitIds.has(unitId) || timeSinceLastUpdate > ONE_HOUR_MS) {
+          newTimers.delete(unitId);
+          // También remover de ignorados si ya no está en ralentí
+          if (!activeUnitIds.has(unitId)) {
+            setIgnoredUnits((prev) => {
+              const newIgnored = new Set(prev);
+              newIgnored.delete(unitId);
+              return newIgnored;
+            });
+          }
         }
       }
-    }
 
-    setIdleTimers(newTimers);
-  }, [idleUnits]);
+      // Actualizar contexto y localStorage
+      dispatch({
+        type: "SET_IDLE_TIMERS",
+        payload: newTimers,
+      });
+
+      saveTimersToStorage(newTimers);
+    };
+    processTimers();
+  }, [
+    idleUnits,
+    state.idleTimers,
+    dispatch,
+    saveTimersToStorage,
+    loadTimersFromStorage,
+    ONE_HOUR_MS,
+  ]);
 
   // Formatear tiempo en formato HH:MM:SS
   const formatTime = (milliseconds) => {
@@ -142,7 +253,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
   // Obtener tiempo de ralentí para una unidad
   const getIdleTime = (unitId) => {
-    const timer = idleTimers.get(unitId);
+    const timer = state.idleTimers.get(unitId);
     if (!timer) return "00:00:00";
 
     return formatTime(timer.accumulatedTime);
@@ -169,7 +280,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
     // Reporte en ralentí: color basado en tiempo
     if (estadoLower.includes("reporte en ralenti")) {
-      const timer = idleTimers.get(unitId);
+      const timer = state.idleTimers.get(unitId);
       if (timer) {
         const totalMinutes = Math.floor(timer.accumulatedTime / (1000 * 60));
         return totalMinutes >= 5 ? "error.main" : "warning.main"; // Rojo >= 5min, Naranja < 5min
@@ -189,8 +300,8 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       units.sort((a, b) => (a.patente || "").localeCompare(b.patente || ""));
     } else if (sortBy === "time") {
       units.sort((a, b) => {
-        const timeA = idleTimers.get(a.Movil_ID)?.accumulatedTime || 0;
-        const timeB = idleTimers.get(b.Movil_ID)?.accumulatedTime || 0;
+        const timeA = state.idleTimers.get(a.Movil_ID)?.accumulatedTime || 0;
+        const timeB = state.idleTimers.get(b.Movil_ID)?.accumulatedTime || 0;
         return timeB - timeA; // Descendente (más tiempo en ralentí arriba)
       });
     }
@@ -200,7 +311,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     const ignored = units.filter((unit) => ignoredUnits.has(unit.Movil_ID));
 
     return [...active, ...ignored];
-  }, [idleUnits, sortBy, ignoredUnits, idleTimers]);
+  }, [idleUnits, sortBy, ignoredUnits, state.idleTimers]);
 
   // Manejar toggle de ignorar unidad
   const toggleIgnoreUnit = (unitId, event) => {
@@ -219,15 +330,16 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   // Manejar selección de unidad
   const handleUnitSelect = (unit) => {
     if (onUnitSelect) {
-      // Si la unidad ya está seleccionada, solo posicionarla en el mapa
-      if (state.selectedUnits.includes(unit.Movil_ID)) {
-        // Solo llamar onUnitSelect con la lista actual para que posicione el mapa
-        onUnitSelect(state.selectedUnits);
-      } else {
-        // Si no está seleccionada, agregarla a la lista existente
-        const updatedUnits = [...state.selectedUnits, unit.Movil_ID];
-        onUnitSelect(updatedUnits);
-      }
+      // Crear nueva lista: mantener las existentes + poner la clickeada al final
+      const currentUnits = [...state.selectedUnits];
+
+      // Remover la unidad si ya estaba (para evitar duplicados)
+      const filteredUnits = currentUnits.filter((id) => id !== unit.Movil_ID);
+
+      // Agregar la unidad clickeada al final (será la que reciba foco)
+      const updatedUnits = [...filteredUnits, unit.Movil_ID];
+
+      onUnitSelect(updatedUnits);
     }
   };
 

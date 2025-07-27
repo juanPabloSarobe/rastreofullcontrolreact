@@ -80,6 +80,7 @@ const UserManualModal = ({ open, onClose }) => {
       children: [
         { id: "seleccion-vehiculos", title: "Selección de Vehículos" },
         { id: "informacion-detallada", title: "Información Detallada" },
+        { id: "alertas-ralenti", title: "⭐ Alertas de Ralentí" },
         { id: "tipos-mapas", title: "Tipos de Mapas" },
       ],
     },
@@ -575,6 +576,342 @@ const UserManualModal = ({ open, onClose }) => {
                     color="info"
                     size="small"
                   />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "alertas-ralenti":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: "bold" }}
+            >
+              ⚡ Alertas de Unidades en Ralentí ⭐ NUEVO
+            </Typography>
+
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: "warning.50",
+                border: "1px solid",
+                borderColor: "warning.200",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="warning.main">
+                  🎯 ¿Qué es el Sistema de Alertas de Ralentí?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El sistema detecta automáticamente vehículos que se encuentran
+                  en estado de ralentí (motor encendido pero sin movimiento),
+                  permitiendo optimizar el consumo de combustible y mejorar la
+                  gestión operativa de su flota.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📍 Ubicación Visual
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Posición:</strong> Panel flotante en la parte
+                  izquierda de la pantalla
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Estados visuales:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Contraído:</strong> Círculo con ícono + badge rojo
+                      con número
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Expandido en hover:</strong> Muestra "Unidades en
+                      ralentí"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Lista desplegada:</strong> Panel completo con
+                      detalles
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🔍 Detección Automática
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El sistema identifica unidades en ralentí basándose en:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      🟠 <strong>"Inicio Ralenti"</strong> → Color naranja
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🟠 <strong>"Reporte en Ralenti"</strong> → Naranja (&lt; 5
+                      min) / 🔴 Rojo (≥ 5 min)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🔘 <strong>"Fin de Ralenti"</strong> → Gris (si motor
+                      encendido)
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📋 Información Mostrada
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Formato de 2 líneas por unidad:</strong>
+                </Typography>
+                <Box
+                  sx={{
+                    bgcolor: "grey.100",
+                    p: 2,
+                    borderRadius: 1,
+                    fontFamily: "monospace",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="body2" component="div">
+                    AF-162-EE - OPS
+                    SRL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[00:17:12]
+                  </Typography>
+                  <Typography variant="body2" component="div">
+                    [Reporte en
+                    Ralentí]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;👤
+                    Luccioni Jesus
+                  </Typography>
+                </Box>
+                <Typography variant="body2">
+                  <strong>Primera línea:</strong> Patente - Empresa + tiempo
+                  transcurrido
+                  <br />
+                  <strong>Segunda línea:</strong> Estado actual + conductor
+                  asignado
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🎯 Funciones Interactivas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Selección de Unidades:</strong>
+                </Typography>
+                <Box component="ol" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Haga clic en cualquier unidad de la lista
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      El mapa se centrará automáticamente en esa unidad
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Se mostrará la información completa
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Mantiene otras unidades seleccionadas previamente
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>Ordenamiento Inteligente:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Por tiempo</strong> (predeterminado): Unidades con
+                      más tiempo arriba
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Por patente:</strong> Orden alfabético
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Botón visible solo cuando la lista está abierta
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>Sistema de Ignorados:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      👁️ <strong>Ícono de ojo:</strong> Ocultar temporalmente
+                      una unidad
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      👁️‍🗨️ <strong>Ojo tachado:</strong> Mostrar unidades ocultas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Unidades ignoradas aparecen al final en gris
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  ⏱️ Contador de Tiempo Avanzado
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Basado en GPS:</strong> No depende de hora local
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Formato reloj:</strong> HH:MM:SS (ej: 01:23:45)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Cambio automático:</strong> Naranja → Rojo a los 5
+                      minutos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Persistencia:</strong> Se mantiene durante la
+                      sesión
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  💼 Casos de Uso Prácticos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Para Gestores de Flota:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Identificar vehículos consumiendo combustible
+                      innecesariamente
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Optimizar operaciones reduciendo tiempos de espera
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Monitoreo en tiempo real de eficiencia operativa
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>Para Supervisores:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Contactar conductores cuando excedan 5 minutos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Planificar rutas más eficientes
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Generar reportes de optimización de combustible
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "success.50",
+                border: "1px solid",
+                borderColor: "success.200",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="success.main">
+                  💡 Consejos de Uso
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Monitoree regularmente</strong> durante horarios
+                      operativos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Tiempo objetivo:</strong> Máximo 3-5 minutos en
+                      ralentí por parada
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Comunicación proactiva:</strong> Contactar antes
+                      de llegar a rojo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Use la función ignorar</strong> para unidades que
+                      requieren espera justificada
+                    </Typography>
+                  </li>
                 </Box>
               </CardContent>
             </Card>

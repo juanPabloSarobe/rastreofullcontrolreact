@@ -78,6 +78,149 @@ Desde la ventana de detalles puede:
 - **Ver contratos**: Consultar obras asignadas al vehículo
 - **Ver conductor**: Información del conductor asignado
 
+## Alertas de Unidades en Ralentí ⭐ NUEVO
+
+### ¿Qué es el Sistema de Alertas de Ralentí?
+
+El sistema detecta automáticamente vehículos que se encuentran en estado de ralentí (motor encendido pero sin movimiento), permitiendo optimizar el consumo de combustible y mejorar la gestión operativa de su flota.
+
+### Cómo Funciona la Alerta
+
+#### Ubicación Visual
+
+- **Posición**: Panel flotante en la parte izquierda de la pantalla
+- **Ícono**: Tablero de salidas con badge rojo mostrando cantidad de unidades
+- **Estados visuales**:
+  - **Contraído**: Círculo con ícono + badge con número
+  - **Expandido en hover**: Muestra "Unidades en ralentí"
+  - **Lista desplegada**: Panel completo con detalles
+
+#### Detección Automática
+
+El sistema identifica unidades en ralentí basándose en:
+
+- **Estados detectados**:
+  - "Inicio Ralenti" → 🟠 Naranja
+  - "Reporte en Ralenti" → 🟠 Naranja (< 5 min) / 🔴 Rojo (≥ 5 min)
+  - "Fin de Ralenti" → 🔘 Gris (si motor encendido)
+- **Filtros inteligentes**:
+  - Excluye reportes de más de 12 horas
+  - Elimina "fin de ralentí" con motor apagado
+  - Timeout automático sin actualizaciones
+
+### Información Mostrada
+
+#### Formato de Lista (2 líneas por unidad)
+
+```
+AF-162-EE - OPS SRL                    [00:17:12]
+[Reporte en Ralentí]          👤 Luccioni Jesus
+```
+
+**Primera línea**: Patente - Empresa + tiempo transcurrido  
+**Segunda línea**: Estado actual + conductor asignado
+
+#### Sistema de Colores por Estado
+
+- **🟠 Naranja**: Inicio de ralentí o reporte menor a 5 minutos
+- **🔴 Rojo**: Reporte en ralentí de 5 minutos o más (requiere atención)
+- **🔘 Gris**: Fin de ralentí con motor aún encendido
+
+### Funciones Interactivas
+
+#### Selección de Unidades
+
+1. **Hacer clic** en cualquier unidad de la lista
+2. **El mapa se centrará** automáticamente en esa unidad
+3. **Se mostrará en UnitDetails** la información completa
+4. **Mantiene otras unidades seleccionadas** previamente
+
+#### Ordenamiento Inteligente
+
+- **Por tiempo** (predeterminado): Unidades con más tiempo en ralentí arriba
+- **Por patente**: Orden alfabético
+- **Botón de ordenamiento**: Solo visible cuando la lista está abierta
+- **Cambio fácil**: Clic en el botón cambia entre modos
+
+#### Sistema de Ignorados Temporal
+
+- **Ícono de ojo**: Hacer clic para ocultar temporalmente una unidad
+- **Ícono de ojo tachado**: Mostrar unidades previamente ocultas
+- **Posición**: Unidades ignoradas aparecen al final en gris
+- **Limpieza automática**: Se elimina cuando la unidad sale de ralentí
+
+### Contador de Tiempo Avanzado
+
+#### Características del Temporizador
+
+- **Basado en fechaHora del GPS**: No depende de la hora local
+- **Acumulación inteligente**: Suma tiempo entre actualizaciones
+- **Formato reloj**: HH:MM:SS (ej: 01:23:45)
+- **Cambio de color automático**: Naranja → Rojo a los 5 minutos
+- **Persistencia**: Se mantiene durante toda la sesión
+
+#### Limpieza Automática
+
+- **1 hora sin updates**: Unidad removida automáticamente
+- **Fin de ralentí**: Timer se resetea y unidad desaparece
+- **Prevención histórica**: No muestra datos antiguos de más de 12 horas
+
+### Casos de Uso Prácticos
+
+#### Para Gestores de Flota
+
+- **Identificar vehículos** consumiendo combustible innecesariamente
+- **Optimizar operaciones** reduciendo tiempos de espera
+- **Monitoreo en tiempo real** de eficiencia operativa
+
+#### Para Supervisores
+
+- **Contactar conductores** cuando excedan 5 minutos en ralentí
+- **Planificar rutas** más eficientes
+- **Generar reportes** de optimización de combustible
+
+#### Ejemplos de Estados
+
+**Situación Normal**:
+
+```
+🟠 Inicio Ralenti [00:02:30] → Acabó de llegar a destino
+```
+
+**Requiere Atención**:
+
+```
+🔴 Reporte en Ralenti [00:07:15] → Contactar conductor
+```
+
+**Finalizando**:
+
+```
+🔘 Fin de Ralenti [00:12:45] → Ya no consume combustible extra
+```
+
+### Consejos de Uso
+
+#### Mejores Prácticas
+
+- **Monitoree regularmente** durante horarios operativos
+- **Establezca protocolos** para unidades que excedan 5 minutos
+- **Use la función de ignorar** para unidades que requieren espera justificada
+- **Aproveche el ordenamiento** por tiempo para priorizar acciones
+
+#### Optimización de Combustible
+
+- **Tiempo objetivo**: Máximo 3-5 minutos en ralentí por parada
+- **Comunicación proactiva**: Contactar antes de llegar a rojo
+- **Análisis de patrones**: Identificar puntos problemáticos recurrentes
+
+### Integración con Otras Funciones
+
+- **Compatible** con selección múltiple de unidades
+- **No interfiere** con otros controles del mapa
+- **Se adapta** automáticamente a dispositivos móviles
+- **Funciona junto** con históricos y reportes
+
 ## Funciones del Menú Principal
 
 ### Histórico Avanzado
@@ -325,6 +468,6 @@ Cuando genere reportes de posición, el sistema le notificará:
 
 ---
 
-**Manual actualizado**: Junio 2025  
+**Manual actualizado**: Julio 2025  
 **Versión del sistema**: Consulte la aplicación para ver la versión actual  
-**Última actualización**: Agregadas mejoras en exportación Excel con timestamps y geocodificación
+**Última actualización**: Agregada funcionalidad de **Alertas de Unidades en Ralentí** con detección automática, contadores de tiempo y gestión inteligente para optimización de combustible
