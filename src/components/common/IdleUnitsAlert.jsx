@@ -243,6 +243,17 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     []
   );
 
+  // Función para normalizar strings - Memoizada para optimizar rendimiento
+  const normalizeString = useCallback(
+    (str) =>
+      str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim(),
+    []
+  );
+
   // Función para cargar timers desde localStorage
   const loadTimersFromStorage = useCallback(() => {
     try {
@@ -306,55 +317,54 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   }, []);
 
   // Función para analizar datos históricos y encontrar inicio de ralentí
-  const analyzeHistoricalIdleData = useCallback((historicalData) => {
-    if (!historicalData || historicalData.length === 0) {
-      return { hasIdleStart: false, idleStartTime: null };
-    }
-
-    // Empezar desde el final (último reporte) e ir hacia atrás
-    let idleStartTime = null;
-    let hasIdleStart = false;
-
-    for (let i = historicalData.length - 1; i >= 0; i--) {
-      const record = historicalData[i];
-      const event = (record.evn || "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim(); // Normalizar acentos y espacios
-
-      // Verificar si es "Inicio Ralenti" (punto exacto) - con y sin acentos
-      if (event === "inicio ralenti" || event === "inicio de ralenti") {
-        const datetime = `${record.fec}T${record.hor}`;
-        idleStartTime = new Date(datetime).getTime();
-        hasIdleStart = true;
-        break; // Encontramos el inicio exacto, no necesitamos seguir
+  const analyzeHistoricalIdleData = useCallback(
+    (historicalData) => {
+      if (!historicalData || historicalData.length === 0) {
+        return { hasIdleStart: false, idleStartTime: null };
       }
 
-      // Si es "Reporte en Ralenti", guardarlo como candidato (fallback) - con y sin acentos
-      else if (
-        event === "reporte en ralenti" ||
-        event === "reporte de ralenti"
-      ) {
-        if (!idleStartTime) {
-          // Solo si no hemos encontrado uno ya
+      // Empezar desde el final (último reporte) e ir hacia atrás
+      let idleStartTime = null;
+      let hasIdleStart = false;
+
+      for (let i = historicalData.length - 1; i >= 0; i--) {
+        const record = historicalData[i];
+        const event = normalizeString(record.evn || "");
+
+        // Verificar si es "Inicio Ralenti" (punto exacto) - con y sin acentos
+        if (event === "inicio ralenti" || event === "inicio de ralenti") {
           const datetime = `${record.fec}T${record.hor}`;
           idleStartTime = new Date(datetime).getTime();
-          // No marcamos hasIdleStart como true porque es un fallback
+          hasIdleStart = true;
+          break; // Encontramos el inicio exacto, no necesitamos seguir
+        }
+
+        // Si es "Reporte en Ralenti", guardarlo como candidato (fallback) - con y sin acentos
+        else if (
+          event === "reporte en ralenti" ||
+          event === "reporte de ralenti"
+        ) {
+          if (!idleStartTime) {
+            // Solo si no hemos encontrado uno ya
+            const datetime = `${record.fec}T${record.hor}`;
+            idleStartTime = new Date(datetime).getTime();
+            // No marcamos hasIdleStart como true porque es un fallback
+          }
+        }
+
+        // Si encontramos "Fin de ralenti", significa que hemos pasado el período actual - con y sin acentos
+        else if (event === "fin de ralenti" || event === "fin ralenti") {
+          break; // Salir del loop, no hay ralentí activo antes de este punto
         }
       }
 
-      // Si encontramos "Fin de ralenti", significa que hemos pasado el período actual - con y sin acentos
-      else if (event === "fin de ralenti" || event === "fin ralenti") {
-        break; // Salir del loop, no hay ralentí activo antes de este punto
-      }
-    }
-
-    return {
-      hasIdleStart,
-      idleStartTime,
-    };
-  }, []);
+      return {
+        hasIdleStart,
+        idleStartTime,
+      };
+    },
+    [normalizeString]
+  );
 
   // Función para cargar y procesar datos históricos para unidades específicas
   const loadHistoricalIdleData = useCallback(
@@ -432,16 +442,10 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
         return false; // Excluir reportes antiguos
       }
 
-      const estado = unit.estado
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim(); // Normalizar acentos y espacios
+      const estado = normalizeString(unit.estado);
 
       const hasIdleState = idleStates.some((idleState) => {
-        const normalizedIdleState = idleState
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
+        const normalizedIdleState = normalizeString(idleState);
         return estado.includes(normalizedIdleState);
       });
 
@@ -458,7 +462,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
       return hasIdleState;
     });
-  }, [markersData, TWELVE_HOURS_MS, idleStates]);
+  }, [markersData, TWELVE_HOURS_MS, idleStates, normalizeString]);
 
   // Memoizar set de unidades activas para optimizar rendimiento
   const activeUnitIds = useMemo(
@@ -624,8 +628,8 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     ONE_HOUR_MS,
   ]);
 
-  // Formatear tiempo en formato HH:MM:SS
-  const formatTime = (milliseconds) => {
+  // Formatear tiempo en formato HH:MM:SS - Memoizado para optimizar rendimiento
+  const formatTime = useCallback((milliseconds) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -634,58 +638,60 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  };
+  }, []);
 
   // Obtener tiempo de ralentí para una unidad
-  const getIdleTime = (unitId) => {
-    const timer = state.idleTimers.get(unitId);
-    if (!timer) return "00:00:00";
-
-    return formatTime(timer.accumulatedTime);
-  };
-
-  // Determinar color del estado basado en tiempo y condiciones
-  const getStateColor = (estado, unitId) => {
-    if (!estado) return "inherit";
-
-    const estadoLower = estado
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim(); // Normalizar acentos y espacios
-
-    // Inicio de ralentí: siempre naranja - con variaciones
-    if (
-      estadoLower.includes("inicio ralenti") ||
-      estadoLower.includes("inicio de ralenti")
-    ) {
-      return "warning.main";
-    }
-
-    // Fin de ralentí con motor encendido: gris - con variaciones
-    if (
-      estadoLower.includes("fin de ralenti") ||
-      estadoLower.includes("fin ralenti")
-    ) {
-      return "text.primary";
-    }
-
-    // Reporte en ralentí: color basado en tiempo - con variaciones
-    if (
-      estadoLower.includes("reporte en ralenti") ||
-      estadoLower.includes("reporte de ralenti")
-    ) {
+  const getIdleTime = useCallback(
+    (unitId) => {
       const timer = state.idleTimers.get(unitId);
-      if (timer) {
-        const totalMinutes = Math.floor(timer.accumulatedTime / (1000 * 60));
-        return totalMinutes >= 5 ? "error.main" : "warning.main"; // Rojo >= 5min, Naranja < 5min
-      }
-      return "warning.main"; // Por defecto naranja si no hay timer
-    }
+      if (!timer) return "00:00:00";
 
-    // Ralentí genérico: naranja
-    return "warning.main";
-  };
+      return formatTime(timer.accumulatedTime);
+    },
+    [state.idleTimers, formatTime]
+  );
+
+  // Determinar color del estado basado en tiempo y condiciones - Memoizado para optimizar rendimiento
+  const getStateColor = useCallback(
+    (estado, unitId) => {
+      if (!estado) return "inherit";
+
+      const estadoLower = normalizeString(estado);
+
+      // Inicio de ralentí: siempre naranja - con variaciones
+      if (
+        estadoLower.includes("inicio ralenti") ||
+        estadoLower.includes("inicio de ralenti")
+      ) {
+        return "warning.main";
+      }
+
+      // Fin de ralentí con motor encendido: gris - con variaciones
+      if (
+        estadoLower.includes("fin de ralenti") ||
+        estadoLower.includes("fin ralenti")
+      ) {
+        return "text.primary";
+      }
+
+      // Reporte en ralentí: color basado en tiempo - con variaciones
+      if (
+        estadoLower.includes("reporte en ralenti") ||
+        estadoLower.includes("reporte de ralenti")
+      ) {
+        const timer = state.idleTimers.get(unitId);
+        if (timer) {
+          const totalMinutes = Math.floor(timer.accumulatedTime / (1000 * 60));
+          return totalMinutes >= 5 ? "error.main" : "warning.main"; // Rojo >= 5min, Naranja < 5min
+        }
+        return "warning.main"; // Por defecto naranja si no hay timer
+      }
+
+      // Ralentí genérico: naranja
+      return "warning.main";
+    },
+    [state.idleTimers, normalizeString]
+  );
 
   // Ordenar unidades
   const sortedIdleUnits = useMemo(() => {
@@ -708,8 +714,8 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
     return [...active, ...ignored];
   }, [idleUnits, sortBy, ignoredUnits, state.idleTimers]);
 
-  // Manejar toggle de ignorar unidad
-  const toggleIgnoreUnit = (unitId, event) => {
+  // Manejar toggle de ignorar unidad - Memoizado para optimizar rendimiento
+  const toggleIgnoreUnit = useCallback((unitId, event) => {
     event.stopPropagation();
     setIgnoredUnits((prev) => {
       const newIgnored = new Set(prev);
@@ -720,28 +726,31 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       }
       return newIgnored;
     });
-  };
+  }, []);
 
-  // Manejar selección de unidad
-  const handleUnitSelect = (unit) => {
-    if (onUnitSelect) {
-      // Crear nueva lista: mantener las existentes + poner la clickeada al final
-      const currentUnits = [...state.selectedUnits];
+  // Manejar selección de unidad - Memoizado para optimizar rendimiento
+  const handleUnitSelect = useCallback(
+    (unit) => {
+      if (onUnitSelect) {
+        // Crear nueva lista: mantener las existentes + poner la clickeada al final
+        const currentUnits = [...state.selectedUnits];
 
-      // Remover la unidad si ya estaba (para evitar duplicados)
-      const filteredUnits = currentUnits.filter((id) => id !== unit.Movil_ID);
+        // Remover la unidad si ya estaba (para evitar duplicados)
+        const filteredUnits = currentUnits.filter((id) => id !== unit.Movil_ID);
 
-      // Agregar la unidad clickeada al final (será la que reciba foco)
-      const updatedUnits = [...filteredUnits, unit.Movil_ID];
+        // Agregar la unidad clickeada al final (será la que reciba foco)
+        const updatedUnits = [...filteredUnits, unit.Movil_ID];
 
-      onUnitSelect(updatedUnits);
-    }
-  };
+        onUnitSelect(updatedUnits);
+      }
+    },
+    [onUnitSelect, state.selectedUnits]
+  );
 
-  // Manejar cambio de ordenamiento
-  const handleSortChange = () => {
+  // Manejar cambio de ordenamiento - Memoizado para optimizar rendimiento
+  const handleSortChange = useCallback(() => {
     setSortBy(sortBy === "alphabetic" ? "time" : "alphabetic");
-  };
+  }, [sortBy]);
 
   // Renderizar contenido específico de ralentí
   const renderIdleContent = ({
