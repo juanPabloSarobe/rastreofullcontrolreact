@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Box from "@mui/material/Box";
@@ -33,22 +39,41 @@ const MemoizedCustomMarker = React.memo(CustomMarker);
 
 // Memoizar la lista de marcadores para optimizar rendimiento
 const MarkersList = React.memo(({ markersData, onMarkerClick }) => {
+  // Pre-calcular props de marcadores para evitar recálculos en cada render
+  const optimizedMarkers = useMemo(() => {
+    return markersData.map((marker) => ({
+      ...marker,
+      // Pre-calcular color una sola vez
+      markerColor: !reportando(marker.fechaHora, false, 24)
+        ? "gray"
+        : marker.estadoDeMotor === "Motor Encendido"
+        ? "green"
+        : "red",
+      // Pre-calcular posición como array
+      position: [Number(marker.latitud), Number(marker.longitud)],
+      // Pre-calcular key
+      markerId: Number(marker.Movil_ID),
+    }));
+  }, [markersData]);
+
+  // Memoizar el callback para evitar recreación
+  const handleMarkerClick = useCallback(
+    (marker) => {
+      onMarkerClick(marker);
+    },
+    [onMarkerClick]
+  );
+
   return (
     <>
-      {markersData.map((marker) => (
+      {optimizedMarkers.map((marker) => (
         <MemoizedCustomMarker
-          key={Number(marker.Movil_ID)}
-          position={[Number(marker.latitud), Number(marker.longitud)]}
+          key={marker.markerId}
+          position={marker.position}
           popupContent={marker.patente}
-          color={
-            !reportando(marker.fechaHora, false, 24) // Enviar 24 horas como parámetro
-              ? "gray"
-              : marker.estadoDeMotor === "Motor Encendido"
-              ? "green"
-              : "red"
-          }
+          color={marker.markerColor}
           rotationAngle={marker.grados}
-          onClick={() => onMarkerClick(marker)}
+          onClick={() => handleMarkerClick(marker)}
           velocidad={marker.velocidad}
         />
       ))}
