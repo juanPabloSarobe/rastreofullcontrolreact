@@ -599,9 +599,25 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
         const endDate = new Date(infractionDate);
         endDate.setDate(infractionDate.getDate() + 1); // Día siguiente
 
-        // Formatear fechas como YYYY-MM-DD (solo fecha, sin hora)
-        const fechaInicial = startDate.toISOString().slice(0, 10);
-        const fechaFinal = endDate.toISOString().slice(0, 10);
+        // 🔧 CORREGIDO: Usar horario local en lugar de UTC
+        // Formatear fechas como YYYY-MM-DD usando horario local
+        const formatLocalDate = (date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        };
+
+        const fechaInicial = formatLocalDate(startDate);
+        const fechaFinal = formatLocalDate(endDate);
+
+        console.log(`📅 Buscando historial para ${unit.patente}:`, {
+          fechaInfraccion: unit.fechaHora,
+          fechaInicial,
+          fechaFinal,
+          infractionDate: infractionDate.toString(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        });
 
         const url = `/api/servicio/historico.php/historico?movil=${unit.Movil_ID}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
 
@@ -648,6 +664,12 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
 
       if (timeDifference > TWELVE_HOURS_MS) {
         return false; // Excluir reportes antiguos
+      }
+
+      // Control de errores de configuración: validar que el motor esté encendido
+      // Solo considerar infracciones válidas cuando el motor esté encendido
+      if (unit.estadoDeMotor !== "Motor Encendido") {
+        return false; // Excluir infracciones con motor apagado (error de configuración)
       }
 
       const estado = normalizeString(unit.estado);
@@ -795,69 +817,77 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
         activeInfractions.map((unit) => unit.Movil_ID)
       );
 
-      // Unidades que estaban activas previamente pero ya no están
+      // Modificado: Permitir que unidades ya en historial se procesen nuevamente
+      // para manejar infracciones múltiples de la misma unidad
       const unitsToMoveToHistory = state.previousActiveInfractions.filter(
-        (unit) =>
-          !currentActiveIds.has(unit.Movil_ID) &&
-          !historyInfractionIds.has(unit.Movil_ID)
+        (unit) => !currentActiveIds.has(unit.Movil_ID)
       );
 
       if (unitsToMoveToHistory.length > 0) {
-        // Agregar unidades al historial inmediatamente (sin detalles)
-        const newHistory = [
-          ...state.infractionHistory,
-          ...unitsToMoveToHistory,
-        ];
-        const limitedHistory = newHistory.slice(0, 50); // Limitar a 50 elementos
+        // Separar unidades nuevas vs existentes en historial
+        const existingInHistory = unitsToMoveToHistory.filter((unit) =>
+          historyInfractionIds.has(unit.Movil_ID)
+        );
+        const newUnitsForHistory = unitsToMoveToHistory.filter(
+          (unit) => !historyInfractionIds.has(unit.Movil_ID)
+        );
 
-        // Actualizar contexto
-        dispatch({
-          type: "SET_INFRACTION_HISTORY",
-          payload: limitedHistory,
-        });
+        // Agregar solo las unidades nuevas al historial
+        if (newUnitsForHistory.length > 0) {
+          const updatedHistory = [
+            ...state.infractionHistory,
+            ...newUnitsForHistory,
+          ];
+          const limitedHistory = updatedHistory.slice(0, 50); // Limitar a 50 elementos
 
-        // localStorage se sincroniza automáticamente via useEffect
+          dispatch({
+            type: "SET_INFRACTION_HISTORY",
+            payload: limitedHistory,
+          });
+        }
 
-        // Obtener detalles para cada unidad que se movió al historial
+        // Procesar TODAS las unidades que terminaron infracción (nuevas y existentes)
+        // para actualizar con los datos más recientes
         for (const unit of unitsToMoveToHistory) {
-          // Marcar como cargando en contexto
+          const isExistingInHistory = historyInfractionIds.has(unit.Movil_ID);
+
+          // Log temporal para debugging
+          console.log(
+            `🔄 Procesando unidad ${unit.patente} (${unit.Movil_ID}):`,
+            {
+              esNuevaEnHistorial: !isExistingInHistory,
+              yaExisteEnHistorial: isExistingInHistory,
+              accion: isExistingInHistory
+                ? "ACTUALIZAR_EXISTENTE"
+                : "AGREGAR_NUEVA",
+            }
+          );
+
+          // Marcar como cargando
           dispatch({
             type: "ADD_LOADING_INFRACTION_UNIT",
             payload: { unitId: unit.Movil_ID },
           });
 
-          // Actualizar localStorage de loading units automáticamente via useEffect
-          dispatch({
-            type: "SET_LOADING_INFRACTION_UNITS",
-            payload: new Set([...state.loadingInfractionUnits, unit.Movil_ID]),
-          });
-
           try {
-            // Obtener detalles de la infracción
+            // Obtener detalles de la infracción más reciente
             const details = await fetchInfractionDetails(unit);
 
             if (details) {
-              // Actualizar la unidad en el historial con los detalles en contexto
-              dispatch({
-                type: "UPDATE_INFRACTION_HISTORY",
-                payload: { unitId: unit.Movil_ID, details },
+              console.log(`✅ Detalles obtenidos para ${unit.patente}:`, {
+                horaInfraccion: details.fechaHoraFormateada,
+                velocidad: details.velocidadMaxima,
+                duracion: details.duracionFormateada,
               });
 
-              // localStorage se sincroniza automáticamente via useEffect
-              setTimeout(() => {
-                const currentHistory = JSON.parse(
-                  localStorage.getItem(INFRACTION_HISTORY_STORAGE_KEY) || "[]"
-                );
-                const updatedHistory = currentHistory.map((historyUnit) =>
-                  historyUnit.Movil_ID === unit.Movil_ID
-                    ? { ...historyUnit, ...details }
-                    : historyUnit
-                );
-                localStorage.setItem(
-                  INFRACTION_HISTORY_STORAGE_KEY,
-                  JSON.stringify(updatedHistory)
-                );
-              }, 100);
+              // Actualizar en el historial con los datos más recientes
+              dispatch({
+                type: "UPDATE_INFRACTION_HISTORY",
+                payload: {
+                  unitId: unit.Movil_ID,
+                  details: { ...details, ...unit }, // Combinar detalles + datos actuales
+                },
+              });
             }
           } catch (error) {
             console.error(
@@ -865,20 +895,10 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
               error
             );
           } finally {
-            // Remover del estado de carga en contexto
+            // Remover del estado de carga
             dispatch({
               type: "REMOVE_LOADING_INFRACTION_UNIT",
               payload: { unitId: unit.Movil_ID },
-            });
-
-            // localStorage se sincroniza automáticamente via useEffect
-            dispatch({
-              type: "SET_LOADING_INFRACTION_UNITS",
-              payload: new Set(
-                [...state.loadingInfractionUnits].filter(
-                  (id) => id !== unit.Movil_ID
-                )
-              ),
             });
           }
         }
@@ -890,7 +910,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       processHistoryMovement();
     }
 
-    // Actualizar el estado previo con las infracciones actuales en contexto
+    // Actualizar el estado previo con las infracciones actuales
     dispatch({
       type: "SET_PREVIOUS_ACTIVE_INFRACTIONS",
       payload: activeInfractions,
@@ -900,8 +920,6 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
     historyInfractionIds,
     fetchInfractionDetails,
     state.previousActiveInfractions,
-    // state.infractionHistory, // REMOVIDO: evita bucle infinito
-    // state.loadingInfractionUnits, // REMOVIDO: evita bucle infinito
     dispatch,
   ]);
 

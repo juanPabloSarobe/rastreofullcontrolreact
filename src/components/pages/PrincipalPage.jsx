@@ -264,14 +264,17 @@ const PrincipalPage = () => {
                     onUnitSelect={handleUnitSelect}
                   />
                   <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
-                  <InfractionAlert
-                    markersData={markersData}
-                    onUnitSelect={handleUnitSelect}
-                  />
-                  <IdleUnitsAlert
-                    markersData={markersData}
-                    onUnitSelect={handleUnitSelect}
-                  />
+                  {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
+                  <Box sx={{ display: { xs: "none", md: "block" } }}>
+                    <InfractionAlert
+                      markersData={markersData}
+                      onUnitSelect={handleUnitSelect}
+                    />
+                    <IdleUnitsAlert
+                      markersData={markersData}
+                      onUnitSelect={handleUnitSelect}
+                    />
+                  </Box>
                   <UnitDetails unitData={selectedUnit} />
                 </>
               )}
