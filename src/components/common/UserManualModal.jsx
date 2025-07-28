@@ -81,6 +81,7 @@ const UserManualModal = ({ open, onClose }) => {
         { id: "seleccion-vehiculos", title: "Selección de Vehículos" },
         { id: "informacion-detallada", title: "Información Detallada" },
         { id: "alertas-ralenti", title: "⭐ Alertas de Ralentí" },
+        { id: "alertas-infracciones", title: "🚨 Alertas de Infracciones" },
         { id: "tipos-mapas", title: "Tipos de Mapas" },
       ],
     },
@@ -279,7 +280,7 @@ const UserManualModal = ({ open, onClose }) => {
                   variant="outlined"
                   color="warning"
                   startIcon={<PhoneIcon />}
-                  href="https://wa.me/+5492994667595?text=necesito%20ayuda%20con%20mi%20password"
+                  href="https://wa.me/+5492994119010?text=necesito%20ayuda%20con%20mi%20password"
                   target="_blank"
                   size="small"
                 >
@@ -918,6 +919,346 @@ const UserManualModal = ({ open, onClose }) => {
           </Box>
         );
 
+      case "alertas-infracciones":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: "bold" }}
+            >
+              🚨 Alertas de Unidades en Infracción ⭐ NUEVO
+            </Typography>
+
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: "error.50",
+                border: "1px solid",
+                borderColor: "error.200",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="error.main">
+                  🎯 ¿Qué es el Sistema de Alertas de Infracciones?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El sistema detecta automáticamente vehículos que cometen
+                  infracciones de velocidad en tiempo real, permitiendo una
+                  respuesta inmediata para mejorar la seguridad vial y el
+                  cumplimiento normativo de su flota.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📍 Ubicación Visual
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Posición:</strong> Panel flotante debajo de las
+                  alertas de ralentí
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Estados visuales:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Contraído:</strong> Círculo con ícono de alerta +
+                      contador de infracciones
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Lista desplegada:</strong> Panel con infracciones
+                      activas e historial
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🔍 Detección Automática
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El sistema identifica infracciones basándose en:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      🔴 <strong>"Infracción de velocidad"</strong> → Color rojo
+                      (alta severidad)
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📋 Sistema de Doble Lista
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>🚨 Infracciones Activas (sección superior):</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Unidades actualmente en infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Información en tiempo real del estado
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Fondo rojo para máxima visibilidad
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>
+                    📋 Historial de Infracciones (sección inferior):
+                  </strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Última Infracción ya finalizada.
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Velocidad máxima alcanzada y duración
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Botones para eliminar individual o limpiar todo
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📊 Información Detallada en Historial
+                </Typography>
+                <Box
+                  sx={{
+                    bgcolor: "grey.100",
+                    p: 2,
+                    borderRadius: 1,
+                    fontFamily: "monospace",
+                    mb: 2,
+                  }}
+                >
+                  AB-123-CD - EMPRESA EJEMPLO
+                  <br />
+                  Max 87 km/h ⏱️ 02:35 👤 Juan Pérez
+                </Box>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Max XX km/h:</strong> Velocidad máxima durante la
+                      infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>⏱️ MM:SS:</strong> Duración total de la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>👤 Conductor:</strong> Operador asignado al
+                      vehículo
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  ⚡ Funcionalidades Avanzadas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>🔄 Persistencia Inteligente:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Historial se mantiene durante la sesión
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Datos guardados en localStorage
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Limpieza automática después de 24 horas
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>🎯 Gestión de Infracciones Múltiples:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Actualiza datos cuando la misma unidad comete otra
+                      infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Siempre muestra la infracción más reciente
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Evita duplicados en el historial
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📈 Casos de Uso Recomendados
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Para Operadores:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Monitoreo en tiempo real de infracciones críticas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Respuesta inmediata ante excesos de velocidad
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Verificación de cumplimiento normativo
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>Para Supervisores:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Análisis de patrones de conducta por conductor
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Identificación de zonas problemáticas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Planificación de capacitación específica
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="body2" paragraph>
+                  <strong>Para Gerencia:</strong>
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Métricas de seguridad vial
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Compliance con regulaciones de transporte
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Reducción de riesgos y responsabilidad civil
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "success.50",
+                border: "1px solid",
+                borderColor: "success.200",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="success.main">
+                  💡 Consejos de Uso
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Respuesta inmediata:</strong> Contactar al
+                      conductor durante infracciones activas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Análisis del historial:</strong> Revisar
+                      velocidades máximas y duraciones
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Gestión del historial:</strong> Limpiar
+                      periódicamente para mantener relevancia
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Educación preventiva:</strong> Usar datos para
+                      capacitación de conductores
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Solo desktop:</strong> Funcionalidad optimizada
+                      para pantallas grandes
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
       case "tipos-mapas":
         return (
           <Box>
@@ -1546,14 +1887,14 @@ const UserManualModal = ({ open, onClose }) => {
                   💬 WhatsApp - Soporte Principal
                 </Typography>
                 <Typography variant="body1" paragraph>
-                  <strong>+54 9 299 466-7595</strong>
+                  <strong>+54 9 299 411-9010</strong>
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                   <Button
                     variant="contained"
                     color="success"
                     startIcon={<PhoneIcon />}
-                    href="https://wa.me/+5492994667595?text=necesito%20ayuda%20con%20mi%20password"
+                    href="https://wa.me/+5492994119010?text=necesito%20ayuda%20con%20mi%20password"
                     target="_blank"
                   >
                     Ayuda con Contraseña
@@ -1562,7 +1903,7 @@ const UserManualModal = ({ open, onClose }) => {
                     variant="outlined"
                     color="success"
                     startIcon={<PhoneIcon />}
-                    href="https://wa.me/+5492994667595?text=necesito%20ayuda%20con%20mi%20usuario"
+                    href="https://wa.me/+5492994119010?text=necesito%20ayuda%20con%20mi%20usuario"
                     target="_blank"
                   >
                     Ayuda con Usuario
@@ -2608,10 +2949,10 @@ const UserManualModal = ({ open, onClose }) => {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              © FullControlGPS 2025 | Manual actualizado: Junio 2025
+              © FullControlGPS 2025 | Manual actualizado: Julio 2025
             </Typography>
             <Link
-              href="https://wa.me/+5492994667595"
+              href="https://wa.me/+5492994119010"
               target="_blank"
               sx={{ fontSize: "0.8rem" }}
             >
