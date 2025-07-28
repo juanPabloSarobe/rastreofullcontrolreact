@@ -28,6 +28,34 @@ import VersionIndicator from "../common/VersionIndicator";
 import { useNotifications } from "../../hooks/useNotifications";
 import { paymentService } from "../../services/paymentService";
 
+// Memoizar CustomMarker para evitar re-renders innecesarios
+const MemoizedCustomMarker = React.memo(CustomMarker);
+
+// Memoizar la lista de marcadores para optimizar rendimiento
+const MarkersList = React.memo(({ markersData, onMarkerClick }) => {
+  return (
+    <>
+      {markersData.map((marker) => (
+        <MemoizedCustomMarker
+          key={Number(marker.Movil_ID)}
+          position={[Number(marker.latitud), Number(marker.longitud)]}
+          popupContent={marker.patente}
+          color={
+            !reportando(marker.fechaHora, false, 24) // Enviar 24 horas como parámetro
+              ? "gray"
+              : marker.estadoDeMotor === "Motor Encendido"
+              ? "green"
+              : "red"
+          }
+          rotationAngle={marker.grados}
+          onClick={() => onMarkerClick(marker)}
+          velocidad={marker.velocidad}
+        />
+      ))}
+    </>
+  );
+});
+
 const PrincipalPage = () => {
   const { state, dispatch } = useContextValue();
   const center = [-38.95622, -68.081845];
@@ -294,26 +322,12 @@ const PrincipalPage = () => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
 
-              {state.viewMode === "rastreo" &&
-                filteredMarkersData.map((marker) => (
-                  <CustomMarker
-                    key={Number(marker.Movil_ID)}
-                    position={[Number(marker.latitud), Number(marker.longitud)]}
-                    popupContent={marker.patente}
-                    color={
-                      !reportando(marker.fechaHora, false, 24) // Enviar 24 horas como parámetro
-                        ? "gray"
-                        : marker.estadoDeMotor === "Motor Encendido"
-                        ? "green"
-                        : "red"
-                    }
-                    rotationAngle={marker.grados}
-                    onClick={() => {
-                      setSelectedUnit(marker);
-                    }}
-                    velocidad={marker.velocidad}
-                  />
-                ))}
+              {state.viewMode === "rastreo" && (
+                <MarkersList
+                  markersData={filteredMarkersData}
+                  onMarkerClick={setSelectedUnit}
+                />
+              )}
               {state.viewMode === "historico" && selectedUnit && (
                 <HistoricalView
                   selectedUnit={selectedUnit}
