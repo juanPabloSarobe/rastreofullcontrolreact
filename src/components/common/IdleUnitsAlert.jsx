@@ -540,12 +540,6 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                     type: "UPDATE_IDLE_TIMER",
                     payload: { unitId, timer: updatedTimer },
                   });
-
-                  console.log(
-                    `Timer actualizado con datos históricos para unidad ${unitId}: ${Math.floor(
-                      preciseAccumulatedTime / (1000 * 60)
-                    )} minutos`
-                  );
                 }
               })
               .catch((error) => {

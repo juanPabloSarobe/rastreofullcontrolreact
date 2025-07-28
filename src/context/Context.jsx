@@ -12,6 +12,10 @@ export const ContextProvider = ({ children }) => {
     hideLowUnits: true, // Valor por defecto
     selectedUnits: [], // Estado para las unidades seleccionadas
     idleTimers: new Map(), // Estado global para timers de ralentí
+    // Estados para sistema de infracciones
+    infractionHistory: [], // Historial de infracciones resueltas
+    loadingInfractionUnits: new Set(), // Unidades consultando detalles de infracción
+    previousActiveInfractions: [], // Estado previo para detectar transiciones
   };
 
   const reducer = (state, action) => {
@@ -40,6 +44,41 @@ export const ContextProvider = ({ children }) => {
           newTimers.set(action.payload.unitId, action.payload.timer);
         }
         return { ...state, idleTimers: newTimers };
+      }
+      // Acciones para sistema de infracciones
+      case "SET_INFRACTION_HISTORY":
+        return { ...state, infractionHistory: action.payload };
+      case "SET_LOADING_INFRACTION_UNITS":
+        return { ...state, loadingInfractionUnits: action.payload };
+      case "SET_PREVIOUS_ACTIVE_INFRACTIONS":
+        return { ...state, previousActiveInfractions: action.payload };
+      case "UPDATE_INFRACTION_HISTORY": {
+        // Actualizar una unidad específica en el historial
+        const updatedHistory = state.infractionHistory.map((unit) =>
+          unit.Movil_ID === action.payload.unitId
+            ? { ...unit, ...action.payload.details }
+            : unit
+        );
+        return { ...state, infractionHistory: updatedHistory };
+      }
+      case "REMOVE_FROM_INFRACTION_HISTORY": {
+        // Eliminar una unidad específica del historial
+        const filteredHistory = state.infractionHistory.filter(
+          (unit) => unit.Movil_ID !== action.payload.unitId
+        );
+        return { ...state, infractionHistory: filteredHistory };
+      }
+      case "CLEAR_INFRACTION_HISTORY":
+        return { ...state, infractionHistory: [] };
+      case "ADD_LOADING_INFRACTION_UNIT": {
+        const newLoadingUnits = new Set(state.loadingInfractionUnits);
+        newLoadingUnits.add(action.payload.unitId);
+        return { ...state, loadingInfractionUnits: newLoadingUnits };
+      }
+      case "REMOVE_LOADING_INFRACTION_UNIT": {
+        const newLoadingUnits = new Set(state.loadingInfractionUnits);
+        newLoadingUnits.delete(action.payload.unitId);
+        return { ...state, loadingInfractionUnits: newLoadingUnits };
       }
       default:
         return state;

@@ -10,10 +10,12 @@ import {
   Divider,
   Button,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import WarningIcon from "@mui/icons-material/Warning";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import BaseExpandableAlert from "./BaseExpandableAlert";
 import { useContextValue } from "../../context/Context";
 
@@ -28,6 +30,7 @@ const InfractionItem = React.memo(
     formattedTime,
     onDelete,
     onUnitSelect,
+    onRefreshDetails,
     isLoadingDetails = false,
   }) => (
     <ListItem
@@ -65,6 +68,33 @@ const InfractionItem = React.memo(
             <DeleteIcon fontSize="small" />
           </IconButton>
         )}
+
+        {/* Botón de refrescar detalles solo para historial */}
+        {/* Temporalmente oculto para evaluar la UI
+        {isHistory && onRefreshDetails && (
+          <Tooltip title="Refrescar detalles de infracción">
+            <IconButton
+              size="small"
+              onClick={(e) => onRefreshDetails(unit, e)}
+              disabled={isLoadingDetails}
+              sx={{
+                color: "text.disabled",
+                mr: 0.5,
+                "&:hover": {
+                  backgroundColor: "rgba(33, 150, 243, 0.1)",
+                  color: "primary.main",
+                },
+                "&:disabled": {
+                  color: "text.disabled",
+                  opacity: 0.5,
+                },
+              }}
+            >
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        */}
 
         <ListItemButton
           onClick={() => onUnitSelect(unit)}
@@ -162,6 +192,8 @@ const InfractionItem = React.memo(
                         display: "flex",
                         gap: 1,
                         alignItems: "center",
+                        flex: 1,
+                        minWidth: 0, // Permite que se comprima
                       }}
                     >
                       {isLoadingDetails ? (
@@ -192,8 +224,8 @@ const InfractionItem = React.memo(
                           <Box
                             sx={{
                               display: "inline-block",
-                              backgroundColor: "grey.100",
-                              color: "text.disabled",
+                              backgroundColor: "grey.200",
+                              color: "grey.700",
                               px: 1,
                               py: 0.25,
                               borderRadius: "8px",
@@ -201,18 +233,19 @@ const InfractionItem = React.memo(
                               fontWeight: "medium",
                             }}
                           >
-                            🚗 {unit.maxVelocidad || "-- km/h"}
+                            Max {unit.maxVelocidad || "-- km/h"}
                           </Box>
                           <Box
                             sx={{
                               display: "inline-block",
-                              backgroundColor: "grey.100",
-                              color: "text.disabled",
+                              backgroundColor: "grey.200",
+                              color: "grey.700",
                               px: 1,
                               py: 0.25,
                               borderRadius: "8px",
                               fontSize: "0.7rem",
                               fontWeight: "medium",
+                              ml: 0.5,
                             }}
                           >
                             ⏱️ {unit.duracion || "--:--"}
@@ -224,10 +257,15 @@ const InfractionItem = React.memo(
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.disabled",
-                        fontSize: "0.75rem",
+                        color: "grey.600",
+                        fontSize: "0.7rem",
                         display: "flex",
                         alignItems: "center",
+                        maxWidth: "50%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        ml: "auto", // Empujar hacia la derecha
                       }}
                     >
                       👤 {unit.nombre || "Conductor no identificado"}
@@ -254,10 +292,15 @@ const InfractionItem = React.memo(
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
-                        fontSize: "0.75rem",
+                        color: "grey.600",
+                        fontSize: "0.7rem",
                         display: "flex",
                         alignItems: "center",
+                        maxWidth: "50%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        ml: "auto", // Empujar hacia la derecha
                       }}
                     >
                       👤 {unit.nombre || "Conductor no identificado"}
@@ -281,17 +324,107 @@ const InfractionItem = React.memo(
   )
 );
 
+// Constantes para localStorage (fuera del componente para evitar recreación)
+const INFRACTION_HISTORY_STORAGE_KEY = "infractionHistory";
+const LOADING_UNITS_STORAGE_KEY = "loadingInfractionUnits";
+
 const InfractionAlert = ({ markersData, onUnitSelect }) => {
   const [sortBy, setSortBy] = useState("time"); // Por defecto por tiempo
-  const [historyInfractions, setHistoryInfractions] = useState([]);
-  const [previousActiveInfractions, setPreviousActiveInfractions] = useState(
-    []
-  );
-  const [loadingUnits, setLoadingUnits] = useState(new Set()); // Estado para unidades cargando
-  const { state } = useContextValue();
+  const { state, dispatch } = useContextValue(); // Obtener estado y dispatch del contexto
+
+  // Función para cargar historial desde localStorage
+  const loadHistoryFromStorage = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(INFRACTION_HISTORY_STORAGE_KEY);
+      if (stored) {
+        const parsedHistory = JSON.parse(stored);
+        return Array.isArray(parsedHistory) ? parsedHistory : [];
+      }
+    } catch (error) {
+      console.warn(
+        "Error cargando historial de infracciones desde localStorage:",
+        error
+      );
+    }
+    return [];
+  }, []); // Sin dependencias - función estable
+
+  // Función para guardar historial en localStorage
+  const saveHistoryToStorage = useCallback((history) => {
+    try {
+      localStorage.setItem(
+        INFRACTION_HISTORY_STORAGE_KEY,
+        JSON.stringify(history)
+      );
+    } catch (error) {
+      console.warn(
+        "Error guardando historial de infracciones en localStorage:",
+        error
+      );
+    }
+  }, []); // Sin dependencias - función estable
+
+  // Función para cargar unidades en carga desde localStorage
+  const loadLoadingUnitsFromStorage = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(LOADING_UNITS_STORAGE_KEY);
+      if (stored) {
+        const parsedUnits = JSON.parse(stored);
+        return new Set(Array.isArray(parsedUnits) ? parsedUnits : []);
+      }
+    } catch (error) {
+      console.warn(
+        "Error cargando unidades en carga desde localStorage:",
+        error
+      );
+    }
+    return new Set();
+  }, []); // Sin dependencias - función estable
+
+  // Función para guardar unidades en carga en localStorage
+  const saveLoadingUnitsToStorage = useCallback((loadingUnitsSet) => {
+    try {
+      const loadingUnitsArray = Array.from(loadingUnitsSet);
+      localStorage.setItem(
+        LOADING_UNITS_STORAGE_KEY,
+        JSON.stringify(loadingUnitsArray)
+      );
+    } catch (error) {
+      console.warn("Error guardando unidades en carga en localStorage:", error);
+    }
+  }, []); // Sin dependencias - función estable
 
   // Constantes memoizadas
   const TWELVE_HOURS_MS = useMemo(() => 12 * 60 * 60 * 1000, []);
+
+  // Inicializar datos desde localStorage al montar el componente
+  useEffect(() => {
+    const storedHistory = loadHistoryFromStorage();
+    const storedLoadingUnits = loadLoadingUnitsFromStorage();
+
+    if (storedHistory.length > 0) {
+      dispatch({
+        type: "SET_INFRACTION_HISTORY",
+        payload: storedHistory,
+      });
+    }
+
+    if (storedLoadingUnits.size > 0) {
+      dispatch({
+        type: "SET_LOADING_INFRACTION_UNITS",
+        payload: storedLoadingUnits,
+      });
+    }
+  }, [loadHistoryFromStorage, loadLoadingUnitsFromStorage, dispatch]);
+
+  // Sincronizar localStorage cuando cambie el contexto
+  useEffect(() => {
+    saveHistoryToStorage(state.infractionHistory);
+  }, [state.infractionHistory, saveHistoryToStorage]);
+
+  useEffect(() => {
+    saveLoadingUnitsToStorage(state.loadingInfractionUnits);
+  }, [state.loadingInfractionUnits, saveLoadingUnitsToStorage]);
 
   // Array de estados de infracción memoizado - Solo términos explícitos
   const infractionStates = useMemo(
@@ -372,46 +505,6 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       .padStart(2, "0")}`;
   }, []);
 
-  // Función para obtener detalles completos de la infracción
-  const fetchInfractionDetails = useCallback(async (unit) => {
-    try {
-      const endDate = new Date(unit.fechaHora);
-      // Buscar en las últimas 2 horas para asegurar que capturamos toda la infracción
-      const startDate = new Date(endDate.getTime() - 2 * 60 * 60 * 1000);
-
-      const fechaInicial = startDate
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
-      const fechaFinal = endDate.toISOString().slice(0, 19).replace("T", " ");
-
-      const url = `/api/servicio/historico.php/historico?movil=${unit.Movil_ID}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
-
-      console.log(
-        `Consultando detalles de infracción para ${unit.patente}:`,
-        url
-      );
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Procesar los datos para encontrar la secuencia de infracción
-      const infractionDetails = processInfractionSequence(data, unit);
-
-      return infractionDetails;
-    } catch (error) {
-      console.error(
-        `Error obteniendo detalles de infracción para ${unit.patente}:`,
-        error
-      );
-      return null;
-    }
-  }, []);
-
   // Función para procesar la secuencia de infracción y calcular detalles
   const processInfractionSequence = useCallback(
     (historicalData, unit) => {
@@ -433,7 +526,8 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
         if (
           !endEvent &&
           (eventType.includes("fin de infracción") ||
-            eventType.includes("fin de infraccion"))
+            eventType.includes("fin de infraccion") ||
+            eventType.includes("fin de infracci"))
         ) {
           endEvent = event;
           infractionEvents.unshift(event);
@@ -441,7 +535,11 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
         }
 
         // Si ya encontramos el fin, buscar movimientos en infracción
-        if (endEvent && eventType.includes("movimiento en infracción")) {
+        if (
+          endEvent &&
+          (eventType.includes("movimiento en infracción") ||
+            eventType.includes("movimiento en infraccion"))
+        ) {
           infractionEvents.unshift(event);
           continue;
         }
@@ -461,16 +559,14 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
         if (
           endEvent &&
           !eventType.includes("infracción") &&
-          !eventType.includes("infraccion")
+          !eventType.includes("infraccion") &&
+          !eventType.includes("infracci")
         ) {
           break;
         }
       }
 
       if (!startEvent || !endEvent || infractionEvents.length === 0) {
-        console.log(
-          `No se encontró secuencia completa de infracción para ${unit.patente}`
-        );
         return null;
       }
 
@@ -484,12 +580,6 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       const endTime = new Date(`${endEvent.fec} ${endEvent.hor}`);
       const durationInSeconds = Math.floor((endTime - startTime) / 1000);
 
-      console.log(`Infracción procesada para ${unit.patente}:`, {
-        maxVelocidad,
-        duracion: formatDuration(durationInSeconds),
-        eventos: infractionEvents.length,
-      });
-
       return {
         maxVelocidad: `${maxVelocidad} km/h`,
         duracion: formatDuration(durationInSeconds),
@@ -497,6 +587,50 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       };
     },
     [formatDuration]
+  );
+
+  // Función para obtener detalles completos de la infracción
+  const fetchInfractionDetails = useCallback(
+    async (unit) => {
+      try {
+        const infractionDate = new Date(unit.fechaHora);
+        // Buscar desde el día de la infracción hasta el día siguiente
+        const startDate = new Date(infractionDate);
+        const endDate = new Date(infractionDate);
+        endDate.setDate(infractionDate.getDate() + 1); // Día siguiente
+
+        // Formatear fechas como YYYY-MM-DD (solo fecha, sin hora)
+        const fechaInicial = startDate.toISOString().slice(0, 10);
+        const fechaFinal = endDate.toISOString().slice(0, 10);
+
+        const url = `/api/servicio/historico.php/historico?movil=${unit.Movil_ID}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // El endpoint devuelve los datos en data.Historico, no directamente en data
+        const historicalData = data.Historico || data;
+
+        // Procesar los datos para encontrar la secuencia de infracción
+        const infractionDetails = processInfractionSequence(
+          historicalData,
+          unit
+        );
+
+        return infractionDetails;
+      } catch (error) {
+        console.error(
+          `Error obteniendo detalles de infracción para ${unit.patente}:`,
+          error
+        );
+        return null;
+      }
+    },
+    [processInfractionSequence]
   );
 
   // Detectar infracciones activas - Memoizado para optimizar rendimiento
@@ -577,23 +711,81 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
 
   // Set memoizado de historial para comparaciones rápidas
   const historyInfractionIds = useMemo(
-    () => new Set(historyInfractions.map((unit) => unit.Movil_ID)),
-    [historyInfractions]
+    () => new Set(state.infractionHistory.map((unit) => unit.Movil_ID)),
+    [state.infractionHistory]
   );
 
   // Manejar eliminación individual del historial - Memoizado
-  const handleRemoveFromHistory = useCallback((unitId, event) => {
-    event.stopPropagation();
-    setHistoryInfractions((prev) =>
-      prev.filter((unit) => unit.Movil_ID !== unitId)
-    );
-  }, []);
+  const handleRemoveFromHistory = useCallback(
+    (unitId, event) => {
+      event.stopPropagation();
+
+      // Actualizar contexto
+      dispatch({
+        type: "REMOVE_FROM_INFRACTION_HISTORY",
+        payload: { unitId },
+      });
+
+      // Actualizar localStorage
+      const updatedHistory = state.infractionHistory.filter(
+        (unit) => unit.Movil_ID !== unitId
+      );
+      saveHistoryToStorage(updatedHistory);
+    },
+    [state.infractionHistory, dispatch, saveHistoryToStorage]
+  );
 
   // Manejar limpiar todo el historial - Memoizado
-  const handleClearAllHistory = useCallback((event) => {
-    event.stopPropagation();
-    setHistoryInfractions([]);
-  }, []);
+  const handleClearAllHistory = useCallback(
+    (event) => {
+      event.stopPropagation();
+
+      // Limpiar contexto
+      dispatch({ type: "CLEAR_INFRACTION_HISTORY" });
+
+      // Limpiar localStorage
+      saveHistoryToStorage([]);
+    },
+    [dispatch, saveHistoryToStorage]
+  );
+
+  // Manejar refrescar detalles de infracción manualmente - Memoizado
+  const handleRefreshInfractionDetails = useCallback(
+    async (unit, event) => {
+      event.stopPropagation();
+
+      // Marcar como cargando
+      dispatch({
+        type: "ADD_LOADING_INFRACTION_UNIT",
+        payload: { unitId: unit.Movil_ID },
+      });
+
+      try {
+        // Obtener detalles de la infracción
+        const details = await fetchInfractionDetails(unit);
+
+        if (details) {
+          // Actualizar la unidad en el historial con los nuevos detalles
+          dispatch({
+            type: "UPDATE_INFRACTION_HISTORY",
+            payload: { unitId: unit.Movil_ID, details },
+          });
+        }
+      } catch (error) {
+        console.error(
+          `Error refrescando detalles para ${unit.patente}:`,
+          error
+        );
+      } finally {
+        // Remover del estado de carga
+        dispatch({
+          type: "REMOVE_LOADING_INFRACTION_UNIT",
+          payload: { unitId: unit.Movil_ID },
+        });
+      }
+    },
+    [dispatch, fetchInfractionDetails]
+  );
 
   // Gestión automática del historial - Detectar unidades que salen de infracción
   useEffect(() => {
@@ -604,42 +796,68 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       );
 
       // Unidades que estaban activas previamente pero ya no están
-      const unitsToMoveToHistory = previousActiveInfractions.filter(
+      const unitsToMoveToHistory = state.previousActiveInfractions.filter(
         (unit) =>
           !currentActiveIds.has(unit.Movil_ID) &&
           !historyInfractionIds.has(unit.Movil_ID)
       );
 
       if (unitsToMoveToHistory.length > 0) {
-        console.log(
-          "Moviendo al historial:",
-          unitsToMoveToHistory.map((u) => u.patente)
-        );
-
         // Agregar unidades al historial inmediatamente (sin detalles)
-        setHistoryInfractions((prev) => {
-          const newHistory = [...prev, ...unitsToMoveToHistory];
-          return newHistory.slice(0, 50);
+        const newHistory = [
+          ...state.infractionHistory,
+          ...unitsToMoveToHistory,
+        ];
+        const limitedHistory = newHistory.slice(0, 50); // Limitar a 50 elementos
+
+        // Actualizar contexto
+        dispatch({
+          type: "SET_INFRACTION_HISTORY",
+          payload: limitedHistory,
         });
+
+        // localStorage se sincroniza automáticamente via useEffect
 
         // Obtener detalles para cada unidad que se movió al historial
         for (const unit of unitsToMoveToHistory) {
-          // Marcar como cargando
-          setLoadingUnits((prev) => new Set([...prev, unit.Movil_ID]));
+          // Marcar como cargando en contexto
+          dispatch({
+            type: "ADD_LOADING_INFRACTION_UNIT",
+            payload: { unitId: unit.Movil_ID },
+          });
+
+          // Actualizar localStorage de loading units automáticamente via useEffect
+          dispatch({
+            type: "SET_LOADING_INFRACTION_UNITS",
+            payload: new Set([...state.loadingInfractionUnits, unit.Movil_ID]),
+          });
 
           try {
             // Obtener detalles de la infracción
             const details = await fetchInfractionDetails(unit);
 
             if (details) {
-              // Actualizar la unidad en el historial con los detalles
-              setHistoryInfractions((prev) =>
-                prev.map((historyUnit) =>
+              // Actualizar la unidad en el historial con los detalles en contexto
+              dispatch({
+                type: "UPDATE_INFRACTION_HISTORY",
+                payload: { unitId: unit.Movil_ID, details },
+              });
+
+              // localStorage se sincroniza automáticamente via useEffect
+              setTimeout(() => {
+                const currentHistory = JSON.parse(
+                  localStorage.getItem(INFRACTION_HISTORY_STORAGE_KEY) || "[]"
+                );
+                const updatedHistory = currentHistory.map((historyUnit) =>
                   historyUnit.Movil_ID === unit.Movil_ID
                     ? { ...historyUnit, ...details }
                     : historyUnit
-                )
-              );
+                );
+                localStorage.setItem(
+                  INFRACTION_HISTORY_STORAGE_KEY,
+                  JSON.stringify(updatedHistory)
+                );
+              }, 100);
             }
           } catch (error) {
             console.error(
@@ -647,11 +865,20 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
               error
             );
           } finally {
-            // Remover del estado de carga
-            setLoadingUnits((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(unit.Movil_ID);
-              return newSet;
+            // Remover del estado de carga en contexto
+            dispatch({
+              type: "REMOVE_LOADING_INFRACTION_UNIT",
+              payload: { unitId: unit.Movil_ID },
+            });
+
+            // localStorage se sincroniza automáticamente via useEffect
+            dispatch({
+              type: "SET_LOADING_INFRACTION_UNITS",
+              payload: new Set(
+                [...state.loadingInfractionUnits].filter(
+                  (id) => id !== unit.Movil_ID
+                )
+              ),
             });
           }
         }
@@ -659,17 +886,23 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
     };
 
     // Solo procesar si tenemos infracciones previas para comparar
-    if (previousActiveInfractions.length > 0) {
+    if (state.previousActiveInfractions.length > 0) {
       processHistoryMovement();
     }
 
-    // Actualizar el estado previo con las infracciones actuales
-    setPreviousActiveInfractions(activeInfractions);
+    // Actualizar el estado previo con las infracciones actuales en contexto
+    dispatch({
+      type: "SET_PREVIOUS_ACTIVE_INFRACTIONS",
+      payload: activeInfractions,
+    });
   }, [
     activeInfractions,
     historyInfractionIds,
     fetchInfractionDetails,
-    // NO incluir historyInfractions ni previousActiveInfractions para evitar bucle infinito
+    state.previousActiveInfractions,
+    // state.infractionHistory, // REMOVIDO: evita bucle infinito
+    // state.loadingInfractionUnits, // REMOVIDO: evita bucle infinito
+    dispatch,
   ]);
 
   // Cleanup automático del historial (eliminar elementos > 24 horas)
@@ -678,19 +911,26 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       const ONE_DAY_MS = 24 * 60 * 60 * 1000;
       const currentTime = Date.now();
 
-      setHistoryInfractions((prev) =>
-        prev.filter((unit) => {
-          const unitTime = new Date(unit.fechaHora).getTime();
-          return currentTime - unitTime < ONE_DAY_MS;
-        })
-      );
+      const filteredHistory = state.infractionHistory.filter((unit) => {
+        const unitTime = new Date(unit.fechaHora).getTime();
+        return currentTime - unitTime < ONE_DAY_MS;
+      });
+
+      // Solo actualizar si hubo cambios
+      if (filteredHistory.length !== state.infractionHistory.length) {
+        dispatch({
+          type: "SET_INFRACTION_HISTORY",
+          payload: filteredHistory,
+        });
+        saveHistoryToStorage(filteredHistory);
+      }
     };
 
     // Ejecutar limpieza cada 30 minutos
     const interval = setInterval(cleanupOldHistory, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [state.infractionHistory, dispatch, saveHistoryToStorage]);
 
   // Renderizar contenido específico de infracciones
   const renderInfractionContent = ({
@@ -732,7 +972,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
               const formattedTime = formatInfractionTime(unit.fechaHora);
               const isLast =
                 index === sortedActiveInfractions.length - 1 &&
-                historyInfractions.length === 0;
+                state.infractionHistory.length === 0;
 
               return (
                 <InfractionItem
@@ -744,6 +984,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
                   severityColor={severityColor}
                   formattedTime={formattedTime}
                   onDelete={null} // No eliminar en activas
+                  onRefreshDetails={null} // No refrescar en activas
                   onUnitSelect={handleUnitSelect}
                 />
               );
@@ -753,12 +994,13 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       )}
 
       {/* Separador entre activas e historial */}
-      {sortedActiveInfractions.length > 0 && historyInfractions.length > 0 && (
-        <Divider sx={{ borderColor: "divider" }} />
-      )}
+      {sortedActiveInfractions.length > 0 &&
+        state.infractionHistory.length > 0 && (
+          <Divider sx={{ borderColor: "divider" }} />
+        )}
 
       {/* Historial de infracciones */}
-      {historyInfractions.length > 0 && (
+      {state.infractionHistory.length > 0 && (
         <>
           {/* Header del historial con botón limpiar */}
           <Box
@@ -783,7 +1025,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
                 gap: 1,
               }}
             >
-              📋 Historial de infracciones ({historyInfractions.length})
+              📋 Historial de infracciones ({state.infractionHistory.length})
             </Typography>
 
             <Button
@@ -805,11 +1047,13 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
 
           {/* Lista del historial */}
           <List dense sx={{ p: 0 }}>
-            {historyInfractions.map((unit, index) => {
+            {state.infractionHistory.map((unit, index) => {
               const severityColor = determineInfractionSeverity(unit.estado);
               const formattedTime = formatInfractionTime(unit.fechaHora);
-              const isLast = index === historyInfractions.length - 1;
-              const isLoadingDetails = loadingUnits.has(unit.Movil_ID);
+              const isLast = index === state.infractionHistory.length - 1;
+              const isLoadingDetails = state.loadingInfractionUnits.has(
+                unit.Movil_ID
+              );
 
               return (
                 <InfractionItem
@@ -821,6 +1065,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
                   severityColor={severityColor}
                   formattedTime={formattedTime}
                   onDelete={handleRemoveFromHistory}
+                  onRefreshDetails={handleRefreshInfractionDetails}
                   onUnitSelect={handleUnitSelect}
                   isLoadingDetails={isLoadingDetails}
                 />
@@ -832,7 +1077,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
 
       {/* Placeholder cuando no hay infracciones ni historial */}
       {sortedActiveInfractions.length === 0 &&
-        historyInfractions.length === 0 && (
+        state.infractionHistory.length === 0 && (
           <Box
             sx={{
               p: 4,
@@ -874,8 +1119,8 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       onUnitSelect={onUnitSelect}
       badgeColor="error.main"
       iconColor="error.main"
-      showHistoryDot={historyInfractions.length > 0}
-      historyTooltip={`Historial: ${historyInfractions.length} infracciones concluidas`}
+      showHistoryDot={state.infractionHistory.length > 0}
+      historyTooltip={`Historial: ${state.infractionHistory.length} infracciones concluidas`}
       zIndex={1100}
     >
       {renderInfractionContent}
