@@ -1,5 +1,5 @@
 {
-  "version": "2025.06.2",
-  "buildDate": "2025-06-21T00:43:12.439Z",
-  "changelog": "📅 Junio 2025 - Versión 2025.06.2\n✅ NUEVO: Manual de Usuario Integrado - Acceda a la ayuda completa desde el menú principal (☰) sin salir de la plataforma\n✅ Guías Paso a Paso - Instrucciones detalladas para todas las funciones del sistema\n✅ Soporte Directo - Enlaces integrados a WhatsApp para asistencia inmediata\n✅ CORRECCIÓN: Resolución de problemas en la detección de versiones para usuarios nuevos y existentes\n⚡ OPTIMIZACIÓN: Verificación automática cada 10 minutos para usuarios que mantienen la aplicación abierta\n🔧 MEJORA: Sistema de Notificaciones Optimizado - Detección más precisa y rápida de nuevas actualizaciones disponibles\n🔧 MEJORA: Reporte de Posición Actual: reporte en Excel con la ubicación actual de todas las unidades de su flota"
+  "version": "2025.06.3",
+  "buildDate": "2025-07-29T19:45:19.506Z",
+  "changelog": "📅 Julio 2025 - Versión 2025.07.1\r\n\r\n✅ NUEVO: ALERTA DE UNIDADES EN RALENTI - Informe en tiempo real con unidades en ralentí\r\n✅ NUEVO: ALERTA DE UNIDADES EN INFRACCION - Informe en tiempo real de las unidades que están cometiendo infracción y registro de la ultima infracción cometida por una unidad.\r\n⚡ OPTIMIZACIÓN: mejora en visualización de calendario en Informes Parciales.\r\n⚡ OPTIMIZACIÓN: mejora en rendimiento general de plataforma.\r\n🔧 ACTUALIZACION: Manual de usuario: manual de usuario actualizado con las descripciones de las nuevas funcionalidades."
 }
