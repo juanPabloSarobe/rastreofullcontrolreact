@@ -1185,7 +1185,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       noUnitsOffset={{ desktop: 144, mobile: 234 }}
       sortBy={sortBy}
       onSortChange={handleSortChange}
-      showSortButton={true}
+      showSortButton={false}
       sortOptions={{ option1: "Patente", option2: "Tiempo" }}
       onUnitSelect={onUnitSelect}
       badgeColor="error.main"
