@@ -32,7 +32,8 @@ const VersionModal = ({ open, onClose }) => {
 
   const fetchCurrentVersion = async () => {
     try {
-      const response = await fetch("/version.json");
+      // CORREGIDO: Agregar cache busting para evitar cache del navegador
+      const response = await fetch("/version.json?t=" + new Date().getTime());
       const data = await response.json();
       setVersionData(data);
     } catch (error) {
