@@ -221,6 +221,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
   const STORAGE_KEY = "idleTimers";
   const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
   const ONE_HOUR_MS = 60 * 60 * 1000;
+  const FIFTEEN_MINUTES_MS = 15 * 60 * 1000; // Nueva constante para 15 minutos
 
   // Memoizar array de estados idle para evitar recrearlo en cada render
   const idleStates = useMemo(
@@ -449,6 +450,11 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
         return estado.includes(normalizedIdleState);
       });
 
+      // NUEVA LÓGICA: Si la unidad está en ralentí pero su último reporte tiene más de 15 minutos, excluirla
+      if (hasIdleState && timeDifference > FIFTEEN_MINUTES_MS) {
+        return false; // Excluir unidades en ralentí que no reportan hace más de 15 minutos
+      }
+
       // Si es "fin de ralentí/ralenti" y motor apagado, no incluir en la lista
       if (
         hasIdleState &&
@@ -462,7 +468,13 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
       return hasIdleState;
     });
-  }, [markersData, TWELVE_HOURS_MS, idleStates, normalizeString]);
+  }, [
+    markersData,
+    TWELVE_HOURS_MS,
+    FIFTEEN_MINUTES_MS,
+    idleStates,
+    normalizeString,
+  ]);
 
   // Memoizar set de unidades activas para optimizar rendimiento
   const activeUnitIds = useMemo(
@@ -493,10 +505,12 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
             currentTime - storedTimer.lastUpdate < ONE_HOUR_MS
           ) {
             // Usar datos almacenados si son recientes (menos de 1 hora)
-            const timeSinceStorage = currentTime - storedTimer.lastUpdate;
+            // CORREGIDO: No usar currentTime, usar el timestamp del GPS actual
+            const timeSinceStorage = fechaHora - storedTimer.lastUpdate;
             newTimers.set(unitId, {
               startTime: storedTimer.startTime,
-              accumulatedTime: storedTimer.accumulatedTime + timeSinceStorage,
+              accumulatedTime:
+                storedTimer.accumulatedTime + Math.max(0, timeSinceStorage),
               lastUpdate: fechaHora,
               isPersisted: true,
             });
@@ -507,10 +521,10 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
               fechaHora
             ); // Máximo 5 min hacia atrás
 
-            // Crear timer temporal y marcar para búsqueda histórica
+            // CORREGIDO: Usar fechaHora en lugar de currentTime para cálculo inicial
             const tempTimer = {
               startTime: estimatedStartTime,
-              accumulatedTime: currentTime - estimatedStartTime,
+              accumulatedTime: Math.max(0, fechaHora - estimatedStartTime),
               lastUpdate: fechaHora,
               isTemporary: true,
             };
@@ -524,9 +538,9 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
               .then((results) => {
                 const result = results[0];
                 if (result && result.hasIdleStart && result.idleStartTime) {
-                  // Actualizar con datos históricos precisos
+                  // CORREGIDO: Usar fechaHora (último timestamp GPS) en lugar de Date.now()
                   const preciseAccumulatedTime =
-                    Date.now() - result.idleStartTime;
+                    fechaHora - result.idleStartTime;
 
                   const updatedTimer = {
                     startTime: result.idleStartTime,
@@ -557,9 +571,10 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
                 });
               });
 
+            // CORREGIDO: Timer inicial también usa fechaHora
             newTimers.set(unitId, {
               startTime: estimatedStartTime,
-              accumulatedTime: currentTime - estimatedStartTime,
+              accumulatedTime: Math.max(0, fechaHora - estimatedStartTime),
               lastUpdate: fechaHora,
               isNewDetection: true,
             });
@@ -573,10 +588,11 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
           if (timeDiff > 0 && timeDiff < ONE_HOUR_MS) {
             timer.accumulatedTime += timeDiff;
           } else if (timeDiff < 0) {
-            // Si el timestamp es anterior, usar tiempo actual como base
+            // CORREGIDO: Si el timestamp es anterior, mantener el tiempo acumulado sin usar currentTime
+            // Solo ajustar si es necesario, pero nunca usar horario actual
             timer.accumulatedTime = Math.max(
               timer.accumulatedTime,
-              currentTime - timer.startTime
+              fechaHora - timer.startTime
             );
           }
 
@@ -587,9 +603,11 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
 
       // Remover unidades que ya no están en ralentí o que han expirado
       for (const [unitId, timer] of newTimers.entries()) {
-        const timeSinceLastUpdate = currentTime - timer.lastUpdate;
+        // CORREGIDO: Usar el último timestamp GPS conocido en lugar de currentTime
+        const lastKnownGpsTime = timer.lastUpdate;
+        const timeSinceLastUpdate = currentTime - lastKnownGpsTime;
 
-        // Remover si la unidad ya no está en ralentí o si han pasado más de 1 hora sin actualizaciones
+        // Remover si la unidad ya no está en ralentí o si han pasado más de 1 hora sin actualizaciones GPS
         if (!activeUnitIds.has(unitId) || timeSinceLastUpdate > ONE_HOUR_MS) {
           newTimers.delete(unitId);
           // También remover de ignorados si ya no está en ralentí
