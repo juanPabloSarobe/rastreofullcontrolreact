@@ -25,7 +25,9 @@ import empresasAExcluir from "../../data/empresasAExcluir.json";
 import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
-import FleetSelectorButton from "../common/FleetSelectorButton";
+import FleetSelectorButton, {
+  FleetSelectorProvider,
+} from "../common/FleetSelectorButton";
 import AreaSelectorButton from "../common/AreaSelectorButton";
 import IdleUnitsAlert from "../common/IdleUnitsAlert";
 import InfractionAlert from "../common/InfractionAlert";
@@ -262,7 +264,7 @@ const PrincipalPage = () => {
   }, []);
 
   return (
-    <>
+    <FleetSelectorProvider>
       {activeNotification && (
         <NotificationModal
           message={activeNotification}
@@ -387,7 +389,7 @@ const PrincipalPage = () => {
 
       {/* Indicador de versión */}
       <VersionIndicator />
-    </>
+    </FleetSelectorProvider>
   );
 };
 

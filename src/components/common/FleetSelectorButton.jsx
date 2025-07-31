@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import {
   Box,
   IconButton,
@@ -17,9 +23,51 @@ import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import CloseIcon from "@mui/icons-material/Close";
 import { useContextValue } from "../../context/Context";
 
+// Contexto para compartir el estado del FleetSelector
+const FleetSelectorContext = createContext();
+
+export const FleetSelectorProvider = ({ children }) => {
+  const [fleetSelectorWidth, setFleetSelectorWidth] = useState(48); // Ancho inicial
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasSelectedFleet, setHasSelectedFleet] = useState(false);
+
+  return (
+    <FleetSelectorContext.Provider
+      value={{
+        fleetSelectorWidth,
+        setFleetSelectorWidth,
+        isExpanded,
+        setIsExpanded,
+        hasSelectedFleet,
+        setHasSelectedFleet,
+      }}
+    >
+      {children}
+    </FleetSelectorContext.Provider>
+  );
+};
+
+export const useFleetSelectorState = () => {
+  const context = useContext(FleetSelectorContext);
+  if (!context) {
+    throw new Error(
+      "useFleetSelectorState must be used within FleetSelectorProvider"
+    );
+  }
+  return context;
+};
+
 // Añadimos setSelectedUnit como prop
 const FleetSelectorButton = ({ setSelectedUnit }) => {
   const { state, dispatch } = useContextValue();
+  const {
+    fleetSelectorWidth,
+    setFleetSelectorWidth,
+    isExpanded,
+    setIsExpanded,
+    hasSelectedFleet,
+    setHasSelectedFleet,
+  } = useFleetSelectorState();
   const [anchorEl, setAnchorEl] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -157,6 +205,7 @@ const FleetSelectorButton = ({ setSelectedUnit }) => {
       // Guardamos los detalles para poder deshacer la selección
       setFleetUnits(units);
       setSelectedFleet(fleet);
+      setHasSelectedFleet(true);
     } catch (error) {
       console.error("Error al obtener unidades de flota:", error);
       setError("No se pudieron cargar las unidades de la flota");
@@ -170,6 +219,7 @@ const FleetSelectorButton = ({ setSelectedUnit }) => {
     dispatch({ type: "SET_SELECTED_UNITS", payload: [] });
     setSelectedFleet(null);
     setFleetUnits([]);
+    setHasSelectedFleet(false);
 
     // Limpiamos también la unidad seleccionada
     if (setSelectedUnit) {
@@ -185,6 +235,26 @@ const FleetSelectorButton = ({ setSelectedUnit }) => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  // Calcular y actualizar el ancho del componente
+  useEffect(() => {
+    let newWidth = 48; // Ancho base
+    let expanded = false;
+
+    if (selectedFleet) {
+      // Estado con flota seleccionada - calcular ancho dinámico
+      const fleetNameLength = selectedFleet.Flota_Nombre.length;
+      newWidth = Math.max(180, fleetNameLength * 8 + 80); // Ancho dinámico basado en texto
+      expanded = true;
+    } else if (isHovered) {
+      // Estado hover
+      newWidth = 200;
+      expanded = true;
+    }
+
+    setFleetSelectorWidth(newWidth);
+    setIsExpanded(expanded);
+  }, [selectedFleet, isHovered, setFleetSelectorWidth, setIsExpanded]);
 
   const open = Boolean(anchorEl);
   const id = open ? "fleet-selector-popover" : undefined;

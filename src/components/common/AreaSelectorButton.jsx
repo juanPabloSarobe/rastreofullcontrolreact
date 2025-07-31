@@ -15,6 +15,7 @@ import CropFreeIcon from "@mui/icons-material/CropFree";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { useContextValue } from "../../context/Context";
+import { useFleetSelectorState } from "./FleetSelectorButton";
 
 // Componente wrapper que maneja el contexto del mapa
 const AreaSelectorMapHandler = ({ markersData, onUnitSelect, isVisible }) => {
@@ -33,6 +34,7 @@ const AreaSelectorMapHandler = ({ markersData, onUnitSelect, isVisible }) => {
 
 const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
   const { state, dispatch } = useContextValue();
+  const { fleetSelectorWidth } = useFleetSelectorState();
   const [isHovered, setIsHovered] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -363,14 +365,24 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
     };
   }, [map]);
 
-  // Calcular posición a la derecha del FleetSelectorButton
+  // Calcular posición dinámica a la derecha del FleetSelectorButton
   const getPositionStyles = () => {
+    // Posición base del FleetSelector: left: 432px
+    const fleetSelectorBaseLeft = 432;
+    // Margen entre componentes
+    const margin = 16;
+    // Calcular nueva posición basada en el ancho del FleetSelector
+    const dynamicLeft = fleetSelectorBaseLeft + fleetSelectorWidth + margin;
+
     return {
       position: "absolute",
       top: { xs: "80px", sm: "16px" },
-      left: { xs: "16px", sm: "624px" }, // Ajustado para estar a la derecha del FleetSelectorButton
+      left: {
+        xs: "16px", // En móvil mantener posición fija
+        sm: `${dynamicLeft}px`, // En desktop usar posición dinámica
+      },
       height: "48px",
-      transition: "all 0.3s ease",
+      transition: "all 0.3s ease", // Transición suave para el desplazamiento
       borderRadius: "24px",
       boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
       backgroundColor: "white",
