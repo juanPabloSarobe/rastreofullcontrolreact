@@ -39,6 +39,8 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
+  const [showInsufficientAreaDialog, setShowInsufficientAreaDialog] =
+    useState(false); // Nuevo dialog
   const [unitsInArea, setUnitsInArea] = useState([]);
   const [pendingSelection, setPendingSelection] = useState(null);
   const rectangleRef = useRef(null);
@@ -187,10 +189,8 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
         // Área mínima
         processSelection(bounds);
       } else {
-        // Si es solo un click, cancelar
-        alert(
-          "Dibuje un rectángulo arrastrando el mouse. Un simple clic no es suficiente."
-        );
+        // Si es solo un click, mostrar dialog elegante
+        setShowInsufficientAreaDialog(true);
         stopDrawing();
       }
     };
@@ -209,9 +209,8 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
 
       // Verificar límites según la documentación
       if (units.length === 0) {
-        alert(
-          "No se encontraron unidades en el área seleccionada. Intente dibujar un área más grande."
-        );
+        // No hay unidades en el área - mostrar dialog
+        setShowInsufficientAreaDialog(true);
         stopDrawing();
         return;
       }
@@ -231,10 +230,9 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
         setPendingSelection(units);
         setShowLimitDialog(true);
       } else {
-        // Más de 100 unidades - no permitir
-        alert(
-          `Se encontraron ${units.length} unidades en el área seleccionada. El límite máximo es de 100 unidades. Por favor, reduzca el área o aumente el zoom.`
-        );
+        // Más de 100 unidades - mostrar dialog elegante
+        setPendingSelection(units);
+        setShowInsufficientAreaDialog(true);
         stopDrawing();
       }
     };
@@ -247,20 +245,57 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
     // Agregar listener para ESC
     document.addEventListener("keydown", onKeyDown);
 
-    // Mostrar instrucciones
-    const instructionPopup = L.popup()
-      .setLatLng(map.getCenter())
-      .setContent(
-        '<div style="text-align: center; font-weight: bold;">Haga clic y arrastre para dibujar un rectángulo<br><small>Presione ESC para cancelar</small></div>'
-      )
-      .openOn(map);
+    // Mostrar tooltip discreto
+    const showInstructions = () => {
+      const tooltip = document.createElement("div");
+      const fleetSelectorBaseLeft = 432;
+      const margin = 16;
+      const dynamicLeft = fleetSelectorBaseLeft + fleetSelectorWidth + margin;
 
-    // Cerrar popup después de 4 segundos
-    setTimeout(() => {
-      if (map.hasLayer(instructionPopup)) {
-        map.closePopup(instructionPopup);
+      tooltip.style.cssText = `
+        position: fixed;
+        top: 72px;
+        left: ${dynamicLeft + 24}px;
+        background: rgba(33, 150, 243, 0.95);
+        color: white;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-family: "Roboto", sans-serif;
+        z-index: 10000;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        animation: slideDown 0.3s ease-out;
+        pointer-events: none;
+      `;
+
+      if (!document.querySelector("#area-tooltip-styles")) {
+        const style = document.createElement("style");
+        style.id = "area-tooltip-styles";
+        style.textContent = `
+          @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `;
+        document.head.appendChild(style);
       }
-    }, 4000);
+
+      tooltip.textContent =
+        "📐 Clic y arrastre para dibujar área · ESC cancelar";
+      document.body.appendChild(tooltip);
+
+      setTimeout(() => {
+        if (tooltip.parentNode) {
+          tooltip.style.opacity = "0";
+          tooltip.style.transform = "translateY(-10px)";
+          setTimeout(() => tooltip.remove(), 300);
+        }
+      }, 2500);
+    };
+
+    // Mostrar instrucciones
+    showInstructions();
 
     // Cleanup function para remover event listeners
     const cleanup = () => {
@@ -515,6 +550,31 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
             color="warning"
           >
             Continuar ({unitsInArea.length} unidades)
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de área insuficiente */}
+      <Dialog
+        open={showInsufficientAreaDialog}
+        onClose={() => setShowInsufficientAreaDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Área insuficiente</DialogTitle>
+        <DialogContent>
+          <Typography>
+            El área dibujada es demasiado pequeña para realizar una selección.
+            Por favor, dibuje un área más grande.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ gap: 1, p: 3 }}>
+          <Button
+            onClick={() => setShowInsufficientAreaDialog(false)}
+            variant="contained"
+            color="primary"
+          >
+            Aceptar
           </Button>
         </DialogActions>
       </Dialog>
