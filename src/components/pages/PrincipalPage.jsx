@@ -26,6 +26,7 @@ import HistoricalView from "./HistoricalView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton from "../common/FleetSelectorButton";
+import AreaSelectorButton from "../common/AreaSelectorButton";
 import IdleUnitsAlert from "../common/IdleUnitsAlert";
 import InfractionAlert from "../common/InfractionAlert";
 import NotificationModal from "../common/NotificationModal";
@@ -346,6 +347,18 @@ const PrincipalPage = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
+
+              {/* Componente de selección por área - renderizado condicional */}
+              {state.viewMode === "rastreo" &&
+                liteData?.GPS &&
+                Object.keys(liteData.GPS).length > 0 &&
+                markersData.length > 0 && (
+                  <AreaSelectorButton
+                    markersData={markersData}
+                    onUnitSelect={handleUnitSelect}
+                    isVisible={true}
+                  />
+                )}
 
               {state.viewMode === "rastreo" && (
                 <MarkersList
