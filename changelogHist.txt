@@ -1,5 +1,14 @@
 📅 HISTORIAL DE ACTUALIZACIONES - FullControl GPS
 
+📅 Julio 2025 - Versión 2025.07
+
+✅ NUEVO: ALERTA DE UNIDADES EN RALENTI - Informe en tiempo real con unidades en ralentí
+✅ NUEVO: ALERTA DE UNIDADES EN INFRACCION - Informe en tiempo real de las unidades que están cometiendo infracción y registro de la ultima infracción cometida por una unidad.
+⚡ OPTIMIZACIÓN: mejora en visualización de calendario en Informes Parciales.
+⚡ OPTIMIZACIÓN: mejora en rendimiento general de plataforma.
+⚡ OPTIMIZACIÓN: correccion de bug menor en alertas de ralenti.
+🔧 ACTUALIZACION: Manual de usuario: manual de usuario actualizado con las descripciones de las nuevas funcionalidades.
+
 
 📅 Junio 2025 - Versión 2025.06.2
 🔧 MEJORA: Reporte de Posición Actual: reporte en Excel con la ubicación actual de todas las unidades de su flota

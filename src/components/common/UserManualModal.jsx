@@ -34,6 +34,7 @@ import {
   GetApp as DownloadIcon,
   Security as SecurityIcon,
   Update as UpdateIcon,
+  CropFree as CropFreeIcon,
 } from "@mui/icons-material";
 
 const UserManualModal = ({ open, onClose }) => {
@@ -470,6 +471,85 @@ const UserManualModal = ({ open, onClose }) => {
               </CardContent>
             </Card>
 
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                >
+                  <CropFreeIcon sx={{ color: "primary.main" }} />
+                  Selección por Área (NUEVO)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Nueva funcionalidad:</strong> Seleccione múltiples
+                  unidades dibujando un área en el mapa:
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      Haga clic en el botón con ícono{" "}
+                      <CropFreeIcon
+                        sx={{ fontSize: "1rem", color: "primary.main" }}
+                      />{" "}
+                      (junto al selector de flotas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Haga clic y arrastre en el mapa para dibujar un rectángulo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Las unidades dentro del área se seleccionarán
+                      automáticamente
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Presione ESC para cancelar el dibujo en cualquier momento
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography
+                  variant="subtitle2"
+                  sx={{ mt: 2, mb: 1, fontWeight: "bold" }}
+                >
+                  Límites de selección:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" color="success.main">
+                      <strong>1-75 unidades:</strong> Selección automática sin
+                      advertencia
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" color="warning.main">
+                      <strong>76-150 unidades:</strong> Muestra advertencia pero
+                      permite continuar
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" color="error.main">
+                      <strong>Más de 150 unidades:</strong> No permite la
+                      selección (para mantener rendimiento)
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
             <Card
               sx={{
                 bgcolor: "success.50",
@@ -479,12 +559,28 @@ const UserManualModal = ({ open, onClose }) => {
             >
               <CardContent>
                 <Typography variant="h6" gutterBottom color="success.main">
-                  ✅ Tip Útil
+                  ✅ Tips Útiles
                 </Typography>
-                <Typography variant="body2">
-                  Use el campo de búsqueda para encontrar rápidamente vehículos
-                  específicos por patente o nombre.
-                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Use el campo de búsqueda para encontrar rápidamente
+                      vehículos específicos por patente o nombre.
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      La selección por área es ideal para monitorear vehículos
+                      en una zona específica (depósitos, rutas, ciudades).
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Si el área es muy grande, aumente el zoom del mapa para
+                      reducir la cantidad de unidades seleccionadas.
+                    </Typography>
+                  </li>
+                </Box>
               </CardContent>
             </Card>
           </Box>

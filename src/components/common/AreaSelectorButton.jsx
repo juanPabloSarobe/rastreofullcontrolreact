@@ -40,7 +40,8 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const [showInsufficientAreaDialog, setShowInsufficientAreaDialog] =
-    useState(false); // Nuevo dialog
+    useState(false); // Dialog para área muy pequeña
+  const [showMaxUnitsDialog, setShowMaxUnitsDialog] = useState(false); // Dialog para más de 150 unidades
   const [unitsInArea, setUnitsInArea] = useState([]);
   const [pendingSelection, setPendingSelection] = useState(null);
   const rectangleRef = useRef(null);
@@ -215,8 +216,8 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
         return;
       }
 
-      if (units.length <= 20) {
-        // Selección automática
+      if (units.length <= 75) {
+        // Selección automática sin advertencia
         const unitIds = units.map((unit) => unit.Movil_ID);
         dispatch({ type: "SET_SELECTED_UNITS", payload: unitIds });
 
@@ -225,14 +226,14 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
         }
 
         stopDrawing();
-      } else if (units.length <= 100) {
+      } else if (units.length <= 150) {
         // Mostrar advertencia pero permitir continuar
         setPendingSelection(units);
         setShowLimitDialog(true);
       } else {
-        // Más de 100 unidades - mostrar dialog elegante
+        // Más de 150 unidades - no permitir selección
         setPendingSelection(units);
-        setShowInsufficientAreaDialog(true);
+        setShowMaxUnitsDialog(true);
         stopDrawing();
       }
     };
@@ -436,30 +437,22 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <Tooltip
-          title={
-            isDrawing
-              ? "Dibuje un rectángulo en el mapa para seleccionar unidades"
-              : "Seleccionar por área"
-          }
+        <IconButton
+          onClick={handleButtonClick}
+          sx={{
+            color: isDrawing ? "#ff5722" : "green",
+            height: "48px",
+            width: "48px",
+            "&:hover": {
+              backgroundColor: isDrawing
+                ? "rgba(255, 87, 34, 0.1)"
+                : "rgba(0, 128, 0, 0.1)",
+            },
+            position: "relative",
+          }}
         >
-          <IconButton
-            onClick={handleButtonClick}
-            sx={{
-              color: isDrawing ? "#ff5722" : "green",
-              height: "48px",
-              width: "48px",
-              "&:hover": {
-                backgroundColor: isDrawing
-                  ? "rgba(255, 87, 34, 0.1)"
-                  : "rgba(0, 128, 0, 0.1)",
-              },
-              position: "relative",
-            }}
-          >
-            <CropFreeIcon />
-          </IconButton>
-        </Tooltip>
+          <CropFreeIcon />
+        </IconButton>
 
         {/* Texto que aparece durante el hover */}
         {(isHovered || isDrawing) && (
@@ -515,7 +508,7 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog de advertencia para más de 20 unidades */}
+      {/* Dialog de advertencia para más de 75 unidades */}
       <Dialog
         open={showLimitDialog}
         onClose={handleCancelLimitSelection}
@@ -575,6 +568,40 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
             color="primary"
           >
             Aceptar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog para más de 150 unidades */}
+      <Dialog
+        open={showMaxUnitsDialog}
+        onClose={() => setShowMaxUnitsDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Demasiadas unidades</DialogTitle>
+        <DialogContent>
+          <Typography paragraph>
+            Se encontraron{" "}
+            <strong>{pendingSelection?.length || 0} unidades</strong> en el área
+            seleccionada.
+          </Typography>
+          <Typography paragraph>
+            El límite máximo permitido es de <strong>150 unidades</strong> para
+            mantener el rendimiento óptimo del sistema.
+          </Typography>
+          <Typography>
+            Por favor, reduzca el área de selección o aumente el zoom para
+            trabajar con menos unidades.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ gap: 1, p: 3 }}>
+          <Button
+            onClick={() => setShowMaxUnitsDialog(false)}
+            variant="contained"
+            color="primary"
+          >
+            Entendido
           </Button>
         </DialogActions>
       </Dialog>
