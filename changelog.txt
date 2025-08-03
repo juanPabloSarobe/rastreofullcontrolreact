@@ -1,5 +1,6 @@
 📅 Agosto 2025 - Versión 2025.08
 
+✅ NUEVO: ALERTA DE CONDUCCION AGRESIVA - Sistema de alertas en tiempo real para conductores que acumulan múltiples preavisos de manejo agresivo, con conteo diario, colores por severidad y reset automático.
 ✅ NUEVO: SELECCION POR AREA - Nueva funcionalidad para seleccionar múltiples unidades dibujando un rectángulo en el mapa.
 ✅ NUEVO: ALERTA DE UNIDADES EN RALENTI - Informe en tiempo real con unidades en ralentí
 ✅ NUEVO: ALERTA DE UNIDADES EN INFRACCION - Informe en tiempo real de las unidades que están cometiendo infracción y registro de la ultima infracción cometida por una unidad.

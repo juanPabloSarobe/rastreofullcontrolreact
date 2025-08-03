@@ -1192,7 +1192,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       iconColor="error.main"
       showHistoryDot={filteredInfractionHistory.length > 0}
       historyTooltip={`Historial: ${filteredInfractionHistory.length} infracciones concluidas`}
-      zIndex={1100}
+      zIndex={1200} // Arriba - más alto
     >
       {renderInfractionContent}
     </BaseExpandableAlert>

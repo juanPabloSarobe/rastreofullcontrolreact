@@ -16,6 +16,9 @@ export const ContextProvider = ({ children }) => {
     infractionHistory: [], // Historial de infracciones resueltas
     loadingInfractionUnits: new Set(), // Unidades consultando detalles de infracción
     previousActiveInfractions: [], // Estado previo para detectar transiciones
+    // Estados para sistema de conducción agresiva
+    aggressiveDrivingHistory: [], // Historial de conductores con manejo agresivo
+    previousActiveAggressiveDriving: [], // Estado previo para detectar transiciones
   };
 
   const reducer = (state, action) => {
@@ -80,6 +83,44 @@ export const ContextProvider = ({ children }) => {
         newLoadingUnits.delete(action.payload.unitId);
         return { ...state, loadingInfractionUnits: newLoadingUnits };
       }
+      // Acciones para sistema de conducción agresiva
+      case "SET_AGGRESSIVE_HISTORY":
+        return { ...state, aggressiveDrivingHistory: action.payload };
+      case "SET_PREVIOUS_ACTIVE_AGGRESSIVE_DRIVING":
+        return { ...state, previousActiveAggressiveDriving: action.payload };
+      case "UPDATE_AGGRESSIVE_HISTORY": {
+        // Actualizar un conductor específico en el historial
+        const existingIndex = state.aggressiveDrivingHistory.findIndex(
+          (conductor) => conductor.conductorId === action.payload.conductorId
+        );
+
+        let updatedHistory;
+        if (existingIndex >= 0) {
+          // Actualizar conductor existente
+          updatedHistory = state.aggressiveDrivingHistory.map(
+            (conductor, index) =>
+              index === existingIndex
+                ? { ...conductor, ...action.payload.details }
+                : conductor
+          );
+        } else {
+          // Agregar nuevo conductor al historial
+          updatedHistory = [
+            ...state.aggressiveDrivingHistory,
+            action.payload.details,
+          ];
+        }
+        return { ...state, aggressiveDrivingHistory: updatedHistory };
+      }
+      case "REMOVE_FROM_AGGRESSIVE_HISTORY": {
+        // Eliminar un conductor específico del historial
+        const filteredHistory = state.aggressiveDrivingHistory.filter(
+          (conductor) => conductor.conductorId !== action.payload.conductorId
+        );
+        return { ...state, aggressiveDrivingHistory: filteredHistory };
+      }
+      case "CLEAR_AGGRESSIVE_HISTORY":
+        return { ...state, aggressiveDrivingHistory: [] };
       default:
         return state;
     }
