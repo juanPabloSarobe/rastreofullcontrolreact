@@ -332,6 +332,7 @@ const getLoadingUnitsStorageKey = (username) =>
 
 const InfractionAlert = ({ markersData, onUnitSelect }) => {
   const [sortBy, setSortBy] = useState("time"); // Por defecto por tiempo
+  const [isInitialized, setIsInitialized] = useState(false); // Flag para controlar la inicialización
   const { state, dispatch } = useContextValue(); // Obtener estado y dispatch del contexto
 
   // Función para verificar si una unidad pertenece al usuario actual
@@ -453,26 +454,18 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
         type: "SET_INFRACTION_HISTORY",
         payload: storedHistory,
       });
-    } else {
-      // Limpiar historial si no hay datos para este usuario
-      dispatch({
-        type: "SET_INFRACTION_HISTORY",
-        payload: [],
-      });
     }
+    // No limpiar si no hay datos - dejar que el estado se mantenga como está
 
     if (storedLoadingUnits.size > 0) {
       dispatch({
         type: "SET_LOADING_INFRACTION_UNITS",
         payload: storedLoadingUnits,
       });
-    } else {
-      // Limpiar unidades de carga si no hay datos para este usuario
-      dispatch({
-        type: "SET_LOADING_INFRACTION_UNITS",
-        payload: new Set(),
-      });
     }
+    // No limpiar si no hay datos - dejar que el estado se mantenga como está
+    
+    setIsInitialized(true); // Marcar como inicializado
   }, [
     loadHistoryFromStorage,
     loadLoadingUnitsFromStorage,
@@ -480,18 +473,18 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
     state.user,
   ]);
 
-  // Sincronizar localStorage cuando cambie el contexto
+  // Sincronizar localStorage cuando cambie el contexto (solo después de inicializar)
   useEffect(() => {
-    if (state.user) {
+    if (state.user && isInitialized) {
       saveHistoryToStorage(state.infractionHistory);
     }
-  }, [state.infractionHistory, saveHistoryToStorage, state.user]);
+  }, [state.infractionHistory, saveHistoryToStorage, state.user, isInitialized]);
 
   useEffect(() => {
-    if (state.user) {
+    if (state.user && isInitialized) {
       saveLoadingUnitsToStorage(state.loadingInfractionUnits);
     }
-  }, [state.loadingInfractionUnits, saveLoadingUnitsToStorage, state.user]);
+  }, [state.loadingInfractionUnits, saveLoadingUnitsToStorage, state.user, isInitialized]);
 
   // Array de estados de infracción memoizado - Solo términos explícitos
   const infractionStates = useMemo(
@@ -1181,8 +1174,8 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
           ? `Infracciones activas: ${activeInfractions.length}`
           : "No hay infracciones activas"
       }
-      verticalOffset={{ desktop: 370, mobile: 320 }}
-      noUnitsOffset={{ desktop: 144, mobile: 234 }}
+      verticalOffset={{ desktop: 365, mobile: 320 }}
+      noUnitsOffset={{ desktop: 145, mobile: 234 }}
       sortBy={sortBy}
       onSortChange={handleSortChange}
       showSortButton={false}
@@ -1192,7 +1185,7 @@ const InfractionAlert = ({ markersData, onUnitSelect }) => {
       iconColor="error.main"
       showHistoryDot={filteredInfractionHistory.length > 0}
       historyTooltip={`Historial: ${filteredInfractionHistory.length} infracciones concluidas`}
-      zIndex={1200} // Arriba - más alto
+      zIndex={1150} // Arriba - más alto
     >
       {renderInfractionContent}
     </BaseExpandableAlert>
