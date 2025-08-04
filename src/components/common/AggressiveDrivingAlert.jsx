@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Box,
   IconButton,
@@ -7,10 +7,8 @@ import {
   ListItemText,
   ListItemButton,
   Typography,
-  Divider,
   Button,
   CircularProgress,
-  Tooltip,
   Chip,
 } from "@mui/material";
 import DriveEtaIcon from "@mui/icons-material/DriveEta";
@@ -26,7 +24,6 @@ const AggressiveDrivingItem = React.memo(
     conductor,
     index,
     isLast,
-    isHistory,
     severityColor,
     formattedTime,
     previewCount,
@@ -41,7 +38,6 @@ const AggressiveDrivingItem = React.memo(
       sx={{
         borderBottom: !isLast ? "1px solid" : "none",
         borderColor: "divider",
-        opacity: isHistory ? 0.6 : 1,
       }}
     >
       <Box
@@ -58,9 +54,7 @@ const AggressiveDrivingItem = React.memo(
             flex: 1,
             py: 0.5,
             "&:hover": {
-              backgroundColor: isHistory
-                ? "rgba(0, 0, 0, 0.04)"
-                : "rgba(156, 39, 176, 0.08)", // Color violeta para hover
+              backgroundColor: "rgba(156, 39, 176, 0.08)", // Color violeta para hover
             },
           }}
         >
@@ -106,7 +100,7 @@ const AggressiveDrivingItem = React.memo(
                           fontStyle: "italic"
                         }}
                       >
-                        (sin conductor)
+                        (sin identificación)
                       </Typography>
                     )}
                   </Typography>
@@ -167,63 +161,56 @@ const AggressiveDrivingItem = React.memo(
           />
         </ListItemButton>
 
-        {isHistory && (
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(conductor.conductorId);
-            }}
-            sx={{
-              color: "text.secondary",
-              mr: 1,
-              "&:hover": {
-                color: "error.main",
-                backgroundColor: "rgba(211, 47, 47, 0.08)",
-              },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        )}
-
-        {!isHistory && (
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRefreshDetails(conductor);
-            }}
-            disabled={isLoadingDetails}
-            sx={{
-              color: "text.secondary",
-              mr: 1,
-              "&:hover": {
-                color: "primary.main",
-                backgroundColor: "rgba(25, 118, 210, 0.08)",
-              },
-            }}
-          >
-            {isLoadingDetails ? (
-              <CircularProgress size={16} />
-            ) : (
-              <RefreshIcon fontSize="small" />
-            )}
-          </IconButton>
-        )}
+        {/* Botón de refresh oculto por ahora
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRefreshDetails(conductor);
+          }}
+          disabled={isLoadingDetails}
+          sx={{
+            color: "text.secondary",
+            mr: 1,
+            "&:hover": {
+              color: "primary.main",
+              backgroundColor: "rgba(25, 118, 210, 0.08)",
+            },
+          }}
+        >
+          {isLoadingDetails ? (
+            <CircularProgress size={16} />
+          ) : (
+            <RefreshIcon fontSize="small" />
+          )}
+        </IconButton>
+        */}
       </Box>
     </ListItem>
   )
 );
 
-// Constantes para localStorage con soporte multiusuario (fuera del componente para evitar recreación)
-const getAggressiveDrivingHistoryStorageKey = (username) =>
-  `aggressiveDrivingHistory_${username}`;
+// Constantes para localStorage con soporte multiusuario
+const getAggressiveDrivingRankingStorageKey = (username) =>
+  `aggressiveDrivingRanking_${username}`;
 
 const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
   const { state, dispatch } = useContextValue();
-  const [sortBy, setSortBy] = useState("time");
-  const [isInitialized, setIsInitialized] = useState(false); // Flag para controlar la inicialización
+  const [sortBy, setSortBy] = useState("count"); // Ordenar por ranking por defecto
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false); // FASE 2: Flag para refresh automático
+  const [loadingHistoryIds, setLoadingHistoryIds] = useState(new Set()); // FASE 2: Conductores cargando historial
+  
+  // CRÍTICO: Ref para trackear conductores ya procesados (evita re-ejecución)
+  const processedConductorsRef = useRef(new Set());
+  const lastProcessTimeRef = useRef(0);
+
+  // Función para limpiar refs cuando sea necesario
+  const clearProcessedConductors = useCallback(() => {
+    processedConductorsRef.current.clear();
+    lastProcessTimeRef.current = 0;
+    console.log("🧹 FASE 2: Referencias de conductores procesados limpiadas");
+  }, []);
 
   // Arrays constantes memoizados
   const aggressiveStates = useMemo(
@@ -231,46 +218,43 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     []
   );
 
-  const TWELVE_HOURS_MS = useMemo(() => 12 * 60 * 60 * 1000, []);
-  const ONE_DAY_MS = useMemo(() => 24 * 60 * 60 * 1000, []);
-
-  // Función para cargar historial desde localStorage específico del usuario
-  const loadHistoryFromStorage = useCallback(() => {
+  // FASE 2: Función para cargar ranking desde localStorage específico del usuario
+  const loadRankingFromStorage = useCallback(() => {
     try {
       if (!state.user) return []; // No cargar si no hay usuario logueado
 
-      const userKey = getAggressiveDrivingHistoryStorageKey(state.user);
+      const userKey = getAggressiveDrivingRankingStorageKey(state.user);
       const stored = localStorage.getItem(userKey);
       if (stored) {
-        const parsedHistory = JSON.parse(stored);
-        return Array.isArray(parsedHistory) ? parsedHistory : [];
+        const parsedRanking = JSON.parse(stored);
+        return Array.isArray(parsedRanking) ? parsedRanking : [];
       }
     } catch (error) {
       console.warn(
-        "Error cargando historial de conducción agresiva desde localStorage:",
+        "Error cargando ranking de conducción agresiva desde localStorage:",
         error
       );
     }
     return [];
-  }, [state.user]); // Depende del usuario actual
+  }, [state.user]);
 
-  // Función para guardar historial en localStorage específico del usuario
-  const saveHistoryToStorage = useCallback(
-    (history) => {
+  // FASE 2: Función para guardar ranking en localStorage específico del usuario
+  const saveRankingToStorage = useCallback(
+    (ranking) => {
       try {
         if (!state.user) return; // No guardar si no hay usuario logueado
 
-        const userKey = getAggressiveDrivingHistoryStorageKey(state.user);
-        localStorage.setItem(userKey, JSON.stringify(history));
+        const userKey = getAggressiveDrivingRankingStorageKey(state.user);
+        localStorage.setItem(userKey, JSON.stringify(ranking));
       } catch (error) {
         console.warn(
-          "Error guardando historial de conducción agresiva en localStorage:",
+          "Error guardando ranking de conducción agresiva en localStorage:",
           error
         );
       }
     },
     [state.user]
-  ); // Depende del usuario actual
+  );
 
   // Función de normalización de strings - Memoizada
   const normalizeString = useCallback(
@@ -283,6 +267,116 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     },
     []
   );
+
+  // FASE 2: Función para obtener historial de unidad y contar preavisos del conductor (SOLO DÍA ACTUAL)
+  const fetchConductorHistorialCount = useCallback(
+    async (unit, conductorInfo) => {
+      try {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1); // Agregar un día
+        
+        const formatLocalDate = (date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        };
+
+        const fechaInicial = formatLocalDate(today);
+        const fechaFinal = formatLocalDate(tomorrow);
+        const url = `/api/servicio/historico.php/historico?movil=${unit.Movil_ID}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}`;
+
+        console.log(`🔍 FASE 2: Fetching historial para ${conductorInfo.displayName} en unidad ${unit.Movil_ID} - RANGO: ${fechaInicial} a ${fechaFinal}`);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn(`⚠️ Error HTTP ${response.status} para ${conductorInfo.displayName} - usando fallback count: 1`);
+          return 1; // Retornar 1 en caso de error HTTP
+        }
+
+        const data = await response.json();
+        const historicalData = data.Historico || data;
+
+        // Si no hay datos históricos o está vacío, contar solo el preaviso actual
+        if (!Array.isArray(historicalData) || historicalData.length === 0) {
+          console.log(`📭 Sin historial para ${conductorInfo.displayName} - usando count: 1`);
+          return 1; // Retornar 1 si no hay historial
+        }
+
+        // Filtrar eventos del conductor específico y contar preavisos DEL DÍA ACTUAL
+        let totalPreavisos = 0;
+
+        historicalData.forEach((event) => {
+          // Verificar si el evento pertenece al conductor
+          const eventoDelConductor = 
+            (conductorInfo.llave && event.lla === conductorInfo.llave) ||
+            (conductorInfo.nombre && event.nom && normalizeString(event.nom) === normalizeString(conductorInfo.nombre));
+
+          if (eventoDelConductor) {
+            // Verificar si es un preaviso de manejo agresivo
+            const evento = normalizeString(event.evn || "");
+            const esPreaviso = aggressiveStates.some((aggressiveState) => {
+              const normalizedAggressiveState = normalizeString(aggressiveState);
+              return evento.includes(normalizedAggressiveState);
+            });
+
+            if (esPreaviso) {
+              totalPreavisos++;
+            }
+          }
+        });
+
+        // Si no encontramos ningún preaviso en el historial, usar 1 (el preaviso actual)
+        const finalCount = Math.max(totalPreavisos, 1);
+        console.log(`✅ FASE 2: Total preavisos HOY para ${conductorInfo.displayName}: ${finalCount} (historial: ${totalPreavisos})`);
+        return finalCount;
+
+      } catch (error) {
+        console.error(`❌ Error obteniendo historial para ${conductorInfo.displayName}:`, error.message);
+        return 1; // Retornar 1 en caso de error de red/parsing
+      }
+    },
+    [aggressiveStates, normalizeString]
+  );
+
+  // Función para obtener información del conductor desde la unidad
+  const getConductorInfo = useCallback((unit) => {
+    const conductorId = unit.conductorEnViaje_identificacion_OID;
+    const conductorName = unit.nombre?.trim();
+    const llave = unit.llave?.trim();
+    const patente = unit.patente?.trim();
+
+    // Verificar si es un conductor válido (no es "conductor no identificado" o similar)
+    const isValidConductor = conductorName && 
+      !normalizeString(conductorName).includes("conductor no identificado") &&
+      !normalizeString(conductorName).includes("sin conductor") &&
+      !normalizeString(conductorName).includes("no identificado");
+
+    if (isValidConductor && conductorId) {
+      return {
+        groupKey: `conductor_${conductorId}`,
+        conductorId: conductorId,
+        displayName: conductorName,
+        nombre: conductorName,
+        llave: llave,
+        isGroupedByPatente: false,
+        patente: patente
+      };
+    } else if (patente && patente.length > 0) {
+      return {
+        groupKey: `patente_${patente}`,
+        conductorId: `patente_${patente}`,
+        displayName: `${patente}`,
+        nombre: null,
+        llave: null,
+        isGroupedByPatente: true,
+        patente: patente
+      };
+    }
+
+    return null; // No válido
+  }, [normalizeString]);
 
   // Función para determinar severidad de conducción agresiva - Memoizada
   const determineAggressiveSeverity = useCallback((count) => {
@@ -297,161 +391,272 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     return date.toLocaleTimeString("es-AR", {
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
+      hour12: false // Formato 24 horas
     });
   }, []);
 
-  // Detectar preavisos de conducción agresiva activos - Memoizado
-  const activeAggressiveDriving = useMemo(() => {
-    if (!markersData) return [];
-
-    const currentTime = Date.now();
-    const currentDate = new Date().toDateString(); // Para agrupar por día
-
-    // DEBUG: Log para ver todos los datos que llegan
-    console.log("🔍 AggressiveDriving DEBUG - markersData:", markersData.length, "unidades");
-    
-    // Filtrar preavisos de manejo agresivo
-    const aggressivePreviews = markersData.filter((unit) => {
-      if (!unit.estado || !unit.fechaHora) return false;
-
-      // Filtro por antigüedad: aceptar reportes desde 01-01-2018 para debug
-      const reportTime = new Date(unit.fechaHora).getTime();
-      const debugMinDate = new Date("2018-01-01").getTime();
-
-      if (reportTime < debugMinDate) {
-        return false;
-      }
-
-      // Verificar que sea un preaviso de manejo agresivo
-      const estado = normalizeString(unit.estado);
+  // FASE 2: Función para actualizar el count de un conductor específico
+  const updateConductorCount = useCallback(
+    (conductorId, newCount) => {
+      const currentRanking = [...(state.aggressiveDrivingHistory || [])];
+      const updateIndex = currentRanking.findIndex(item => item.conductorId === conductorId);
       
-      const hasAggressiveState = aggressiveStates.some((aggressiveState) => {
-        const normalizedAggressiveState = normalizeString(aggressiveState);
-        return estado.includes(normalizedAggressiveState);
+      if (updateIndex >= 0) {
+        currentRanking[updateIndex] = {
+          ...currentRanking[updateIndex],
+          count: newCount,
+          isLoadingHistory: false, // IMPORTANTE: Siempre marcar como no cargando
+          lastHistoryUpdate: new Date().toISOString() // Timestamp para evitar re-cargas
+        };
+
+        dispatch({
+          type: "SET_AGGRESSIVE_HISTORY",
+          payload: currentRanking
+        });
+
+        // Guardar en localStorage
+        saveRankingToStorage(currentRanking);
+        console.log(`📊 FASE 2: Count actualizado para ${currentRanking[updateIndex].nombre}: ${newCount}`);
+      } else {
+        console.warn(`⚠️ No se encontró conductor ${conductorId} para actualizar count`);
+      }
+    },
+    [state.aggressiveDrivingHistory, dispatch, saveRankingToStorage]
+  );
+
+  // FASE 2: Función para refresh automático de todos los conductores al iniciar sesión
+  const refreshAllConductors = useCallback(async () => {
+    const ranking = [...(state.aggressiveDrivingHistory || [])];
+    console.log("🔄 FASE 2: Iniciando refresh automático de todos los conductores");
+    
+    for (const conductor of ranking) {
+      if (conductor.lastUnit) {
+        const conductorInfo = getConductorInfo(conductor.lastUnit);
+        
+        if (conductorInfo) {
+          setLoadingHistoryIds(prev => new Set(prev).add(conductor.conductorId));
+          
+          try {
+            const updatedCount = await fetchConductorHistorialCount(conductor.lastUnit, conductorInfo);
+            updateConductorCount(conductor.conductorId, updatedCount);
+          } catch (error) {
+            console.warn(`Error actualizando ${conductor.nombre}:`, error);
+          } finally {
+            setLoadingHistoryIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(conductor.conductorId);
+              return newSet;
+            });
+          }
+        }
+      }
+    }
+    
+    console.log("✅ FASE 2: Refresh automático completado");
+  }, [state.aggressiveDrivingHistory, getConductorInfo, fetchConductorHistorialCount, updateConductorCount]);
+
+  // FASE 2: Combinar datos en tiempo real con ranking persistente
+  const aggressiveDrivingRanking = useMemo(() => {
+    // Primero, obtener datos en tiempo real como en Fase 1
+    const realtimeData = (() => {
+      if (!markersData || !isInitialized) return [];
+
+      // Obtener fecha actual para filtro
+      const today = new Date();
+      const todayDateString = today.toDateString(); // Comparar solo fecha sin hora
+
+      console.log("🔍 FASE 2 - Procesando datos en tiempo real:", markersData.length, "unidades");
+      console.log("📅 FILTRO ACTIVO: Solo eventos del día actual -", todayDateString);
+      
+      // Filtrar preavisos de manejo agresivo DEL DÍA ACTUAL
+      const aggressivePreviews = markersData.filter((unit) => {
+        if (!unit.estado || !unit.fechaHora) return false;
+
+        // CRÍTICO: Filtrar solo eventos del día actual
+        const unitDate = new Date(unit.fechaHora);
+        const unitDateString = unitDate.toDateString();
+        
+        if (unitDateString !== todayDateString) {
+          return false; // Descartar eventos que no sean de hoy
+        }
+
+        // Verificar que sea un preaviso de manejo agresivo
+        const estado = normalizeString(unit.estado);
+        
+        const hasAggressiveState = aggressiveStates.some((aggressiveState) => {
+          const normalizedAggressiveState = normalizeString(aggressiveState);
+          return estado.includes(normalizedAggressiveState);
+        });
+
+        if (hasAggressiveState) {
+          console.log("🚨 DETECTADO Preaviso Agresivo DEL DÍA:", {
+            estado: unit.estado,
+            conductor: unit.nombre || "Sin conductor",
+            patente: unit.patente,
+            fechaHora: unit.fechaHora,
+            llave: unit.llave
+          });
+        }
+
+        return hasAggressiveState;
       });
 
-      // Log solo cuando encontramos un estado de manejo agresivo
-      if (hasAggressiveState) {
-        console.log("� DETECTADO Manejo Agresivo:", {
-          estado: unit.estado,
-          conductor: unit.nombre || "Sin conductor",
-          patente: unit.patente,
-          conductorId: unit.conductorEnViaje_identificacion_OID
-        });
-      }
+      // Agrupar por conductor (lógica de Fase 1)
+      const conductorGroups = {};
 
-      return hasAggressiveState;
-    });
+      aggressivePreviews.forEach((unit) => {
+        const conductorInfo = getConductorInfo(unit);
+        if (!conductorInfo) return;
 
-    // DEBUG: Log de resultados del filtrado
-    console.log("🚨 Preavisos agresivos encontrados:", aggressivePreviews.length);
+        const groupKey = conductorInfo.groupKey;
 
-    // Agrupar por conductor y contar preavisos del día actual
-    const conductorGroups = {};
+        if (!conductorGroups[groupKey]) {
+          conductorGroups[groupKey] = {
+            conductorId: conductorInfo.conductorId,
+            nombre: conductorInfo.displayName,
+            count: 0,
+            lastUnit: unit,
+            lastTime: unit.fechaHora,
+            isGroupedByPatente: conductorInfo.isGroupedByPatente,
+            patente: conductorInfo.patente,
+            fromRealtime: true // Flag para identificar origen
+          };
+        }
 
-    aggressivePreviews.forEach((unit) => {
-      const conductorId = unit.conductorEnViaje_identificacion_OID;
-      const conductorName = unit.nombre?.trim();
-      const patente = unit.patente?.trim();
-      const reportDate = new Date(unit.fechaHora).toDateString();
+        conductorGroups[groupKey].count++;
 
-      // Crear una clave única: usar conductorId si existe, sino usar patente
-      let groupKey, displayName, isGroupedByPatente;
+        // Mantener la unidad más reciente
+        if (
+          new Date(unit.fechaHora) >
+          new Date(conductorGroups[groupKey].lastTime)
+        ) {
+          conductorGroups[groupKey].lastUnit = unit;
+          conductorGroups[groupKey].lastTime = unit.fechaHora;
+        }
+      });
+
+      return Object.values(conductorGroups);
+    })();
+
+    // Combinar con datos persistentes del localStorage/estado
+    const persistentData = state.aggressiveDrivingHistory || [];
+    
+    console.log("🔄 FASE 2: Combinando datos...");
+    console.log("📦 Datos persistentes:", persistentData.map(p => `${p.nombre} (${p.count})`));
+    console.log("⚡ Datos tiempo real:", realtimeData.map(r => `${r.nombre} (${r.count})`));
+    
+    // Crear mapa combinado (priorizar datos persistentes pero actualizar con tiempo real)
+    const combinedMap = new Map();
+    
+    // Primero agregar datos persistentes
+    persistentData.forEach(conductor => {
+      combinedMap.set(conductor.conductorId, {
+        ...conductor,
+        fromPersistent: true
+      });
       
-      if (conductorId && conductorName) {
-        // Agrupar por conductor
-        groupKey = `conductor_${conductorId}`;
-        displayName = conductorName;
-        isGroupedByPatente = false;
-      } else if (patente && patente.length > 0) {
-        // Agrupar por patente cuando no hay conductor (validar que patente no esté vacía después del trim)
-        groupKey = `patente_${patente}`;
-        displayName = `Vehículo ${patente}`;
-        isGroupedByPatente = true;
-      } else {
-        // Si no hay ni conductor ni patente válidos, saltar
-        console.log("❌ Rechazado: Sin conductorId/nombre ni patente válida", {
-          conductorId,
-          patente: unit.patente
+      // Debug especial para Vergara Gabriel
+      if (conductor.nombre && conductor.nombre.toLowerCase().includes('vergara')) {
+        console.log("🔍 VERGARA GABRIEL - Cargado desde persistente:", {
+          conductorId: conductor.conductorId,
+          nombre: conductor.nombre,
+          count: conductor.count,
+          lastHistoryUpdate: conductor.lastHistoryUpdate,
+          lastTime: conductor.lastTime
         });
-        return;
       }
-
-      // Para debug: aceptar cualquier fecha (comentar para filtro por día actual)
-      // Solo contar preavisos del día actual
-      // if (reportDate !== currentDate) {
-      //   console.log("❌ Rechazado: Fecha no es del día actual", displayName);
-      //   return;
-      // }
-
-      console.log("✅ Procesando:", displayName, `(${isGroupedByPatente ? 'por patente' : 'por conductor'})`);
-
-      if (!conductorGroups[groupKey]) {
-        conductorGroups[groupKey] = {
-          conductorId: conductorId || `patente_${patente}`, // ID único para el grupo
-          nombre: displayName,
-          count: 0,
-          lastUnit: unit,
-          lastTime: unit.fechaHora,
-          previews: [],
-          isGroupedByPatente, // Flag para saber cómo se agrupó
-          patente: patente // Mantener referencia a la patente limpia
-        };
-        console.log("🆕 Nuevo grupo:", displayName);
+    });
+    
+    // Luego actualizar/agregar con datos en tiempo real
+    realtimeData.forEach(conductor => {
+      const existing = combinedMap.get(conductor.conductorId);
+      
+      // Debug especial para Vergara Gabriel
+      if (conductor.nombre && conductor.nombre.toLowerCase().includes('vergara')) {
+        console.log("🔍 VERGARA GABRIEL - Procesando tiempo real:", {
+          conductorId: conductor.conductorId,
+          nombre: conductor.nombre,
+          count: conductor.count,
+          existing: existing ? 'SÍ' : 'NO',
+          existingCount: existing?.count
+        });
       }
-
-      conductorGroups[groupKey].count++;
-      conductorGroups[groupKey].previews.push(unit);
-      console.log("📈 Count:", conductorGroups[groupKey].count, "para", displayName);
-
-      // Mantener la unidad más reciente
-      if (
-        new Date(unit.fechaHora) >
-        new Date(conductorGroups[groupKey].lastTime)
-      ) {
-        conductorGroups[groupKey].lastUnit = unit;
-        conductorGroups[groupKey].lastTime = unit.fechaHora;
+      
+      if (existing) {
+        // Actualizar datos existentes con información más reciente
+        combinedMap.set(conductor.conductorId, {
+          ...existing,
+          lastUnit: conductor.lastUnit,
+          lastTime: conductor.lastTime,
+          // Mantener el count del persistente si existe, sino usar el de tiempo real
+          count: existing.count || conductor.count,
+          // CRÍTICO: NO marcar como loading si ya existe
+          isLoadingHistory: false,
+          // MANTENER: Conservar información de procesamiento anterior
+          lastHistoryUpdate: existing.lastHistoryUpdate
+        });
+      } else {
+        // Nuevo conductor detectado - SOLO aquí marcarlo para carga de historial
+        // CRÍTICO: Marcar con count mínimo 1 para evitar eliminación prematura
+        combinedMap.set(conductor.conductorId, {
+          ...conductor,
+          count: Math.max(conductor.count, 1), // Garantizar mínimo 1
+          isLoadingHistory: true, // Solo nuevos conductores necesitan historial
+          detectedAt: new Date().toISOString() // Timestamp de detección
+        });
+        
+        console.log(`🆕 NUEVO CONDUCTOR DETECTADO: ${conductor.nombre} - Count inicial: ${Math.max(conductor.count, 1)} (original: ${conductor.count})`);
       }
     });
 
-    // Convertir a array y filtrar solo conductores con más de 0 preavisos
-    const result = Object.values(conductorGroups).filter(
-      (conductor) => conductor.count > 0
-    );
+    // CRÍTICO: Filtrar conductores persistentes que no tengan datos de hoy
+    // Solo remover si el lastTime/addedAt no es de hoy
+    const today = new Date();
+    const todayDateString = today.toDateString();
+    
+    const finalMap = new Map();
+    
+    combinedMap.forEach((conductor, conductorId) => {
+      // Verificar si el conductor tiene datos del día actual
+      const conductorDate = conductor.lastTime ? 
+        new Date(conductor.lastTime).toDateString() : 
+        conductor.addedAt ? 
+          new Date(conductor.addedAt).toDateString() : 
+          todayDateString; // Default a hoy si no hay fecha
+      
+      // Solo mantener conductores del día actual
+      if (conductorDate === todayDateString) {
+        finalMap.set(conductorId, conductor);
+      } else {
+        console.log(`🗑️ Eliminando conductor de día anterior: ${conductor.nombre} (${conductorDate})`);
+      }
+    });
 
-    // DEBUG: Log del resultado final
-    console.log("🎯 RESULTADO FINAL AggressiveDriving:", result.length, "conductores con manejo agresivo");
+    const result = Array.from(finalMap.values());
+    
+    console.log("🎯 FASE 2: Ranking combinado:", result.length, "conductores");
+    console.log("📊 PERSISTENTES:", persistentData.length, "| TIEMPO REAL:", realtimeData.length, "| FINAL:", result.length);
     result.forEach(c => {
-      console.log(`  • ${c.nombre}: ${c.count} preavisos`);
+      const status = c.isLoadingHistory ? 
+        '(🔄 cargando...)' : 
+        c.lastHistoryUpdate ? 
+          '(✅ procesado)' : 
+          '(📦 persistente)';
+      console.log(`  • ${c.nombre}: ${c.count} preavisos ${status} [${c.conductorId}]`);
     });
 
     return result;
-  }, [markersData, TWELVE_HOURS_MS, aggressiveStates, normalizeString]);
+  }, [markersData, isInitialized, aggressiveStates, normalizeString, getConductorInfo, state.aggressiveDrivingHistory]);
 
-  // Sets memoizados para comparaciones rápidas
-  const activeAggressiveIds = useMemo(
-    () =>
-      new Set(
-        activeAggressiveDriving.map((conductor) => conductor.conductorId)
-      ),
-    [activeAggressiveDriving]
-  );
+  // Ordenar ranking - FASE 1: Por defecto ordenar por count (ranking)
+  const sortedAggressiveDriving = useMemo(() => {
+    const conductors = [...aggressiveDrivingRanking];
 
-  const historyAggressiveIds = useMemo(
-    () =>
-      new Set(
-        state.aggressiveDrivingHistory?.map(
-          (conductor) => conductor.conductorId
-        ) || []
-      ),
-    [state.aggressiveDrivingHistory]
-  );
-
-  // Ordenar conductores con conducción agresiva - Memoizado
-  const sortedActiveAggressiveDriving = useMemo(() => {
-    const conductors = [...activeAggressiveDriving];
-
-    if (sortBy === "alphabetic") {
+    if (sortBy === "count") {
+      // Ordenar por ranking (más preavisos primero) - Comportamiento por defecto
+      conductors.sort((a, b) => b.count - a.count);
+    } else if (sortBy === "alphabetic") {
       conductors.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
     } else if (sortBy === "time") {
       conductors.sort((a, b) => {
@@ -462,41 +667,18 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     }
 
     return conductors;
-  }, [activeAggressiveDriving, sortBy]);
+  }, [aggressiveDrivingRanking, sortBy]);
 
   // Handlers memoizados
-  const handleRemoveFromHistory = useCallback(
-    (conductorId) => {
-      dispatch({
-        type: "REMOVE_FROM_AGGRESSIVE_HISTORY",
-        payload: { conductorId },
-      });
-
-      // Actualizar localStorage
-      const updatedHistory = (state.aggressiveDrivingHistory || []).filter(
-        (conductor) => conductor.conductorId !== conductorId
-      );
-      saveHistoryToStorage(updatedHistory);
-    },
-    [state.aggressiveDrivingHistory, dispatch, saveHistoryToStorage]
-  );
-
-  const handleClearAllHistory = useCallback(() => {
-    dispatch({
-      type: "CLEAR_AGGRESSIVE_HISTORY",
-    });
-
-    // Limpiar localStorage
-    saveHistoryToStorage([]);
-  }, [dispatch, saveHistoryToStorage]);
-
   const handleSortChange = useCallback(() => {
-    setSortBy((prev) => (prev === "alphabetic" ? "time" : "alphabetic"));
+    setSortBy((prev) => {
+      if (prev === "count") return "alphabetic";
+      if (prev === "alphabetic") return "time";
+      return "count";
+    });
   }, []);
 
   const handleRefreshDetails = useCallback(async (conductor) => {
-    // Por ahora, solo simulamos la carga
-    // En el futuro se puede implementar obtención de detalles adicionales
     console.log(`Refrescando detalles para conductor: ${conductor.nombre}`);
   }, []);
 
@@ -519,288 +701,275 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     [onUnitSelect, state.selectedUnits]
   );
 
-  // Inicializar datos desde localStorage al montar el componente
+  // Inicializar datos al montar el componente - FASE 2: Cargar desde localStorage y activar refresh
   useEffect(() => {
     if (!state.user) return; // No cargar si no hay usuario logueado
 
-    const storedHistory = loadHistoryFromStorage();
+    // Limpiar refs al inicializar para evitar estados inconsistentes
+    clearProcessedConductors();
 
-    if (storedHistory.length > 0) {
-      dispatch({
-        type: "SET_AGGRESSIVE_HISTORY",
-        payload: storedHistory,
+    const storedRanking = loadRankingFromStorage();
+
+    if (storedRanking.length > 0) {
+      console.log("📂 FASE 2: Cargando ranking desde localStorage:", storedRanking.length, "conductores");
+      
+      // Verificar si los datos son del día actual
+      const today = new Date().toDateString();
+      const validRanking = storedRanking.filter(conductor => {
+        const conductorDate = new Date(conductor.lastTime || conductor.addedAt).toDateString();
+        return conductorDate === today;
+      });
+
+      if (validRanking.length > 0) {
+        dispatch({
+          type: "SET_AGGRESSIVE_HISTORY",
+          payload: validRanking,
+        });
+        
+        // Activar refresh automático si hay datos válidos
+        setNeedsRefresh(true);
+        console.log("🔄 FASE 2: Activando refresh automático para", validRanking.length, "conductores");
+      } else {
+        console.log("🗑️ FASE 2: Datos de días anteriores eliminados");
+        // Limpiar localStorage si los datos son de días anteriores
+        saveRankingToStorage([]);
+      }
+    }
+    
+    setIsInitialized(true);
+  }, [loadRankingFromStorage, dispatch, saveRankingToStorage, state.user, clearProcessedConductors]);
+
+  // FASE 2: Sincronizar localStorage cuando cambie el contexto (solo después de inicializar)
+  useEffect(() => {
+    if (state.user && isInitialized && !needsRefresh) {
+      saveRankingToStorage(state.aggressiveDrivingHistory || []);
+    }
+  }, [state.aggressiveDrivingHistory, saveRankingToStorage, state.user, isInitialized, needsRefresh]);
+
+  // FASE 2: Ejecutar refresh automático cuando sea necesario
+  useEffect(() => {
+    if (needsRefresh && isInitialized && (state.aggressiveDrivingHistory || []).length > 0) {
+      refreshAllConductors().finally(() => {
+        setNeedsRefresh(false);
       });
     }
-    // No limpiar si no hay datos - dejar que el estado se mantenga como está
+  }, [needsRefresh, isInitialized, state.aggressiveDrivingHistory, refreshAllConductors]);
+
+  // FASE 2: Detectar cambios en aggressiveDrivingRanking sin ejecutar inmediatamente (evita bucles)
+  useEffect(() => {
+    if (!isInitialized) return;
     
-    setIsInitialized(true); // Marcar como inicializado
-  }, [
-    loadHistoryFromStorage,
-    dispatch,
-    state.user,
-  ]);
+    // Solo verificar si hay nuevos conductores que necesiten procesamiento
+    const newConductors = aggressiveDrivingRanking.filter(conductor => 
+      conductor.isLoadingHistory && 
+      conductor.fromRealtime &&
+      !processedConductorsRef.current.has(conductor.conductorId)
+    );
 
-  // Sincronizar localStorage cuando cambie el contexto (solo después de inicializar)
-  useEffect(() => {
-    if (state.user && isInitialized) {
-      saveHistoryToStorage(state.aggressiveDrivingHistory || []);
+    if (newConductors.length > 0) {
+      console.log(`🔍 FASE 2: Detectados ${newConductors.length} nuevos conductores para processing:`);
+      newConductors.forEach(c => {
+        console.log(`  - ${c.nombre} (ID: ${c.conductorId}) - Count actual: ${c.count}`);
+      });
+      
+      // IMPORTANTE: Marcar inmediatamente como procesados para evitar bucles
+      newConductors.forEach(c => {
+        processedConductorsRef.current.add(c.conductorId);
+      });
+      
+      // Trigger del procesamiento mediante un pequeño cambio de estado
+      setLoadingHistoryIds(prev => {
+        const newSet = new Set([...prev]);
+        newConductors.forEach(c => newSet.add(c.conductorId));
+        return newSet;
+      });
     }
-  }, [state.aggressiveDrivingHistory, saveHistoryToStorage, state.user, isInitialized]);
+  }, [aggressiveDrivingRanking, isInitialized]);
 
-  // Gestión automática del historial - Detectar conductores que salen de conducción agresiva
+  // FASE 2: Detectar nuevos conductores y obtener su historial (con protección anti-bucle MEJORADA)
   useEffect(() => {
-    const processHistoryMovement = async () => {
-      const currentActiveIds = new Set(
-        activeAggressiveDriving.map((conductor) => conductor.conductorId)
-      );
+    if (!isInitialized) return;
 
-      // Encontrar conductores que estaban activos previamente pero ya no están
-      const conductorsToMoveToHistory = (
-        state.previousActiveAggressiveDriving || []
-      ).filter((conductor) => !currentActiveIds.has(conductor.conductorId));
+    // Obtener conductores que necesitan historial (más flexible que el filtro anterior)
+    const conductorsNeedingHistory = aggressiveDrivingRanking.filter(conductor => 
+      conductor.isLoadingHistory && 
+      loadingHistoryIds.has(conductor.conductorId) && // Solo los que están en el Set de loading
+      !conductor.lastHistoryUpdate && // Solo si nunca se ha procesado
+      conductor.fromRealtime // Solo conductores nuevos detectados en tiempo real
+    );
 
-      if (conductorsToMoveToHistory.length > 0) {
-        // Mover al historial
-        for (const conductor of conductorsToMoveToHistory) {
-          if (!historyAggressiveIds.has(conductor.conductorId)) {
-            dispatch({
-              type: "UPDATE_AGGRESSIVE_HISTORY",
-              payload: {
-                conductorId: conductor.conductorId,
-                details: {
+    if (conductorsNeedingHistory.length === 0) {
+      console.log("⏭️ FASE 2: Ningún conductor necesita historial en este ciclo");
+      return;
+    }
+
+    // Throttling: No procesar más de una vez cada 2 segundos
+    const now = Date.now();
+    if (now - lastProcessTimeRef.current < 2000) {
+      console.log("⏸️ FASE 2: Throttling activo, postergando procesamiento");
+      // Re-programar el procesamiento
+      setTimeout(() => {
+        setLoadingHistoryIds(prev => new Set([...prev])); // Re-trigger
+      }, 2000 - (now - lastProcessTimeRef.current));
+      return;
+    }
+
+    // Actualizar timestamp de último procesamiento
+    lastProcessTimeRef.current = now;
+
+    console.log(`🔄 FASE 2: ${conductorsNeedingHistory.length} conductores necesitan historial (ejecutando API calls):`);
+    conductorsNeedingHistory.forEach(c => {
+      console.log(`  - ${c.nombre} (ID: ${c.conductorId}) - Count inicial: ${c.count}`);
+    });
+
+    // Procesar cada conductor de forma secuencial (no paralela) para evitar overload
+    const processConductorsSequentially = async () => {
+      for (const conductor of conductorsNeedingHistory) {
+        if (conductor.lastUnit) {
+          const conductorInfo = getConductorInfo(conductor.lastUnit);
+          
+          if (conductorInfo) {
+            console.log(`🆕 FASE 2: ⚡ EJECUTANDO API CALL para conductor: ${conductor.nombre}`);
+            
+            try {
+              const totalCount = await fetchConductorHistorialCount(conductor.lastUnit, conductorInfo);
+              
+              // Actualizar el ranking en el estado
+              const currentRanking = [...(state.aggressiveDrivingHistory || [])];
+              const existingIndex = currentRanking.findIndex(item => item.conductorId === conductor.conductorId);
+              
+              if (existingIndex >= 0) {
+                currentRanking[existingIndex] = {
+                  ...currentRanking[existingIndex],
+                  count: Math.max(totalCount, 1), // GARANTIZAR MÍNIMO 1
+                  isLoadingHistory: false,
+                  lastHistoryUpdate: new Date().toISOString()
+                };
+              } else {
+                // Agregar nuevo conductor al ranking
+                currentRanking.push({
                   ...conductor,
-                  movedToHistoryAt: new Date().toISOString(),
-                },
-              },
+                  count: Math.max(totalCount, 1), // GARANTIZAR MÍNIMO 1
+                  isLoadingHistory: false,
+                  lastHistoryUpdate: new Date().toISOString(),
+                  addedAt: new Date().toISOString()
+                });
+              }
+
+              dispatch({
+                type: "SET_AGGRESSIVE_HISTORY",
+                payload: currentRanking
+              });
+
+              console.log(`✅ FASE 2: API CALL COMPLETADA para ${conductor.nombre} - Count final: ${Math.max(totalCount, 1)} (API devolvió: ${totalCount})`);
+
+            } catch (error) {
+              console.error(`❌ Error obteniendo historial para ${conductor.nombre}:`, error);
+              
+              // IMPORTANTE: Marcar como no cargando SIEMPRE, incluso en error
+              const currentRanking = [...(state.aggressiveDrivingHistory || [])];
+              const updateIndex = currentRanking.findIndex(item => item.conductorId === conductor.conductorId);
+              
+              if (updateIndex >= 0) {
+                currentRanking[updateIndex] = {
+                  ...currentRanking[updateIndex],
+                  isLoadingHistory: false,
+                  lastHistoryUpdate: new Date().toISOString(),
+                  count: Math.max(currentRanking[updateIndex].count || 1, 1) // GARANTIZAR MÍNIMO 1
+                };
+
+                dispatch({
+                  type: "SET_AGGRESSIVE_HISTORY",
+                  payload: currentRanking
+                });
+              }
+            } finally {
+              setLoadingHistoryIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(conductor.conductorId);
+                return newSet;
+              });
+            }
+          } else {
+            console.warn(`⚠️ No se pudo obtener conductor info para ${conductor.nombre}`);
+            // Remover del loading set si no se puede procesar
+            setLoadingHistoryIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(conductor.conductorId);
+              return newSet;
             });
           }
         }
-      }
-    };
-
-    // Solo procesar si tenemos conductores previos para comparar
-    if ((state.previousActiveAggressiveDriving || []).length > 0) {
-      processHistoryMovement();
-    }
-
-    // Actualizar el estado previo con los conductores actuales
-    dispatch({
-      type: "SET_PREVIOUS_ACTIVE_AGGRESSIVE_DRIVING",
-      payload: activeAggressiveDriving,
-    });
-  }, [
-    activeAggressiveDriving,
-    historyAggressiveIds,
-    state.previousActiveAggressiveDriving,
-    dispatch,
-  ]);
-
-  // Cleanup automático del historial (eliminar elementos > 24 horas)
-  useEffect(() => {
-    const cleanupOldHistory = () => {
-      const currentTime = Date.now();
-
-      const filteredHistory = (state.aggressiveDrivingHistory || []).filter(
-        (conductor) => {
-          const movedTime = new Date(
-            conductor.movedToHistoryAt || conductor.lastTime
-          ).getTime();
-          return currentTime - movedTime < ONE_DAY_MS;
-        }
-      );
-
-      // Solo actualizar si hubo cambios
-      if (
-        filteredHistory.length !== (state.aggressiveDrivingHistory || []).length
-      ) {
-        dispatch({
-          type: "SET_AGGRESSIVE_HISTORY",
-          payload: filteredHistory,
-        });
         
-        // Actualizar localStorage
-        saveHistoryToStorage(filteredHistory);
+        // Pequeña pausa entre conductores para no sobrecargar
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     };
 
-    const interval = setInterval(cleanupOldHistory, 30 * 60 * 1000); // Cada 30 minutos
-    return () => clearInterval(interval);
-  }, [state.aggressiveDrivingHistory, dispatch, ONE_DAY_MS, saveHistoryToStorage]);
+    processConductorsSequentially();
+  }, [isInitialized, getConductorInfo, fetchConductorHistorialCount, state.aggressiveDrivingHistory, dispatch, loadingHistoryIds, aggressiveDrivingRanking]);
 
-  // Reset diario a las 00:00
-  useEffect(() => {
-    const checkDailyReset = () => {
-      const now = new Date();
-      const lastReset = new Date(
-        localStorage.getItem("aggressiveDrivingLastReset") || "1970-01-01"
-      );
-
-      // Si cambió el día, limpiar historial y reset
-      if (now.toDateString() !== lastReset.toDateString()) {
-        dispatch({
-          type: "CLEAR_AGGRESSIVE_HISTORY",
-        });
-        
-        // Limpiar localStorage
-        saveHistoryToStorage([]);
-        localStorage.setItem("aggressiveDrivingLastReset", now.toISOString());
-      }
-    };
-
-    // Verificar al montar el componente
-    checkDailyReset();
-
-    // Verificar cada minuto por si pasa medianoche
-    const interval = setInterval(checkDailyReset, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [dispatch, saveHistoryToStorage]);
-
-  // Renderizar contenido específico de conducción agresiva
+  // Renderizar contenido específico de conducción agresiva - FASE 2: Con estados de carga
   const renderContent = ({ onUnitSelect, handleClose }) => (
     <Box sx={{ maxHeight: "328px", overflow: "auto" }}>
-      {/* Header con información */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          px: 2,
-          py: 1,
-          backgroundColor: "rgba(156, 39, 176, 0.05)", // Fondo violeta suave
-        }}
-      >
-        <Typography
-          variant="subtitle2"
-          sx={{ fontWeight: 600, color: "#9c27b0" }}
-        >
-          Conductores con Manejo Agresivo
-        </Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          Reset diario 00:00
-        </Typography>
-      </Box>
+      {/* Indicador de refresh en curso */}
+      {needsRefresh && (
+        <Box sx={{ p: 1, textAlign: "center" }}>
+          <Typography variant="caption" sx={{ color: "info.main", fontStyle: "italic" }}>
+            🔄 Actualizando conteos del día...
+          </Typography>
+        </Box>
+      )}
 
-      {/* Lista de conductores activos */}
-      {sortedActiveAggressiveDriving.length > 0 && (
+      {/* Lista única de ranking */}
+      {sortedAggressiveDriving.length > 0 && (
         <List disablePadding>
-          {sortedActiveAggressiveDriving.map((conductor, index) => (
+          {sortedAggressiveDriving.map((conductor, index) => (
             <AggressiveDrivingItem
               key={conductor.conductorId}
               conductor={conductor}
               index={index}
-              isLast={
-                index === sortedActiveAggressiveDriving.length - 1 &&
-                (state.aggressiveDrivingHistory || []).length === 0
-              }
-              isHistory={false}
+              isLast={index === sortedAggressiveDriving.length - 1}
               severityColor={determineAggressiveSeverity(conductor.count)}
               formattedTime={formatAggressiveTime(conductor.lastTime)}
-              previewCount={conductor.count}
-              onDelete={handleRemoveFromHistory}
+              previewCount={conductor.isLoadingHistory ? "..." : conductor.count}
+              onDelete={() => {}} // Sin funcionalidad de borrar
               onUnitSelect={handleUnitSelect}
               onRefreshDetails={handleRefreshDetails}
-              isLoadingDetails={false}
+              isLoadingDetails={conductor.isLoadingHistory || loadingHistoryIds.has(conductor.conductorId)}
             />
           ))}
         </List>
       )}
 
-      {/* Separador si hay historial */}
-      {sortedActiveAggressiveDriving.length > 0 &&
-        (state.aggressiveDrivingHistory || []).length > 0 && (
-          <Divider sx={{ my: 1 }} />
-        )}
-
-      {/* Lista de historial */}
-      {(state.aggressiveDrivingHistory || []).length > 0 && (
-        <Box>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              px: 2,
-              py: 1,
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{ color: "text.secondary", fontWeight: 600 }}
-            >
-              Historial
-            </Typography>
-            <Button
-              size="small"
-              startIcon={<ClearAllIcon />}
-              onClick={handleClearAllHistory}
-              sx={{
-                fontSize: "0.7rem",
-                py: 0.25,
-                px: 1,
-                minHeight: "24px",
-              }}
-            >
-              Limpiar
-            </Button>
-          </Box>
-
-          <List disablePadding>
-            {(state.aggressiveDrivingHistory || []).map((conductor, index) => (
-              <AggressiveDrivingItem
-                key={`history-${conductor.conductorId}`}
-                conductor={conductor}
-                index={index}
-                isLast={
-                  index === (state.aggressiveDrivingHistory || []).length - 1
-                }
-                isHistory={true}
-                severityColor={determineAggressiveSeverity(conductor.count)}
-                formattedTime={formatAggressiveTime(conductor.lastTime)}
-                previewCount={conductor.count}
-                onDelete={handleRemoveFromHistory}
-                onUnitSelect={handleUnitSelect}
-                onRefreshDetails={handleRefreshDetails}
-                isLoadingDetails={false}
-              />
-            ))}
-          </List>
+      {/* Mensaje cuando no hay datos */}
+      {sortedAggressiveDriving.length === 0 && (
+        <Box sx={{ textAlign: "center", py: 3 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            No hay conductores con manejo agresivo
+          </Typography>
         </Box>
       )}
-
-      {/* Mensaje cuando no hay datos */}
-      {sortedActiveAggressiveDriving.length === 0 &&
-        (state.aggressiveDrivingHistory || []).length === 0 && (
-          <Box sx={{ textAlign: "center", py: 3 }}>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              No hay conductores con manejo agresivo
-            </Typography>
-          </Box>
-        )}
     </Box>
   );
 
   return (
     <BaseExpandableAlert
       icon={DriveEtaIcon}
-      title="Manejo Agresivo"
-      count={activeAggressiveDriving.length}
-      tooltipText="Conductores con manejo agresivo"
-      badgeColor="secondary.main" // Color violeta del tema Material-UI
-      iconColor="secondary.main" // Color violeta del tema Material-UI
-      verticalOffset={{ desktop: 430, mobile: 400 }} // Cuando hay unidades seleccionadas
-      noUnitsOffset={{
-        desktop: 210, mobile: 180
-      }} // Cuando NO hay unidades seleccionadas - posición media
+      title="Conducción Agresiva"
+      count={aggressiveDrivingRanking.length}
+      tooltipText="Ranking de conductores con conducción agresiva"
+      badgeColor="secondary.main"
+      iconColor="secondary.main"
+      verticalOffset={{ desktop: 430, mobile: 400 }}
+      noUnitsOffset={{ desktop: 210, mobile: 180 }}
       onUnitSelect={onUnitSelect}
       sortBy={sortBy}
       onSortChange={handleSortChange}
-      showSortButton={true}
-      sortOptions={{ option1: "Conductor", option2: "Tiempo" }}
-      showHistoryDot={(state.aggressiveDrivingHistory || []).length > 0}
-      historyTooltip={`${
-        (state.aggressiveDrivingHistory || []).length
-      } en historial`}
-      zIndex={1100} // Entre InfractionAlert (1200) y IdleUnitsAlert (1100)
+      showSortButton={false} // Oculto como en otros componentes
+      sortOptions={{ option1: "Ranking", option2: "Conductor", option3: "Tiempo" }}
+      showHistoryDot={false} // Sin historial separado en Fase 2
+      zIndex={1100}
     >
       {renderContent}
     </BaseExpandableAlert>
