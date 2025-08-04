@@ -204,13 +204,27 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
   // CRÍTICO: Ref para trackear conductores ya procesados (evita re-ejecución)
   const processedConductorsRef = useRef(new Set());
   const lastProcessTimeRef = useRef(0);
+  const isProcessingRef = useRef(false); // NUEVO: Lock global para evitar procesamiento concurrente
 
   // Función para limpiar refs cuando sea necesario
   const clearProcessedConductors = useCallback(() => {
     processedConductorsRef.current.clear();
     lastProcessTimeRef.current = 0;
-    console.log("🧹 FASE 2: Referencias de conductores procesados limpiadas");
+    isProcessingRef.current = false; // Resetear lock
+    setLoadingHistoryIds(new Set()); // También limpiar IDs en carga
+    console.log("🧹 FASE 2: Referencias de conductores procesados limpiadas completamente");
   }, []);
+
+  // Función de debug para diagnóstico (temporal)
+  const debugCurrentState = useCallback(() => {
+    console.log("🔍 DEBUG ESTADO ACTUAL:");
+    console.log("  - isInitialized:", isInitialized);
+    console.log("  - needsRefresh:", needsRefresh);
+    console.log("  - processedConductors:", Array.from(processedConductorsRef.current));
+    console.log("  - loadingHistoryIds:", Array.from(loadingHistoryIds));
+    console.log("  - aggressiveDrivingHistory:", state.aggressiveDrivingHistory?.map(c => `${c.nombre}(${c.count})`));
+    console.log("  - lastProcessTime:", new Date(lastProcessTimeRef.current).toLocaleTimeString());
+  }, [isInitialized, needsRefresh, loadingHistoryIds, state.aggressiveDrivingHistory]);
 
   // Arrays constantes memoizados
   const aggressiveStates = useMemo(
@@ -227,7 +241,15 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
       const stored = localStorage.getItem(userKey);
       if (stored) {
         const parsedRanking = JSON.parse(stored);
-        return Array.isArray(parsedRanking) ? parsedRanking : [];
+        const ranking = Array.isArray(parsedRanking) ? parsedRanking : [];
+        
+        // Log detallado de lo que se está cargando
+        console.log(`📂 CARGANDO DESDE LOCALSTORAGE (${userKey}):`, ranking.length, "conductores");
+        ranking.forEach(conductor => {
+          console.log(`  📂 ${conductor.nombre}: ${conductor.count} preavisos, last: ${conductor.lastTime?.substring(11, 19) || 'N/A'}, procesado: ${conductor.lastHistoryUpdate ? '✅' : '❌'}`);
+        });
+        
+        return ranking;
       }
     } catch (error) {
       console.warn(
@@ -245,7 +267,16 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
         if (!state.user) return; // No guardar si no hay usuario logueado
 
         const userKey = getAggressiveDrivingRankingStorageKey(state.user);
+        
+        // Log detallado de lo que se está guardando
+        console.log(`💾 GUARDANDO EN LOCALSTORAGE (${userKey}):`, ranking.length, "conductores");
+        ranking.forEach(conductor => {
+          console.log(`  💾 ${conductor.nombre}: ${conductor.count} preavisos, last: ${conductor.lastTime?.substring(11, 19) || 'N/A'}, procesado: ${conductor.lastHistoryUpdate ? '✅' : '❌'}`);
+        });
+        
         localStorage.setItem(userKey, JSON.stringify(ranking));
+        
+        console.log("✅ GUARDADO EN LOCALSTORAGE COMPLETADO");
       } catch (error) {
         console.warn(
           "Error guardando ranking de conducción agresiva en localStorage:",
@@ -584,27 +615,49 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
       }
       
       if (existing) {
+        // CRÍTICO: Si el conductor existente ya fue procesado, MANTENER su count definitivo
+        // Si ya tiene historial procesado, NO permitir que tiempo real lo sobrescriba
+        const finalCount = existing.lastHistoryUpdate ? 
+          existing.count : // Si ya fue procesado, MANTENER el count del historial
+          Math.max(existing.count, conductor.count); // Si no fue procesado, usar el mayor
+        
+        // Log especial para debugging
+        if (conductor.nombre && (conductor.nombre.toLowerCase().includes('brian') || conductor.nombre.toLowerCase().includes('miranda'))) {
+          console.log(`🔍 DEBUG ${conductor.nombre}:`, {
+            existingCount: existing.count,
+            realtimeCount: conductor.count,
+            finalCount: finalCount,
+            hasHistoryUpdate: !!existing.lastHistoryUpdate,
+            isLoadingHistory: existing.isLoadingHistory
+          });
+        }
+        
         // Actualizar datos existentes con información más reciente
         combinedMap.set(conductor.conductorId, {
           ...existing,
           lastUnit: conductor.lastUnit,
           lastTime: conductor.lastTime,
-          // Mantener el count del persistente si existe, sino usar el de tiempo real
-          count: existing.count || conductor.count,
-          // CRÍTICO: NO marcar como loading si ya existe
-          isLoadingHistory: false,
+          count: finalCount, // USAR COUNT CALCULADO
+          // CRÍTICO: NO marcar como loading si ya fue procesado o está siendo procesado
+          isLoadingHistory: existing.lastHistoryUpdate ? false : existing.isLoadingHistory,
           // MANTENER: Conservar información de procesamiento anterior
-          lastHistoryUpdate: existing.lastHistoryUpdate
+          lastHistoryUpdate: existing.lastHistoryUpdate,
+          isProcessing: existing.isProcessing || false
         });
+        
+        console.log(`🔄 CONDUCTOR EXISTENTE ACTUALIZADO: ${conductor.nombre} - Count: ${finalCount} (persistente: ${existing.count}, tiempo real: ${conductor.count}, procesado: ${!!existing.lastHistoryUpdate})`);
       } else {
         // Nuevo conductor detectado - SOLO aquí marcarlo para carga de historial
         // CRÍTICO: Marcar con count mínimo 1 para evitar eliminación prematura
-        combinedMap.set(conductor.conductorId, {
+        const newConductor = {
           ...conductor,
           count: Math.max(conductor.count, 1), // Garantizar mínimo 1
           isLoadingHistory: true, // Solo nuevos conductores necesitan historial
+          isProcessing: false, // Inicialmente no está siendo procesado
           detectedAt: new Date().toISOString() // Timestamp de detección
-        });
+        };
+        
+        combinedMap.set(conductor.conductorId, newConductor);
         
         console.log(`🆕 NUEVO CONDUCTOR DETECTADO: ${conductor.nombre} - Count inicial: ${Math.max(conductor.count, 1)} (original: ${conductor.count})`);
       }
@@ -739,175 +792,208 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     setIsInitialized(true);
   }, [loadRankingFromStorage, dispatch, saveRankingToStorage, state.user, clearProcessedConductors]);
 
-  // FASE 2: Sincronizar localStorage cuando cambie el contexto (solo después de inicializar)
+  // FASE 2: Sincronizar localStorage cuando cambie el contexto (SIEMPRE después de inicializar)
   useEffect(() => {
-    if (state.user && isInitialized && !needsRefresh) {
-      saveRankingToStorage(state.aggressiveDrivingHistory || []);
+    if (state.user && isInitialized && state.aggressiveDrivingHistory) {
+      console.log("💾 GUARDANDO en localStorage:", state.aggressiveDrivingHistory.length, "conductores");
+      
+      // Log detallado para debugging
+      state.aggressiveDrivingHistory.forEach(conductor => {
+        console.log(`  💾 ${conductor.nombre}: ${conductor.count} preavisos - ${conductor.lastHistoryUpdate ? '✅ procesado' : '📦 pendiente'}`);
+      });
+      
+      saveRankingToStorage(state.aggressiveDrivingHistory);
     }
-  }, [state.aggressiveDrivingHistory, saveRankingToStorage, state.user, isInitialized, needsRefresh]);
+  }, [state.aggressiveDrivingHistory, saveRankingToStorage, state.user, isInitialized]);
 
-  // FASE 2: Ejecutar refresh automático cuando sea necesario
+  // FASE 2: Ejecutar refresh automático cuando sea necesario (SOLO AL INICIALIZAR)
   useEffect(() => {
     if (needsRefresh && isInitialized && (state.aggressiveDrivingHistory || []).length > 0) {
+      console.log("🔄 FASE 2: Ejecutando refresh automático SOLO UNA VEZ al inicializar");
+      
+      // Ejecutar refresh y luego desactivar immediatamente
       refreshAllConductors().finally(() => {
         setNeedsRefresh(false);
+        console.log("✅ FASE 2: Refresh automático completado y desactivado");
       });
     }
-  }, [needsRefresh, isInitialized, state.aggressiveDrivingHistory, refreshAllConductors]);
+  }, [needsRefresh, isInitialized]); // DEPENDENCIAS MÍNIMAS - Sin state.aggressiveDrivingHistory
 
-  // FASE 2: Detectar cambios en aggressiveDrivingRanking sin ejecutar inmediatamente (evita bucles)
+  // FASE 2: Procesar nuevos conductores UNA SOLA VEZ (evita bucles infinitos)
   useEffect(() => {
-    if (!isInitialized) return;
+    console.log("🔔 USEEFFECT DISPARADO - Procesar nuevos conductores");
     
-    // Solo verificar si hay nuevos conductores que necesiten procesamiento
+    if (!isInitialized) {
+      console.log("⏹️ No inicializado, saliendo");
+      return;
+    }
+
+    // LOCK GLOBAL: Si ya está procesando, no hacer nada
+    if (isProcessingRef.current) {
+      console.log("🔒 PROCESAMIENTO YA EN CURSO, saliendo para evitar duplicados");
+      return;
+    }
+    
+    // CRÍTICO: Solo detectar conductores que REALMENTE son nuevos y nunca fueron procesados
     const newConductors = aggressiveDrivingRanking.filter(conductor => 
       conductor.isLoadingHistory && 
       conductor.fromRealtime &&
-      !processedConductorsRef.current.has(conductor.conductorId)
+      !conductor.lastHistoryUpdate && // NUNCA fue procesado
+      !processedConductorsRef.current.has(conductor.conductorId) && // NO está en el ref
+      !loadingHistoryIds.has(conductor.conductorId) && // NO está siendo procesado actualmente
+      conductor.detectedAt // Debe tener timestamp de detección
     );
 
-    if (newConductors.length > 0) {
-      console.log(`🔍 FASE 2: Detectados ${newConductors.length} nuevos conductores para processing:`);
-      newConductors.forEach(c => {
-        console.log(`  - ${c.nombre} (ID: ${c.conductorId}) - Count actual: ${c.count}`);
-      });
-      
-      // IMPORTANTE: Marcar inmediatamente como procesados para evitar bucles
-      newConductors.forEach(c => {
-        processedConductorsRef.current.add(c.conductorId);
-      });
-      
-      // Trigger del procesamiento mediante un pequeño cambio de estado
-      setLoadingHistoryIds(prev => {
-        const newSet = new Set([...prev]);
-        newConductors.forEach(c => newSet.add(c.conductorId));
-        return newSet;
-      });
-    }
-  }, [aggressiveDrivingRanking, isInitialized]);
-
-  // FASE 2: Detectar nuevos conductores y obtener su historial (con protección anti-bucle MEJORADA)
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    // Obtener conductores que necesitan historial (más flexible que el filtro anterior)
-    const conductorsNeedingHistory = aggressiveDrivingRanking.filter(conductor => 
-      conductor.isLoadingHistory && 
-      loadingHistoryIds.has(conductor.conductorId) && // Solo los que están en el Set de loading
-      !conductor.lastHistoryUpdate && // Solo si nunca se ha procesado
-      conductor.fromRealtime // Solo conductores nuevos detectados en tiempo real
-    );
-
-    if (conductorsNeedingHistory.length === 0) {
-      console.log("⏭️ FASE 2: Ningún conductor necesita historial en este ciclo");
+    if (newConductors.length === 0) {
+      console.log("⏭️ FASE 2: No hay conductores nuevos que requieran procesamiento");
       return;
     }
 
-    // Throttling: No procesar más de una vez cada 2 segundos
+    // Throttling ESTRICTO: No procesar más de una vez cada 3 segundos
     const now = Date.now();
-    if (now - lastProcessTimeRef.current < 2000) {
-      console.log("⏸️ FASE 2: Throttling activo, postergando procesamiento");
-      // Re-programar el procesamiento
-      setTimeout(() => {
-        setLoadingHistoryIds(prev => new Set([...prev])); // Re-trigger
-      }, 2000 - (now - lastProcessTimeRef.current));
+    if (now - lastProcessTimeRef.current < 3000) {
+      console.log(`⏸️ FASE 2: Throttling activo, esperando ${3000 - (now - lastProcessTimeRef.current)}ms más`);
       return;
     }
 
-    // Actualizar timestamp de último procesamiento
+    // ACTIVAR LOCK GLOBAL
+    isProcessingRef.current = true;
+    
+    // Actualizar timestamp de último procesamiento INMEDIATAMENTE
     lastProcessTimeRef.current = now;
 
-    console.log(`🔄 FASE 2: ${conductorsNeedingHistory.length} conductores necesitan historial (ejecutando API calls):`);
-    conductorsNeedingHistory.forEach(c => {
-      console.log(`  - ${c.nombre} (ID: ${c.conductorId}) - Count inicial: ${c.count}`);
+    console.log(`🔄 FASE 2: ${newConductors.length} conductores necesitan historial (ejecutando API calls):`);
+    newConductors.forEach(c => {
+      console.log(`  - ${c.nombre} (ID: ${c.conductorId}) - Count inicial: ${c.count} - NUNCA PROCESADO`);
+    });
+    
+    // IMPORTANTE: Marcar inmediatamente como procesados para evitar bucles
+    newConductors.forEach(c => {
+      processedConductorsRef.current.add(c.conductorId);
+    });
+    
+    // Marcar como en carga
+    setLoadingHistoryIds(prev => {
+      const newSet = new Set([...prev]);
+      newConductors.forEach(c => newSet.add(c.conductorId));
+      return newSet;
     });
 
-    // Procesar cada conductor de forma secuencial (no paralela) para evitar overload
+    // Procesar cada conductor de forma secuencial
     const processConductorsSequentially = async () => {
-      for (const conductor of conductorsNeedingHistory) {
-        if (conductor.lastUnit) {
-          const conductorInfo = getConductorInfo(conductor.lastUnit);
-          
-          if (conductorInfo) {
-            console.log(`🆕 FASE 2: ⚡ EJECUTANDO API CALL para conductor: ${conductor.nombre}`);
+      try {
+        for (const conductor of newConductors) {
+          if (conductor.lastUnit) {
+            const conductorInfo = getConductorInfo(conductor.lastUnit);
             
-            try {
-              const totalCount = await fetchConductorHistorialCount(conductor.lastUnit, conductorInfo);
+            if (conductorInfo) {
+              console.log(`🆕 FASE 2: ⚡ EJECUTANDO API CALL para conductor: ${conductor.nombre}`);
               
-              // Actualizar el ranking en el estado
-              const currentRanking = [...(state.aggressiveDrivingHistory || [])];
-              const existingIndex = currentRanking.findIndex(item => item.conductorId === conductor.conductorId);
-              
-              if (existingIndex >= 0) {
-                currentRanking[existingIndex] = {
-                  ...currentRanking[existingIndex],
-                  count: Math.max(totalCount, 1), // GARANTIZAR MÍNIMO 1
-                  isLoadingHistory: false,
-                  lastHistoryUpdate: new Date().toISOString()
-                };
-              } else {
-                // Agregar nuevo conductor al ranking
-                currentRanking.push({
-                  ...conductor,
-                  count: Math.max(totalCount, 1), // GARANTIZAR MÍNIMO 1
-                  isLoadingHistory: false,
-                  lastHistoryUpdate: new Date().toISOString(),
-                  addedAt: new Date().toISOString()
-                });
-              }
-
-              dispatch({
-                type: "SET_AGGRESSIVE_HISTORY",
-                payload: currentRanking
-              });
-
-              console.log(`✅ FASE 2: API CALL COMPLETADA para ${conductor.nombre} - Count final: ${Math.max(totalCount, 1)} (API devolvió: ${totalCount})`);
-
-            } catch (error) {
-              console.error(`❌ Error obteniendo historial para ${conductor.nombre}:`, error);
-              
-              // IMPORTANTE: Marcar como no cargando SIEMPRE, incluso en error
-              const currentRanking = [...(state.aggressiveDrivingHistory || [])];
-              const updateIndex = currentRanking.findIndex(item => item.conductorId === conductor.conductorId);
-              
-              if (updateIndex >= 0) {
-                currentRanking[updateIndex] = {
-                  ...currentRanking[updateIndex],
-                  isLoadingHistory: false,
-                  lastHistoryUpdate: new Date().toISOString(),
-                  count: Math.max(currentRanking[updateIndex].count || 1, 1) // GARANTIZAR MÍNIMO 1
-                };
+              try {
+                const totalCount = await fetchConductorHistorialCount(conductor.lastUnit, conductorInfo);
+                
+                // CRÍTICO: Obtener el count actual del conductor para no perder datos
+                const currentRanking = [...(state.aggressiveDrivingHistory || [])];
+                const updateIndex = currentRanking.findIndex(item => item.conductorId === conductor.conductorId);
+                
+                // Calcular el count final: MÁXIMO entre API y count actual en tiempo real
+                const currentCount = updateIndex >= 0 ? currentRanking[updateIndex].count : conductor.count;
+                const finalCount = Math.max(totalCount, currentCount, 1);
+                
+                console.log(`🔢 FASE 2: Calculando count final para ${conductor.nombre}:`);
+                console.log(`  - API historial: ${totalCount}`);
+                console.log(`  - Count actual: ${currentCount}`);
+                console.log(`  - Count final: ${finalCount}`);
+                
+                if (updateIndex >= 0) {
+                  currentRanking[updateIndex] = {
+                    ...currentRanking[updateIndex],
+                    count: finalCount, // USAR EL MÁXIMO CALCULADO
+                    isLoadingHistory: false,
+                    isProcessing: false,
+                    lastHistoryUpdate: new Date().toISOString()
+                  };
+                } else {
+                  // Agregar nuevo conductor al ranking con todos los datos
+                  currentRanking.push({
+                    ...conductor,
+                    count: finalCount, // USAR EL MÁXIMO CALCULADO
+                    isLoadingHistory: false,
+                    isProcessing: false,
+                    lastHistoryUpdate: new Date().toISOString(),
+                    addedAt: new Date().toISOString()
+                  });
+                }
 
                 dispatch({
                   type: "SET_AGGRESSIVE_HISTORY",
                   payload: currentRanking
                 });
+
+                // CRÍTICO: Guardar inmediatamente en localStorage después de actualizar
+                console.log(`💾 GUARDANDO INMEDIATAMENTE ${conductor.nombre} con count ${finalCount} en localStorage`);
+                saveRankingToStorage(currentRanking);
+
+                console.log(`✅ FASE 2: API CALL COMPLETADA para ${conductor.nombre} - Count final: ${finalCount} (API: ${totalCount}, Actual: ${currentCount})`);
+
+              } catch (error) {
+                console.error(`❌ Error obteniendo historial para ${conductor.nombre}:`, error);
+                
+                // IMPORTANTE: Marcar como no cargando SIEMPRE, incluso en error
+                const errorRanking = [...(state.aggressiveDrivingHistory || [])];
+                const errorIndex = errorRanking.findIndex(item => item.conductorId === conductor.conductorId);
+                
+                if (errorIndex >= 0) {
+                  errorRanking[errorIndex] = {
+                    ...errorRanking[errorIndex],
+                    isLoadingHistory: false,
+                    isProcessing: false,
+                    lastHistoryUpdate: new Date().toISOString(),
+                    count: Math.max(errorRanking[errorIndex].count || 1, 1) // GARANTIZAR MÍNIMO 1
+                  };
+
+                  dispatch({
+                    type: "SET_AGGRESSIVE_HISTORY",
+                    payload: errorRanking
+                  });
+
+                  // CRÍTICO: Guardar también en caso de error
+                  console.log(`💾 GUARDANDO EN ERROR ${conductor.nombre} en localStorage`);
+                  saveRankingToStorage(errorRanking);
+                }
+              } finally {
+                // Remover del loading set
+                setLoadingHistoryIds(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(conductor.conductorId);
+                  return newSet;
+                });
               }
-            } finally {
+            } else {
+              console.warn(`⚠️ No se pudo obtener conductor info para ${conductor.nombre}`);
+              // Remover del loading set si no se puede procesar
               setLoadingHistoryIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(conductor.conductorId);
                 return newSet;
               });
             }
-          } else {
-            console.warn(`⚠️ No se pudo obtener conductor info para ${conductor.nombre}`);
-            // Remover del loading set si no se puede procesar
-            setLoadingHistoryIds(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(conductor.conductorId);
-              return newSet;
-            });
           }
+          
+          // Pausa entre conductores para no sobrecargar
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
-        // Pequeña pausa entre conductores para no sobrecargar
-        await new Promise(resolve => setTimeout(resolve, 500));
+      } finally {
+        // LIBERAR LOCK GLOBAL SIEMPRE
+        isProcessingRef.current = false;
+        console.log("🔓 LOCK GLOBAL LIBERADO - Procesamiento completado");
       }
     };
 
     processConductorsSequentially();
-  }, [isInitialized, getConductorInfo, fetchConductorHistorialCount, state.aggressiveDrivingHistory, dispatch, loadingHistoryIds, aggressiveDrivingRanking]);
+    
+    console.log(`✅ FASE 2: Iniciado procesamiento de ${newConductors.length} conductores`);
+  }, [aggressiveDrivingRanking, isInitialized, getConductorInfo, fetchConductorHistorialCount, saveRankingToStorage, state.aggressiveDrivingHistory, dispatch]); // AGREGAR DEPENDENCIAS NECESARIAS
 
   // Renderizar contenido específico de conducción agresiva - FASE 2: Con estados de carga
   const renderContent = ({ onUnitSelect, handleClose }) => (
