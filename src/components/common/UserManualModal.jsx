@@ -19,6 +19,9 @@ import {
   Card,
   CardContent,
   Link,
+  Drawer,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -35,6 +38,7 @@ import {
   Security as SecurityIcon,
   Update as UpdateIcon,
   CropFree as CropFreeIcon,
+  Menu as MenuIcon,
 } from "@mui/icons-material";
 
 const UserManualModal = ({ open, onClose }) => {
@@ -44,6 +48,7 @@ const UserManualModal = ({ open, onClose }) => {
     reportes: false,
     soporte: false,
   });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -52,6 +57,13 @@ const UserManualModal = ({ open, onClose }) => {
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  const handleSectionSelect = (sectionId) => {
+    setSelectedSection(sectionId);
+    if (isMobile) {
+      setMobileMenuOpen(false);
+    }
   };
 
   const menuSections = [
@@ -2474,7 +2486,7 @@ const UserManualModal = ({ open, onClose }) => {
                   • <strong>Análisis de datos:</strong> Use filtros y tablas
                   dinámicas para análisis avanzados
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" paragraph>
                   • <strong>Tiempo de descarga:</strong> Depende del período
                   seleccionado, sea paciente con períodos largos
                 </Typography>
@@ -2491,6 +2503,134 @@ const UserManualModal = ({ open, onClose }) => {
         );
     }
   };
+
+  // Renderizar el menú lateral
+  const renderSidebarMenu = () => (
+    <Box
+      sx={{
+        width: isMobile ? "280px" : "320px",
+        height: "100%",
+        bgcolor: "grey.50",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          p: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: "green",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: "bold",
+            fontSize: isMobile ? "1rem" : "1.25rem",
+          }}
+        >
+          📚 Manual de Usuario
+        </Typography>
+        {isMobile && (
+          <IconButton
+            onClick={() => setMobileMenuOpen(false)}
+            sx={{ color: "white" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
+      </Box>
+
+      {/* Navigation List */}
+      <List dense sx={{ flexGrow: 1, p: 0, overflowY: "auto" }}>
+        {menuSections.map((section) => (
+          <React.Fragment key={section.id}>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={selectedSection === section.id}
+                onClick={() => {
+                  if (section.hasChildren) {
+                    handleSectionToggle(section.id);
+                  } else {
+                    handleSectionSelect(section.id);
+                  }
+                }}
+                sx={{
+                  py: 1,
+                  "&.Mui-selected": {
+                    bgcolor: "primary.100",
+                    borderRight: "4px solid",
+                    borderColor: "primary.main",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  {section.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={section.title}
+                  primaryTypographyProps={{
+                    fontSize: "0.9rem",
+                    fontWeight:
+                      selectedSection === section.id ? "bold" : "normal",
+                  }}
+                />
+                {section.hasChildren &&
+                  (expandedSections[section.id] ? (
+                    <ExpandLess />
+                  ) : (
+                    <ExpandMore />
+                  ))}
+              </ListItemButton>
+            </ListItem>
+
+            {section.hasChildren && (
+              <Collapse
+                in={expandedSections[section.id]}
+                timeout="auto"
+                unmountOnExit
+              >
+                <List component="div" disablePadding>
+                  {section.children.map((child) => (
+                    <ListItem key={child.id} disablePadding>
+                      <ListItemButton
+                        selected={selectedSection === child.id}
+                        onClick={() => handleSectionSelect(child.id)}
+                        sx={{
+                          pl: 4,
+                          py: 0.5,
+                          "&.Mui-selected": {
+                            bgcolor: "primary.50",
+                            borderRight: "3px solid",
+                            borderColor: "primary.main",
+                          },
+                        }}
+                      >
+                        <ListItemText
+                          primary={child.title}
+                          primaryTypographyProps={{
+                            fontSize: "0.8rem",
+                            fontWeight:
+                              selectedSection === child.id ? "bold" : "normal",
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            )}
+          </React.Fragment>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="user-manual-title">
@@ -2511,135 +2651,31 @@ const UserManualModal = ({ open, onClose }) => {
           overflow: "hidden",
         }}
       >
-        {/* Sidebar Navigation */}
-        <Box
-          sx={{
-            width: isMobile ? "100%" : "320px",
-            height: isMobile ? "auto" : "100%",
-            borderRight: isMobile ? "none" : "1px solid",
-            borderBottom: isMobile ? "1px solid" : "none",
-            borderColor: "divider",
-            bgcolor: "grey.50",
-            display: "flex",
-            flexDirection: "column",
-            maxHeight: isMobile ? "200px" : "100%",
-            overflowY: "auto",
-          }}
-        >
-          {/* Header */}
-          <Box
+        {/* Desktop Sidebar */}
+        {!isMobile && renderSidebarMenu()}
+
+        {/* Mobile Drawer */}
+        {isMobile && (
+          <Drawer
+            variant="temporary"
+            anchor="left"
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            ModalProps={{
+              keepMounted: true, // Better open performance on mobile.
+              style: { zIndex: 1400 }, // Aumentar z-index para estar por encima del modal
+            }}
             sx={{
-              p: 2,
-              borderBottom: "1px solid",
-              borderColor: "divider",
-              bgcolor: "green",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              "& .MuiDrawer-paper": {
+                width: "280px",
+                boxSizing: "border-box",
+                zIndex: 1400, // Asegurar que el papel también tenga z-index alto
+              },
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: "bold",
-                fontSize: isMobile ? "1rem" : "1.25rem",
-              }}
-            >
-              📚 Manual de Usuario
-            </Typography>
-            {isMobile && (
-              <IconButton onClick={onClose} sx={{ color: "white" }}>
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-
-          {/* Navigation List */}
-          <List dense sx={{ flexGrow: 1, p: 0 }}>
-            {menuSections.map((section) => (
-              <React.Fragment key={section.id}>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    selected={selectedSection === section.id}
-                    onClick={() => {
-                      if (section.hasChildren) {
-                        handleSectionToggle(section.id);
-                      } else {
-                        setSelectedSection(section.id);
-                      }
-                    }}
-                    sx={{
-                      py: 1,
-                      "&.Mui-selected": {
-                        bgcolor: "primary.100",
-                        borderRight: "4px solid",
-                        borderColor: "primary.main",
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      {section.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={section.title}
-                      primaryTypographyProps={{
-                        fontSize: "0.9rem",
-                        fontWeight:
-                          selectedSection === section.id ? "bold" : "normal",
-                      }}
-                    />
-                    {section.hasChildren &&
-                      (expandedSections[section.id] ? (
-                        <ExpandLess />
-                      ) : (
-                        <ExpandMore />
-                      ))}
-                  </ListItemButton>
-                </ListItem>
-
-                {section.hasChildren && (
-                  <Collapse
-                    in={expandedSections[section.id]}
-                    timeout="auto"
-                    unmountOnExit
-                  >
-                    <List component="div" disablePadding>
-                      {section.children.map((child) => (
-                        <ListItem key={child.id} disablePadding>
-                          <ListItemButton
-                            selected={selectedSection === child.id}
-                            onClick={() => setSelectedSection(child.id)}
-                            sx={{
-                              pl: 4,
-                              py: 0.5,
-                              "&.Mui-selected": {
-                                bgcolor: "primary.50",
-                                borderRight: "3px solid",
-                                borderColor: "primary.main",
-                              },
-                            }}
-                          >
-                            <ListItemText
-                              primary={child.title}
-                              primaryTypographyProps={{
-                                fontSize: "0.8rem",
-                                fontWeight:
-                                  selectedSection === child.id
-                                    ? "bold"
-                                    : "normal",
-                              }}
-                            />
-                          </ListItemButton>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Collapse>
-                )}
-              </React.Fragment>
-            ))}
-          </List>
-        </Box>
+            {renderSidebarMenu()}
+          </Drawer>
+        )}
 
         {/* Main Content */}
         <Box
@@ -2651,36 +2687,42 @@ const UserManualModal = ({ open, onClose }) => {
           }}
         >
           {/* Content Header */}
-          {!isMobile && (
-            <Box
-              sx={{
-                p: 2,
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: "bold", color: "green" }}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {isMobile && (
+                <IconButton
+                  onClick={() => setMobileMenuOpen(true)}
+                  sx={{ mr: 1 }}
                 >
-                  FullControl GPS
-                </Typography>
-                <Chip
-                  label="v2025"
-                  size="small"
-                  sx={{ bgcolor: "green", color: "white" }}
-                />
-              </Box>
-              <IconButton onClick={onClose}>
-                <CloseIcon />
-              </IconButton>
+                  <MenuIcon />
+                </IconButton>
+              )}
+              <Typography
+                variant={isMobile ? "h6" : "h5"}
+                sx={{ fontWeight: "bold", color: "green" }}
+              >
+                FullControl GPS
+              </Typography>
+              <Chip
+                label="v2025"
+                size="small"
+                sx={{ bgcolor: "green", color: "white" }}
+              />
             </Box>
-          )}
+            <IconButton onClick={onClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
 
           {/* Content Body */}
           <Box
@@ -2711,7 +2753,7 @@ const UserManualModal = ({ open, onClose }) => {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              © FullControlGPS 2025 | Manual actualizado: Julio 2025
+              © FullControlGPS 2025 | Manual actualizado: Agosto 2025
             </Typography>
             <Link
               href="https://wa.me/+5492994119010"
