@@ -166,31 +166,6 @@ const AggressiveDrivingItem = React.memo(
             }
           />
         </ListItemButton>
-
-        {/* Botón de refresh oculto por ahora
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRefreshDetails(conductor);
-          }}
-          disabled={isLoadingDetails}
-          sx={{
-            color: "text.secondary",
-            mr: 1,
-            "&:hover": {
-              color: "primary.main",
-              backgroundColor: "rgba(25, 118, 210, 0.08)",
-            },
-          }}
-        >
-          {isLoadingDetails ? (
-            <CircularProgress size={16} />
-          ) : (
-            <RefreshIcon fontSize="small" />
-          )}
-        </IconButton>
-        */}
       </Box>
     </ListItem>
   )
@@ -211,6 +186,10 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
   const processedConductorsRef = useRef(new Set());
   const lastProcessTimeRef = useRef(0);
   const isProcessingRef = useRef(false); // NUEVO: Lock global para evitar procesamiento concurrente
+
+  // ETAPA 2: Refs para evitar dependencias circulares
+  const aggressiveDrivingRankingRef = useRef([]);
+  const stableFunctionsRef = useRef({});
 
   // Función para limpiar refs cuando sea necesario
   const clearProcessedConductors = useCallback(() => {
@@ -480,47 +459,417 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     });
   }, []);
 
-  // FASE 2: Función para actualizar el count de un conductor específico
-  const updateConductorCount = useCallback(
-    (conductorId, newCount) => {
-      const currentRanking = [...(state.aggressiveDrivingHistory || [])];
-      const updateIndex = currentRanking.findIndex(
-        (item) => item.conductorId === conductorId
-      );
+  // ETAPA 3: Función de utilidad para crear funciones de debounce
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
 
-      if (updateIndex >= 0) {
-        currentRanking[updateIndex] = {
-          ...currentRanking[updateIndex],
-          count: newCount,
-          isLoadingHistory: false, // IMPORTANTE: Siempre marcar como no cargando
-          lastHistoryUpdate: new Date().toISOString(), // Timestamp para evitar re-cargas
-        };
+  // ETAPA 3: Sistema de guardado debounced para localStorage
+  const debouncedSaveToStorage = useCallback(
+    debounce((ranking) => {
+      try {
+        if (!state.user) {
+          console.warn(
+            "⚠️ ETAPA 3: No se puede guardar sin usuario autenticado"
+          );
+          return;
+        }
 
-        dispatch({
-          type: "SET_AGGRESSIVE_HISTORY",
-          payload: currentRanking,
-        });
+        const userKey = getAggressiveDrivingRankingStorageKey(state.user);
 
-        // Guardar en localStorage
-        saveRankingToStorage(currentRanking);
         console.log(
-          `📊 FASE 2: Count actualizado para ${currentRanking[updateIndex].nombre}: ${newCount}`
+          `💾 ETAPA 3: Guardado debounced iniciado (${userKey}):`,
+          ranking.length,
+          "conductores"
         );
-      } else {
-        console.warn(
-          `⚠️ No se encontró conductor ${conductorId} para actualizar count`
+
+        // Filtrar solo datos válidos antes de guardar
+        const validRanking = ranking.filter(
+          (conductor) =>
+            conductor.conductorId &&
+            conductor.nombre &&
+            typeof conductor.count === "number" &&
+            conductor.count >= 0
         );
+
+        if (validRanking.length !== ranking.length) {
+          console.warn(
+            `⚠️ ETAPA 3: Filtrados ${
+              ranking.length - validRanking.length
+            } conductores inválidos antes de guardar`
+          );
+        }
+
+        localStorage.setItem(userKey, JSON.stringify(validRanking));
+
+        console.log(
+          `✅ ETAPA 3: Guardado en localStorage completado - ${validRanking.length} conductores válidos`
+        );
+      } catch (error) {
+        console.error("❌ ETAPA 3: Error en guardado debounced:", error);
       }
-    },
-    [state.aggressiveDrivingHistory, dispatch, saveRankingToStorage]
+    }, 1000), // Debounce de 1 segundo
+    [state.user]
   );
 
-  // FASE 2: Función para refresh automático de todos los conductores al iniciar sesión
+  // ETAPA 3: Función centralizada para actualizar el historial de conducción agresiva
+  const updateAggressiveHistory = useCallback(
+    (updates, operation = "update") => {
+      try {
+        const currentRanking = [...(state.aggressiveDrivingHistory || [])];
+        let hasChanges = false;
+
+        // Crear backup para rollback en caso de error
+        const backupRanking = [...currentRanking];
+
+        console.log(
+          `🔄 ETAPA 3: Ejecutando operación '${operation}' con ${
+            Array.isArray(updates) ? updates.length : 1
+          } actualización(es)`
+        );
+
+        // Convertir updates a array si es un solo objeto
+        const updateArray = Array.isArray(updates) ? updates : [updates];
+
+        updateArray.forEach((update) => {
+          const { conductorId, data, action = "update" } = update;
+
+          if (action === "update" || action === "upsert") {
+            const updateIndex = currentRanking.findIndex(
+              (item) => item.conductorId === conductorId
+            );
+
+            if (updateIndex >= 0) {
+              // Actualizar conductor existente
+              const oldData = { ...currentRanking[updateIndex] };
+              currentRanking[updateIndex] = {
+                ...oldData,
+                ...data,
+                lastUpdated: new Date().toISOString(),
+              };
+
+              console.log(
+                `📊 ETAPA 3: Conductor actualizado - ${currentRanking[updateIndex].nombre}: count ${oldData.count} → ${currentRanking[updateIndex].count}`
+              );
+              hasChanges = true;
+            } else if (action === "upsert") {
+              // Agregar nuevo conductor (solo si es upsert)
+              currentRanking.push({
+                ...data,
+                conductorId,
+                addedAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+              });
+
+              console.log(
+                `🆕 ETAPA 3: Nuevo conductor agregado - ${data.nombre}: count ${data.count}`
+              );
+              hasChanges = true;
+            }
+          } else if (action === "remove") {
+            const removeIndex = currentRanking.findIndex(
+              (item) => item.conductorId === conductorId
+            );
+
+            if (removeIndex >= 0) {
+              const removedConductor = currentRanking.splice(removeIndex, 1)[0];
+              console.log(
+                `🗑️ ETAPA 3: Conductor removido - ${removedConductor.nombre}`
+              );
+              hasChanges = true;
+            }
+          }
+        });
+
+        // Solo actualizar si hay cambios reales
+        if (hasChanges) {
+          // Actualizar contexto
+          dispatch({
+            type: "SET_AGGRESSIVE_HISTORY",
+            payload: currentRanking,
+          });
+
+          // Guardar en localStorage de forma debounced
+          debouncedSaveToStorage(currentRanking);
+
+          console.log(
+            `✅ ETAPA 3: Historial actualizado exitosamente - ${currentRanking.length} conductores`
+          );
+          return { success: true, data: currentRanking };
+        } else {
+          console.log(`⏭️ ETAPA 3: No hay cambios para aplicar`);
+          return { success: true, data: currentRanking, noChanges: true };
+        }
+      } catch (error) {
+        console.error(`❌ ETAPA 3: Error actualizando historial:`, error);
+
+        // En caso de error, podrías implementar rollback aquí
+        // dispatch({ type: "SET_AGGRESSIVE_HISTORY", payload: backupRanking });
+
+        return { success: false, error: error.message };
+      }
+    },
+    [state.aggressiveDrivingHistory, dispatch, debouncedSaveToStorage]
+  );
+
+  // ETAPA 3: Funciones modulares para combinación de datos
+  const combineRealtimeWithPersistent = useCallback(
+    (realtimeData, persistentData) => {
+      console.log("🔄 ETAPA 3: Combinando datos con sistema modular...");
+      console.log(
+        "📦 Datos persistentes:",
+        persistentData.map((p) => `${p.nombre} (${p.count})`)
+      );
+      console.log(
+        "⚡ Datos tiempo real:",
+        realtimeData.map((r) => `${r.nombre} (${r.count})`)
+      );
+
+      const combinedMap = new Map();
+
+      // 1. Cargar datos persistentes
+      persistentData.forEach((conductor) => {
+        combinedMap.set(conductor.conductorId, {
+          ...conductor,
+          fromPersistent: true,
+        });
+      });
+
+      // 2. Integrar/actualizar con datos en tiempo real
+      realtimeData.forEach((conductor) => {
+        const existing = combinedMap.get(conductor.conductorId);
+
+        if (existing) {
+          // Calcular count final usando máximo
+          const baseHistoryCount = existing.lastHistoryUpdate
+            ? existing.count
+            : existing.count;
+          const newRealtimePreavisos = conductor.count;
+          const finalCount = Math.max(baseHistoryCount, newRealtimePreavisos);
+
+          // Actualizar conductor existente
+          combinedMap.set(conductor.conductorId, {
+            ...existing,
+            lastUnit: conductor.lastUnit,
+            lastTime: conductor.lastTime,
+            count: finalCount,
+            isLoadingHistory: existing.lastHistoryUpdate
+              ? false
+              : existing.isLoadingHistory,
+            lastHistoryUpdate: existing.lastHistoryUpdate,
+            isProcessing: existing.isProcessing || false,
+            lastRealtimeUpdate: new Date().toISOString(),
+          });
+
+          console.log(
+            `🔄 ETAPA 3: Conductor actualizado - ${conductor.nombre}: Count: ${finalCount} (base: ${baseHistoryCount}, tiempo real: ${newRealtimePreavisos})`
+          );
+        } else {
+          // Nuevo conductor detectado
+          const newConductor = {
+            ...conductor,
+            count: Math.max(conductor.count, 1),
+            isLoadingHistory: true,
+            isProcessing: false,
+            detectedAt: new Date().toISOString(),
+          };
+
+          combinedMap.set(conductor.conductorId, newConductor);
+          console.log(
+            `🆕 ETAPA 3: Nuevo conductor detectado - ${conductor.nombre}: Count inicial: ${newConductor.count}`
+          );
+        }
+      });
+
+      return combinedMap;
+    },
+    []
+  );
+
+  const filterCurrentDayData = useCallback((combinedMap) => {
+    const today = new Date().toDateString();
+    const finalMap = new Map();
+
+    combinedMap.forEach((conductor, conductorId) => {
+      const conductorDate = conductor.lastTime
+        ? new Date(conductor.lastTime).toDateString()
+        : conductor.addedAt
+        ? new Date(conductor.addedAt).toDateString()
+        : today;
+
+      if (conductorDate === today) {
+        finalMap.set(conductorId, conductor);
+      } else {
+        console.log(
+          `🗑️ ETAPA 3: Eliminando conductor de día anterior: ${conductor.nombre} (${conductorDate})`
+        );
+      }
+    });
+
+    return finalMap;
+  }, []);
+
+  // ETAPA 3: Función para extraer datos en tiempo real (modularizada)
+  const extractRealtimeData = useCallback(() => {
+    if (!markersData || !isInitialized) return [];
+
+    const today = new Date();
+    const todayDateString = today.toDateString();
+
+    console.log(
+      "🔍 ETAPA 3 - Procesando datos en tiempo real:",
+      markersData.length,
+      "unidades"
+    );
+    console.log(
+      "📅 FILTRO ACTIVO: Solo eventos del día actual -",
+      todayDateString
+    );
+
+    // Filtrar preavisos de manejo agresivo DEL DÍA ACTUAL
+    const aggressivePreviews = markersData.filter((unit) => {
+      if (!unit.estado || !unit.fechaHora) return false;
+
+      // Filtrar solo eventos del día actual
+      const unitDate = new Date(unit.fechaHora);
+      const unitDateString = unitDate.toDateString();
+
+      if (unitDateString !== todayDateString) return false;
+
+      // Verificar que sea un preaviso de manejo agresivo
+      const estado = normalizeString(unit.estado);
+      const hasAggressiveState = aggressiveStates.some((aggressiveState) => {
+        const normalizedAggressiveState = normalizeString(aggressiveState);
+        return estado.includes(normalizedAggressiveState);
+      });
+
+      if (hasAggressiveState) {
+        console.log("🚨 ETAPA 3: DETECTADO Preaviso Agresivo DEL DÍA:", {
+          estado: unit.estado,
+          conductor: unit.nombre || "Sin conductor",
+          patente: unit.patente,
+          fechaHora: unit.fechaHora,
+          llave: unit.llave,
+        });
+      }
+
+      return hasAggressiveState;
+    });
+
+    // Agrupar por conductor
+    const conductorGroups = {};
+
+    aggressivePreviews.forEach((unit) => {
+      const conductorInfo = getConductorInfo(unit);
+      if (!conductorInfo) return;
+
+      const groupKey = conductorInfo.groupKey;
+
+      if (!conductorGroups[groupKey]) {
+        conductorGroups[groupKey] = {
+          conductorId: conductorInfo.conductorId,
+          nombre: conductorInfo.displayName,
+          count: 0,
+          lastUnit: unit,
+          lastTime: unit.fechaHora,
+          isGroupedByPatente: conductorInfo.isGroupedByPatente,
+          patente: conductorInfo.patente,
+          fromRealtime: true,
+        };
+      }
+
+      conductorGroups[groupKey].count++;
+
+      // Mantener la unidad más reciente
+      if (
+        new Date(unit.fechaHora) > new Date(conductorGroups[groupKey].lastTime)
+      ) {
+        conductorGroups[groupKey].lastUnit = unit;
+        conductorGroups[groupKey].lastTime = unit.fechaHora;
+      }
+    });
+
+    return Object.values(conductorGroups);
+  }, [
+    markersData,
+    isInitialized,
+    normalizeString,
+    aggressiveStates,
+    getConductorInfo,
+  ]);
+
+  // ETAPA 3: useMemo optimizado con funciones modulares
+  const aggressiveDrivingRanking = useMemo(() => {
+    console.log(
+      "🎯 ETAPA 3: Iniciando combinación de datos con sistema modular"
+    );
+
+    // 1. Extraer datos en tiempo real
+    const realtimeData = extractRealtimeData();
+
+    // 2. Obtener datos persistentes
+    const persistentData = state.aggressiveDrivingHistory || [];
+
+    // 3. Combinar datos usando función modular
+    const combinedMap = combineRealtimeWithPersistent(
+      realtimeData,
+      persistentData
+    );
+
+    // 4. Filtrar solo datos del día actual
+    const finalMap = filterCurrentDayData(combinedMap);
+
+    // 5. Convertir a array y generar resultado final
+    const result = Array.from(finalMap.values());
+
+    console.log("🎯 ETAPA 3: Ranking combinado:", result.length, "conductores");
+    console.log(
+      "📊 PERSISTENTES:",
+      persistentData.length,
+      "| TIEMPO REAL:",
+      realtimeData.length,
+      "| FINAL:",
+      result.length
+    );
+
+    result.forEach((c) => {
+      const status = c.isLoadingHistory
+        ? "(🔄 cargando...)"
+        : c.lastHistoryUpdate
+        ? "(✅ procesado)"
+        : "(📦 persistente)";
+      console.log(
+        `  • ${c.nombre}: ${c.count} preavisos ${status} [${c.conductorId}]`
+      );
+    });
+
+    // Actualizar ref con el resultado
+    aggressiveDrivingRankingRef.current = result;
+
+    return result;
+  }, [
+    extractRealtimeData,
+    state.aggressiveDrivingHistory,
+    combineRealtimeWithPersistent,
+    filterCurrentDayData,
+  ]);
+
+  // ETAPA 3: Función de refresh optimizada usando el sistema centralizado
   const refreshAllConductors = useCallback(async () => {
     const ranking = [...(state.aggressiveDrivingHistory || [])];
     console.log(
-      "🔄 FASE 2: Iniciando refresh automático de todos los conductores"
+      "🔄 ETAPA 3: Iniciando refresh automático de todos los conductores"
     );
+
+    const refreshUpdates = [];
 
     for (const conductor of ranking) {
       if (conductor.lastUnit) {
@@ -536,9 +885,30 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
               conductor.lastUnit,
               conductorInfo
             );
-            updateConductorCount(conductor.conductorId, updatedCount);
+
+            // Preparar actualización para el sistema centralizado
+            refreshUpdates.push({
+              conductorId: conductor.conductorId,
+              data: {
+                count: updatedCount,
+                isLoadingHistory: false,
+                lastHistoryUpdate: new Date().toISOString(),
+              },
+              action: "update",
+            });
           } catch (error) {
             console.warn(`Error actualizando ${conductor.nombre}:`, error);
+
+            // En caso de error, marcar como no cargando
+            refreshUpdates.push({
+              conductorId: conductor.conductorId,
+              data: {
+                isLoadingHistory: false,
+                lastHistoryUpdate: new Date().toISOString(),
+                count: Math.max(conductor.count || 1, 1), // Garantizar mínimo 1
+              },
+              action: "update",
+            });
           } finally {
             setLoadingHistoryIds((prev) => {
               const newSet = new Set(prev);
@@ -550,298 +920,32 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
       }
     }
 
-    console.log("✅ FASE 2: Refresh automático completado");
+    // Aplicar todas las actualizaciones de una vez usando el sistema centralizado
+    if (refreshUpdates.length > 0) {
+      const result = updateAggressiveHistory(refreshUpdates, "batch_refresh");
+      if (result.success) {
+        console.log("✅ ETAPA 3: Refresh automático completado exitosamente");
+      } else {
+        console.error("❌ ETAPA 3: Error en refresh automático:", result.error);
+      }
+    }
   }, [
     state.aggressiveDrivingHistory,
     getConductorInfo,
     fetchConductorHistorialCount,
-    updateConductorCount,
+    updateAggressiveHistory,
   ]);
 
-  // FASE 2: Combinar datos en tiempo real con ranking persistente
-  const aggressiveDrivingRanking = useMemo(() => {
-    // Primero, obtener datos en tiempo real como en Fase 1
-    const realtimeData = (() => {
-      if (!markersData || !isInitialized) return [];
-
-      // Obtener fecha actual para filtro
-      const today = new Date();
-      const todayDateString = today.toDateString(); // Comparar solo fecha sin hora
-
-      console.log(
-        "🔍 FASE 2 - Procesando datos en tiempo real:",
-        markersData.length,
-        "unidades"
-      );
-      console.log(
-        "📅 FILTRO ACTIVO: Solo eventos del día actual -",
-        todayDateString
-      );
-
-      // Filtrar preavisos de manejo agresivo DEL DÍA ACTUAL
-      const aggressivePreviews = markersData.filter((unit) => {
-        if (!unit.estado || !unit.fechaHora) return false;
-
-        // CRÍTICO: Filtrar solo eventos del día actual
-        const unitDate = new Date(unit.fechaHora);
-        const unitDateString = unitDate.toDateString();
-
-        if (unitDateString !== todayDateString) {
-          return false; // Descartar eventos que no sean de hoy
-        }
-
-        // Verificar que sea un preaviso de manejo agresivo
-        const estado = normalizeString(unit.estado);
-
-        const hasAggressiveState = aggressiveStates.some((aggressiveState) => {
-          const normalizedAggressiveState = normalizeString(aggressiveState);
-          return estado.includes(normalizedAggressiveState);
-        });
-
-        if (hasAggressiveState) {
-          console.log("🚨 DETECTADO Preaviso Agresivo DEL DÍA:", {
-            estado: unit.estado,
-            conductor: unit.nombre || "Sin conductor",
-            patente: unit.patente,
-            fechaHora: unit.fechaHora,
-            llave: unit.llave,
-          });
-        }
-
-        return hasAggressiveState;
-      });
-
-      // Agrupar por conductor (lógica de Fase 1)
-      const conductorGroups = {};
-
-      aggressivePreviews.forEach((unit) => {
-        const conductorInfo = getConductorInfo(unit);
-        if (!conductorInfo) return;
-
-        const groupKey = conductorInfo.groupKey;
-
-        if (!conductorGroups[groupKey]) {
-          conductorGroups[groupKey] = {
-            conductorId: conductorInfo.conductorId,
-            nombre: conductorInfo.displayName,
-            count: 0,
-            lastUnit: unit,
-            lastTime: unit.fechaHora,
-            isGroupedByPatente: conductorInfo.isGroupedByPatente,
-            patente: conductorInfo.patente,
-            fromRealtime: true, // Flag para identificar origen
-          };
-        }
-
-        conductorGroups[groupKey].count++;
-
-        // Mantener la unidad más reciente
-        if (
-          new Date(unit.fechaHora) >
-          new Date(conductorGroups[groupKey].lastTime)
-        ) {
-          conductorGroups[groupKey].lastUnit = unit;
-          conductorGroups[groupKey].lastTime = unit.fechaHora;
-        }
-      });
-
-      return Object.values(conductorGroups);
-    })();
-
-    // Combinar con datos persistentes del localStorage/estado
-    const persistentData = state.aggressiveDrivingHistory || [];
-
-    console.log("🔄 FASE 2: Combinando datos...");
-    console.log(
-      "📦 Datos persistentes:",
-      persistentData.map((p) => `${p.nombre} (${p.count})`)
-    );
-    console.log(
-      "⚡ Datos tiempo real:",
-      realtimeData.map((r) => `${r.nombre} (${r.count})`)
-    );
-
-    // Crear mapa combinado (priorizar datos persistentes pero actualizar con tiempo real)
-    const combinedMap = new Map();
-
-    // Primero agregar datos persistentes
-    persistentData.forEach((conductor) => {
-      combinedMap.set(conductor.conductorId, {
-        ...conductor,
-        fromPersistent: true,
-      });
-
-      // Debug especial para Vergara Gabriel
-      if (
-        conductor.nombre &&
-        conductor.nombre.toLowerCase().includes("vergara")
-      ) {
-        console.log("🔍 VERGARA GABRIEL - Cargado desde persistente:", {
-          conductorId: conductor.conductorId,
-          nombre: conductor.nombre,
-          count: conductor.count,
-          lastHistoryUpdate: conductor.lastHistoryUpdate,
-          lastTime: conductor.lastTime,
-        });
-      }
-    });
-
-    // Luego actualizar/agregar con datos en tiempo real
-    realtimeData.forEach((conductor) => {
-      const existing = combinedMap.get(conductor.conductorId);
-
-      // Debug especial para Vergara Gabriel
-      if (
-        conductor.nombre &&
-        conductor.nombre.toLowerCase().includes("vergara")
-      ) {
-        console.log("🔍 VERGARA GABRIEL - Procesando tiempo real:", {
-          conductorId: conductor.conductorId,
-          nombre: conductor.nombre,
-          count: conductor.count,
-          existing: existing ? "SÍ" : "NO",
-          existingCount: existing?.count,
-        });
-      }
-
-      if (existing) {
-        // CORREGIDO: Siempre combinar los datos del historial con los nuevos preavisos en tiempo real
-        // El count del historial puede estar desactualizado vs la realidad actual
-
-        // 1. Obtener el count base del historial (ya procesado) o el count persistente
-        const baseHistoryCount = existing.lastHistoryUpdate
-          ? existing.count // Count ya procesado del historial
-          : existing.count; // Count persistente actual
-
-        // 2. Si hay nuevos preavisos en tiempo real, SUMAR la diferencia
-        // Esto permite que los nuevos preavisos se agreguen al count del historial
-        const newRealtimePreavisos = conductor.count;
-
-        // 3. Calcular el count final: usar el MÁXIMO entre historial y tiempo real
-        // Esto asegura que nunca perdamos preavisos y que siempre mostremos el count más alto
-        const finalCount = Math.max(baseHistoryCount, newRealtimePreavisos);
-
-        // Log especial para debugging
-        if (
-          conductor.nombre &&
-          (conductor.nombre.toLowerCase().includes("brian") ||
-            conductor.nombre.toLowerCase().includes("miranda") ||
-            conductor.nombre.toLowerCase().includes("vergara"))
-        ) {
-          console.log(`🔍 DEBUG ${conductor.nombre}:`, {
-            baseHistoryCount: baseHistoryCount,
-            newRealtimePreavisos: newRealtimePreavisos,
-            finalCount: finalCount,
-            hasHistoryUpdate: !!existing.lastHistoryUpdate,
-            isLoadingHistory: existing.isLoadingHistory,
-            lastTime: conductor.lastTime,
-            existingLastTime: existing.lastTime,
-          });
-        }
-
-        // Actualizar datos existentes con información más reciente
-        combinedMap.set(conductor.conductorId, {
-          ...existing,
-          lastUnit: conductor.lastUnit,
-          lastTime: conductor.lastTime, // SIEMPRE actualizar con el tiempo más reciente
-          count: finalCount, // USAR COUNT CALCULADO CON MÁXIMO
-          // CRÍTICO: NO marcar como loading si ya fue procesado o está siendo procesado
-          isLoadingHistory: existing.lastHistoryUpdate
-            ? false
-            : existing.isLoadingHistory,
-          // MANTENER: Conservar información de procesamiento anterior
-          lastHistoryUpdate: existing.lastHistoryUpdate,
-          isProcessing: existing.isProcessing || false,
-          // NUEVO: Trackear última actualización en tiempo real
-          lastRealtimeUpdate: new Date().toISOString(),
-        });
-
-        console.log(
-          `🔄 CONDUCTOR EXISTENTE ACTUALIZADO: ${
-            conductor.nombre
-          } - Count: ${finalCount} (historial base: ${baseHistoryCount}, tiempo real: ${newRealtimePreavisos}, procesado: ${!!existing.lastHistoryUpdate})`
-        );
-      } else {
-        // Nuevo conductor detectado - SOLO aquí marcarlo para carga de historial
-        // CRÍTICO: Marcar con count mínimo 1 para evitar eliminación prematura
-        const newConductor = {
-          ...conductor,
-          count: Math.max(conductor.count, 1), // Garantizar mínimo 1
-          isLoadingHistory: true, // Solo nuevos conductores necesitan historial
-          isProcessing: false, // Inicialmente no está siendo procesado
-          detectedAt: new Date().toISOString(), // Timestamp de detección
-        };
-
-        combinedMap.set(conductor.conductorId, newConductor);
-
-        console.log(
-          `🆕 NUEVO CONDUCTOR DETECTADO: ${
-            conductor.nombre
-          } - Count inicial: ${Math.max(conductor.count, 1)} (original: ${
-            conductor.count
-          })`
-        );
-      }
-    });
-
-    // CRÍTICO: Filtrar conductores persistentes que no tengan datos de hoy
-    // Solo remover si el lastTime/addedAt no es de hoy
-    const today = new Date();
-    const todayDateString = today.toDateString();
-
-    const finalMap = new Map();
-
-    combinedMap.forEach((conductor, conductorId) => {
-      // Verificar si el conductor tiene datos del día actual
-      const conductorDate = conductor.lastTime
-        ? new Date(conductor.lastTime).toDateString()
-        : conductor.addedAt
-        ? new Date(conductor.addedAt).toDateString()
-        : todayDateString; // Default a hoy si no hay fecha
-
-      // Solo mantener conductores del día actual
-      if (conductorDate === todayDateString) {
-        finalMap.set(conductorId, conductor);
-      } else {
-        console.log(
-          `🗑️ Eliminando conductor de día anterior: ${conductor.nombre} (${conductorDate})`
-        );
-      }
-    });
-
-    const result = Array.from(finalMap.values());
-
-    console.log("🎯 FASE 2: Ranking combinado:", result.length, "conductores");
-    console.log(
-      "📊 PERSISTENTES:",
-      persistentData.length,
-      "| TIEMPO REAL:",
-      realtimeData.length,
-      "| FINAL:",
-      result.length
-    );
-    result.forEach((c) => {
-      const status = c.isLoadingHistory
-        ? "(🔄 cargando...)"
-        : c.lastHistoryUpdate
-        ? "(✅ procesado)"
-        : "(📦 persistente)";
-      console.log(
-        `  • ${c.nombre}: ${c.count} preavisos ${status} [${c.conductorId}]`
-      );
-    });
-
-    return result;
-  }, [
-    markersData,
-    isInitialized,
-    aggressiveStates,
-    normalizeString,
+  // ETAPA 3: Actualizar refs con funciones estables incluyendo sistema centralizado
+  stableFunctionsRef.current = {
     getConductorInfo,
-    state.aggressiveDrivingHistory,
-  ]);
+    fetchConductorHistorialCount,
+    saveRankingToStorage,
+    updateAggressiveHistory,
+    debouncedSaveToStorage,
+  };
 
-  // Ordenar ranking - FASE 1: Por defecto ordenar por count (ranking)
+  // ETAPA 3: Ordenar ranking optimizado
   const sortedAggressiveDriving = useMemo(() => {
     const conductors = [...aggressiveDrivingRanking];
 
@@ -951,7 +1055,7 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
   useEffect(() => {
     if (state.user && isInitialized && state.aggressiveDrivingHistory) {
       console.log(
-        "💾 GUARDANDO en localStorage:",
+        "💾 ETAPA 3: Sincronización con localStorage usando sistema debounced:",
         state.aggressiveDrivingHistory.length,
         "conductores"
       );
@@ -965,11 +1069,12 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
         );
       });
 
-      saveRankingToStorage(state.aggressiveDrivingHistory);
+      // Usar el sistema debounced en lugar de guardado directo
+      debouncedSaveToStorage(state.aggressiveDrivingHistory);
     }
   }, [
     state.aggressiveDrivingHistory,
-    saveRankingToStorage,
+    debouncedSaveToStorage,
     state.user,
     isInitialized,
   ]);
@@ -993,9 +1098,9 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     }
   }, [needsRefresh, isInitialized]); // DEPENDENCIAS MÍNIMAS - Sin state.aggressiveDrivingHistory
 
-  // FASE 2: Procesar nuevos conductores UNA SOLA VEZ (evita bucles infinitos)
+  // ETAPA 2: useEffect optimizado para procesar nuevos conductores (SIN bucles infinitos)
   useEffect(() => {
-    console.log("🔔 USEEFFECT DISPARADO - Procesar nuevos conductores");
+    console.log("🔔 USEEFFECT OPTIMIZADO - Procesar nuevos conductores");
 
     if (!isInitialized) {
       console.log("⏹️ No inicializado, saliendo");
@@ -1010,8 +1115,16 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
       return;
     }
 
+    // CRÍTICO: Usar ref para obtener datos actuales sin crear dependencias
+    const currentRanking = aggressiveDrivingRankingRef.current;
+
+    if (!currentRanking || currentRanking.length === 0) {
+      console.log("⏭️ No hay datos en el ranking, saliendo");
+      return;
+    }
+
     // CRÍTICO: Solo detectar conductores que REALMENTE son nuevos y nunca fueron procesados
-    const newConductors = aggressiveDrivingRanking.filter(
+    const newConductors = currentRanking.filter(
       (conductor) =>
         conductor.isLoadingHistory &&
         conductor.fromRealtime &&
@@ -1023,7 +1136,7 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
 
     if (newConductors.length === 0) {
       console.log(
-        "⏭️ FASE 2: No hay conductores nuevos que requieran procesamiento"
+        "⏭️ ETAPA 2: No hay conductores nuevos que requieran procesamiento"
       );
       return;
     }
@@ -1032,7 +1145,7 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     const now = Date.now();
     if (now - lastProcessTimeRef.current < 3000) {
       console.log(
-        `⏸️ FASE 2: Throttling activo, esperando ${
+        `⏸️ ETAPA 2: Throttling activo, esperando ${
           3000 - (now - lastProcessTimeRef.current)
         }ms más`
       );
@@ -1046,7 +1159,7 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     lastProcessTimeRef.current = now;
 
     console.log(
-      `🔄 FASE 2: ${newConductors.length} conductores necesitan historial (ejecutando API calls):`
+      `🔄 ETAPA 2: ${newConductors.length} conductores necesitan historial (ejecutando API calls):`
     );
     newConductors.forEach((c) => {
       console.log(
@@ -1066,16 +1179,25 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
       return newSet;
     });
 
-    // Procesar cada conductor de forma secuencial
+    // ETAPA 3: Usar sistema centralizado para actualizaciones
     const processConductorsSequentially = async () => {
       try {
+        // Usar funciones desde refs para evitar dependencias
+        const {
+          getConductorInfo,
+          fetchConductorHistorialCount,
+          updateAggressiveHistory,
+        } = stableFunctionsRef.current;
+
+        const batchUpdates = [];
+
         for (const conductor of newConductors) {
           if (conductor.lastUnit) {
             const conductorInfo = getConductorInfo(conductor.lastUnit);
 
             if (conductorInfo) {
               console.log(
-                `🆕 FASE 2: ⚡ EJECUTANDO API CALL para conductor: ${conductor.nombre}`
+                `🆕 ETAPA 3: ⚡ EJECUTANDO API CALL para conductor: ${conductor.nombre}`
               );
 
               try {
@@ -1084,7 +1206,7 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
                   conductorInfo
                 );
 
-                // CRÍTICO: Obtener el count actual del conductor para no perder datos
+                // Obtener el count actual del conductor para no perder datos
                 const currentRanking = [
                   ...(state.aggressiveDrivingHistory || []),
                 ];
@@ -1092,7 +1214,6 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
                   (item) => item.conductorId === conductor.conductorId
                 );
 
-                // Calcular el count final: MÁXIMO entre API y count actual en tiempo real
                 const currentCount =
                   updateIndex >= 0
                     ? currentRanking[updateIndex].count
@@ -1100,45 +1221,28 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
                 const finalCount = Math.max(totalCount, currentCount, 1);
 
                 console.log(
-                  `🔢 FASE 2: Calculando count final para ${conductor.nombre}:`
+                  `🔢 ETAPA 3: Calculando count final para ${conductor.nombre}:`
                 );
                 console.log(`  - API historial: ${totalCount}`);
                 console.log(`  - Count actual: ${currentCount}`);
                 console.log(`  - Count final: ${finalCount}`);
 
-                if (updateIndex >= 0) {
-                  currentRanking[updateIndex] = {
-                    ...currentRanking[updateIndex],
-                    count: finalCount, // USAR EL MÁXIMO CALCULADO
+                // Preparar actualización para batch
+                batchUpdates.push({
+                  conductorId: conductor.conductorId,
+                  data: {
+                    count: finalCount,
                     isLoadingHistory: false,
                     isProcessing: false,
                     lastHistoryUpdate: new Date().toISOString(),
-                  };
-                } else {
-                  // Agregar nuevo conductor al ranking con todos los datos
-                  currentRanking.push({
-                    ...conductor,
-                    count: finalCount, // USAR EL MÁXIMO CALCULADO
-                    isLoadingHistory: false,
-                    isProcessing: false,
-                    lastHistoryUpdate: new Date().toISOString(),
-                    addedAt: new Date().toISOString(),
-                  });
-                }
-
-                dispatch({
-                  type: "SET_AGRESSIVE_HISTORY",
-                  payload: currentRanking,
+                    addedAt:
+                      updateIndex < 0 ? new Date().toISOString() : undefined,
+                  },
+                  action: updateIndex >= 0 ? "update" : "upsert",
                 });
 
-                // CRÍTICO: Guardar inmediatamente en localStorage después de actualizar
                 console.log(
-                  `💾 GUARDANDO INMEDIATAMENTE ${conductor.nombre} con count ${finalCount} en localStorage`
-                );
-                saveRankingToStorage(currentRanking);
-
-                console.log(
-                  `✅ FASE 2: API CALL COMPLETADA para ${conductor.nombre} - Count final: ${finalCount} (API: ${totalCount}, Actual: ${currentCount})`
+                  `✅ ETAPA 3: API CALL COMPLETADA para ${conductor.nombre} - Count final: ${finalCount}`
                 );
               } catch (error) {
                 console.error(
@@ -1146,34 +1250,17 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
                   error
                 );
 
-                // IMPORTANTE: Marcar como no cargando SIEMPRE, incluso en error
-                const errorRanking = [
-                  ...(state.aggressiveDrivingHistory || []),
-                ];
-                const errorIndex = errorRanking.findIndex(
-                  (item) => item.conductorId === conductor.conductorId
-                );
-
-                if (errorIndex >= 0) {
-                  errorRanking[errorIndex] = {
-                    ...errorRanking[errorIndex],
+                // Preparar actualización de error para batch
+                batchUpdates.push({
+                  conductorId: conductor.conductorId,
+                  data: {
                     isLoadingHistory: false,
                     isProcessing: false,
                     lastHistoryUpdate: new Date().toISOString(),
-                    count: Math.max(errorRanking[errorIndex].count || 1, 1), // GARANTIZAR MÍNIMO 1
-                  };
-
-                  dispatch({
-                    type: "SET_AGRESSIVE_HISTORY",
-                    payload: errorRanking,
-                  });
-
-                  // CRÍTICO: Guardar también en caso de error
-                  console.log(
-                    `💾 GUARDANDO EN ERROR ${conductor.nombre} en localStorage`
-                  );
-                  saveRankingToStorage(errorRanking);
-                }
+                    count: Math.max(conductor.count || 1, 1),
+                  },
+                  action: "update",
+                });
               } finally {
                 // Remover del loading set
                 setLoadingHistoryIds((prev) => {
@@ -1186,7 +1273,6 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
               console.warn(
                 `⚠️ No se pudo obtener conductor info para ${conductor.nombre}`
               );
-              // Remover del loading set si no se puede procesar
               setLoadingHistoryIds((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(conductor.conductorId);
@@ -1195,30 +1281,47 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
             }
           }
 
-          // Pausa entre conductores para no sobrecargar
+          // Pausa entre conductores
           await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        // Aplicar todas las actualizaciones de una vez
+        if (batchUpdates.length > 0) {
+          const result = updateAggressiveHistory(
+            batchUpdates,
+            "batch_process_new_conductors"
+          );
+          if (result.success) {
+            console.log(
+              `✅ ETAPA 3: Procesamiento batch completado exitosamente - ${batchUpdates.length} actualizaciones`
+            );
+          } else {
+            console.error(
+              `❌ ETAPA 3: Error en procesamiento batch:`,
+              result.error
+            );
+          }
         }
       } finally {
         // LIBERAR LOCK GLOBAL SIEMPRE
         isProcessingRef.current = false;
-        console.log("🔓 LOCK GLOBAL LIBERADO - Procesamiento completado");
+        console.log(
+          "🔓 ETAPA 3: LOCK GLOBAL LIBERADO - Procesamiento completado"
+        );
       }
     };
 
     processConductorsSequentially();
 
     console.log(
-      `✅ FASE 2: Iniciado procesamiento de ${newConductors.length} conductores`
+      `✅ ETAPA 2: Iniciado procesamiento de ${newConductors.length} conductores`
     );
   }, [
-    aggressiveDrivingRanking,
     isInitialized,
-    getConductorInfo,
-    fetchConductorHistorialCount,
-    saveRankingToStorage,
-    state.aggressiveDrivingHistory,
+    loadingHistoryIds,
     dispatch,
-  ]); // AGREGAR DEPENDENCIAS NECESARIAS
+    state.aggressiveDrivingHistory,
+  ]); // DEPENDENCIAS MÍNIMAS Y ESTABLES
 
   // Renderizar contenido específico de conducción agresiva - FASE 2: Con estados de carga
   const renderContent = ({ onUnitSelect, handleClose }) => (
