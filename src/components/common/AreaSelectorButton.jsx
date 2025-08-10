@@ -422,7 +422,7 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
       borderRadius: "24px",
       boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
       backgroundColor: "white",
-      display: "flex",
+      display: { xs: "none", sm: "flex" }, // Ocultar en móvil, mostrar en desktop
       alignItems: "center",
       zIndex: 1000,
       overflow: "hidden",
