@@ -149,16 +149,24 @@ const useConductorCache = (markersData, aggressiveStates) => {
         const url = `/api/servicio/historico.php/historico?movil=${unit.Movil_ID}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}`;
 
         console.log(
-          `🔍 API Call para ${conductorInfo.displayName} (${unit.Movil_ID})`
+          `🔍 EJECUTANDO API CALL para ${conductorInfo.displayName}:`
         );
+        console.log(`    URL: ${url}`);
+        console.log(`    Movil_ID: ${unit.Movil_ID}`);
+        console.log(`    Rango: ${fechaInicial} a ${fechaFinal}`);
 
         const response = await fetch(url);
+
+        console.log(`📡 Response status: ${response.status}`);
+
         if (!response.ok) {
           console.warn(`⚠️ Error HTTP ${response.status} - usando fallback`);
           return 1;
         }
 
         const data = await response.json();
+        console.log(`📦 Data recibida:`, data);
+
         const historicalData = data.Historico || data;
 
         if (!Array.isArray(historicalData) || historicalData.length === 0) {
@@ -187,13 +195,14 @@ const useConductorCache = (markersData, aggressiveStates) => {
 
             if (esPreaviso) {
               totalPreavisos++;
+              console.log(`🎯 Preaviso encontrado en historial: ${event.evn}`);
             }
           }
         });
 
         const finalCount = Math.max(totalPreavisos, 1);
         console.log(
-          `✅ Count final para ${conductorInfo.displayName}: ${finalCount}`
+          `✅ Count final para ${conductorInfo.displayName}: ${finalCount} (historial: ${totalPreavisos})`
         );
         return finalCount;
       } catch (error) {
@@ -245,7 +254,7 @@ const useConductorCache = (markersData, aggressiveStates) => {
         // Actualizar contexto global
         const contextData = Array.from(currentCache.values());
         dispatch({
-          type: "SET_AGGRESSIVE_HISTORY",
+          type: "SET_AGRESSIVE_HISTORY",
           payload: contextData,
         });
 
@@ -396,20 +405,42 @@ const useConductorCache = (markersData, aggressiveStates) => {
       return;
     }
 
-    // Throttling: no procesar más de una vez cada 3 segundos
+    // REDUCIR THROTTLING: cambiar de 3000ms a 1000ms para más responsividad
     const now = Date.now();
-    if (now - lastProcessTimeRef.current < 3000) {
+    if (now - lastProcessTimeRef.current < 1000) {
       console.log("⏸️ Throttling activo, esperando");
       return;
     }
 
     const currentCache = cacheRef.current;
+
+    // CORREGIR FILTRO: No excluir conductores que están en loadingConductors
+    // porque pueden ser nuevos que necesitan procesamiento inicial
     const newConductors = Array.from(currentCache.values()).filter(
       (conductor) =>
         conductor.needsHistoryFetch &&
         conductor.isLoading &&
-        !processedConductorsRef.current.has(conductor.conductorId) &&
-        !loadingConductors.has(conductor.conductorId)
+        !processedConductorsRef.current.has(conductor.conductorId)
+      // REMOVIDO: && !loadingConductors.has(conductor.conductorId)
+    );
+
+    console.log(`🔍 FILTROS APLICADOS:`);
+    console.log(`    Total conductores en cache: ${currentCache.size}`);
+    console.log(
+      `    Con needsHistoryFetch: ${
+        Array.from(currentCache.values()).filter((c) => c.needsHistoryFetch)
+          .length
+      }`
+    );
+    console.log(
+      `    Con isLoading: ${
+        Array.from(currentCache.values()).filter((c) => c.isLoading).length
+      }`
+    );
+    console.log(`    Ya procesados: ${processedConductorsRef.current.size}`);
+    console.log(`    En loadingSet: ${loadingConductors.size}`);
+    console.log(
+      `    Resultado final: ${newConductors.length} conductores para procesar`
     );
 
     if (newConductors.length === 0) {
@@ -417,7 +448,27 @@ const useConductorCache = (markersData, aggressiveStates) => {
       return;
     }
 
-    console.log(`🔄 Procesando ${newConductors.length} conductores nuevos`);
+    console.log(
+      `🔄 INICIANDO PROCESAMIENTO de ${newConductors.length} conductores nuevos`
+    );
+
+    // LOG DETALLADO para debugging
+    newConductors.forEach((conductor, index) => {
+      console.log(
+        `  ${index + 1}. ${conductor.nombre} (ID: ${conductor.conductorId})`
+      );
+      console.log(`     - needsHistoryFetch: ${conductor.needsHistoryFetch}`);
+      console.log(`     - isLoading: ${conductor.isLoading}`);
+      console.log(`     - lastUnit:`, conductor.lastUnit ? "✅" : "❌");
+      console.log(
+        `     - ya procesado: ${processedConductorsRef.current.has(
+          conductor.conductorId
+        )}`
+      );
+      console.log(
+        `     - en loadingSet: ${loadingConductors.has(conductor.conductorId)}`
+      );
+    });
 
     // Activar lock y actualizar timestamp
     isProcessingRef.current = true;
@@ -428,7 +479,7 @@ const useConductorCache = (markersData, aggressiveStates) => {
       processedConductorsRef.current.add(c.conductorId);
     });
 
-    // Marcar como en carga
+    // Marcar como en carga (si no están ya)
     setLoadingConductors((prev) => {
       const newSet = new Set(prev);
       newConductors.forEach((c) => newSet.add(c.conductorId));
@@ -444,11 +495,18 @@ const useConductorCache = (markersData, aggressiveStates) => {
 
           if (conductorInfo) {
             try {
-              console.log(`🆕 API Call para: ${conductor.nombre}`);
+              console.log(`🆕 EJECUTANDO API CALL para: ${conductor.nombre}`);
+              console.log(
+                `    URL será: /api/servicio/historico.php/historico?movil=${conductor.lastUnit.Movil_ID}`
+              );
 
               const historyCount = await fetchConductorHistory(
                 conductor.lastUnit,
                 conductorInfo
+              );
+
+              console.log(
+                `✅ API CALL COMPLETADA para ${conductor.nombre} - Resultado: ${historyCount}`
               );
 
               const finalCount = Math.max(
@@ -492,11 +550,17 @@ const useConductorCache = (markersData, aggressiveStates) => {
                 return newSet;
               });
             }
+          } else {
+            console.warn(
+              `⚠️ No se pudo obtener conductorInfo para ${conductor.nombre}`
+            );
           }
+        } else {
+          console.warn(`⚠️ No hay lastUnit para ${conductor.nombre}`);
         }
 
-        // Pausa entre conductores
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // REDUCIR PAUSA: de 500ms a 200ms para mayor responsividad
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
       // Aplicar todas las actualizaciones
@@ -509,7 +573,7 @@ const useConductorCache = (markersData, aggressiveStates) => {
     } finally {
       // Liberar lock siempre
       isProcessingRef.current = false;
-      console.log("🔓 Lock liberado");
+      console.log("🔓 Lock liberado - Procesamiento completado");
     }
   }, [getConductorInfo, fetchConductorHistory, updateCache, loadingConductors]);
 
@@ -628,7 +692,7 @@ const useConductorCache = (markersData, aggressiveStates) => {
 
         // Actualizar contexto
         dispatch({
-          type: "SET_AGGRESSIVE_HISTORY",
+          type: "SET_AGRESSIVE_HISTORY",
           payload: validData,
         });
 
@@ -660,16 +724,47 @@ const useConductorCache = (markersData, aggressiveStates) => {
     }
   }, [isInitialized, detectRealtimeConductors, mergeRealtimeWithCache]);
 
-  // Procesamiento de nuevos conductores
+  // Procesamiento de nuevos conductores - REDUCIR DELAY
   useEffect(() => {
     if (!isInitialized) return;
 
     const timer = setTimeout(() => {
       processNewConductors();
-    }, 1000); // Delay para evitar múltiples ejecuciones
+    }, 500); // Cambio aquí: de 1000ms a 500ms
 
     return () => clearTimeout(timer);
   }, [isInitialized, processNewConductors]);
+
+  // AGREGAR NUEVO EFECTO para debugging del cache
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const currentCache = Array.from(cacheRef.current.values());
+    const needsProcessing = currentCache.filter(
+      (c) => c.needsHistoryFetch && c.isLoading
+    );
+
+    if (needsProcessing.length > 0) {
+      console.log(
+        `🔍 DEBUGGING CACHE - ${needsProcessing.length} conductores necesitan procesamiento:`
+      );
+      needsProcessing.forEach((conductor, index) => {
+        console.log(`  ${index + 1}. ${conductor.nombre}:`);
+        console.log(`     - needsHistoryFetch: ${conductor.needsHistoryFetch}`);
+        console.log(`     - isLoading: ${conductor.isLoading}`);
+        console.log(
+          `     - en processedRef: ${processedConductorsRef.current.has(
+            conductor.conductorId
+          )}`
+        );
+        console.log(
+          `     - en loadingSet: ${loadingConductors.has(
+            conductor.conductorId
+          )}`
+        );
+      });
+    }
+  }, [cacheRef.current, isInitialized, loadingConductors]);
 
   // Refresh automático al inicializar
   useEffect(() => {
@@ -720,13 +815,15 @@ const useConductorCache = (markersData, aggressiveStates) => {
               updateCache([
                 {
                   conductorId,
-                  data: {
-                    count: Math.max(updatedCount, 1),
-                    lastHistoryUpdate: new Date().toISOString(),
-                  },
+                  data: { count: Math.max(updatedCount, 1) },
                   action: "upsert",
                 },
               ]);
+            } catch (error) {
+              console.error(
+                `Error refrescando conductor ${conductorId}:`,
+                error
+              );
             } finally {
               setLoadingConductors((prev) => {
                 const newSet = new Set(prev);
@@ -737,17 +834,14 @@ const useConductorCache = (markersData, aggressiveStates) => {
           }
         }
       },
-      [getConductorInfo, fetchConductorHistory, updateCache]
+      [fetchConductorHistory, getConductorInfo, updateCache]
     ),
 
-    refreshAll: refreshAllConductors,
-    clearCache: useCallback(() => {
-      cacheRef.current.clear();
-      processedConductorsRef.current.clear();
-      setLoadingConductors(new Set());
-      saveToStorage(new Map());
-      dispatch({ type: "SET_AGGRESSIVE_HISTORY", payload: [] });
-    }, [saveToStorage, dispatch]),
+    refreshAll: useCallback(() => {
+      if (isInitialized) {
+        refreshAllConductors();
+      }
+    }, [isInitialized, refreshAllConductors]),
   };
 };
 

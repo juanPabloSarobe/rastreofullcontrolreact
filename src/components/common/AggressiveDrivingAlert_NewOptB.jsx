@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Box,
   List,
@@ -177,6 +177,41 @@ const AggressiveDrivingAlert = ({ markersData, onUnitSelect }) => {
     refreshConductor,
     refreshAll,
   } = useConductorCache(markersData, aggressiveStates);
+
+  // AGREGAR DEBUGGING TEMPORAL - REMOVER EN PRODUCCIÓN
+  useEffect(() => {
+    console.log("🔍 DEBUGGING COMPONENT STATE:");
+    console.log("  - conductors:", conductors.length);
+    console.log("  - loadingConductors:", loadingConductors.size);
+    console.log("  - isInitialized:", isInitialized);
+    console.log("  - markersData count:", markersData ? markersData.length : 0);
+
+    if (conductors.length > 0) {
+      console.log("📋 CONDUCTORES ACTUALES:");
+      conductors.forEach((conductor, index) => {
+        console.log(`  ${index + 1}. ${conductor.nombre}:`);
+        console.log(`     - count: ${conductor.count}`);
+        console.log(`     - isLoading: ${conductor.isLoading}`);
+        console.log(`     - needsHistoryFetch: ${conductor.needsHistoryFetch}`);
+        console.log(
+          `     - lastHistoryUpdate: ${conductor.lastHistoryUpdate || "NO"}`
+        );
+        console.log(
+          `     - en loadingSet: ${loadingConductors.has(
+            conductor.conductorId
+          )}`
+        );
+      });
+    }
+
+    // Log específico cuando hay loading pero sin conductores visibles
+    if (loadingConductors.size > 0 && conductors.length === 0) {
+      console.log(
+        "⚠️ SITUACIÓN ANÓMALA: Hay conductores cargando pero ninguno visible"
+      );
+      console.log("    loadingConductors:", Array.from(loadingConductors));
+    }
+  }, [conductors, loadingConductors, isInitialized, markersData]);
 
   // Funciones de utilidad simples (movidas del hook)
   const determineAggressiveSeverity = useCallback((count) => {
