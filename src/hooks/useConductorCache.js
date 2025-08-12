@@ -20,12 +20,16 @@ const useConductorCache = (markersData, aggressiveStates) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [loadingConductors, setLoadingConductors] = useState(new Set());
   const [needsRefresh, setNeedsRefresh] = useState(false);
+  // Nuevo: señal de pendientes para disparar procesamiento basado en eventos
+  const [pendingSignal, setPendingSignal] = useState(0);
 
   // Refs para control interno
   const processedConductorsRef = useRef(new Set());
   const isProcessingRef = useRef(false);
   const lastProcessTimeRef = useRef(0);
   const cacheRef = useRef(new Map());
+  // Nuevo: cola de conductores pendientes de obtener historial
+  const pendingQueueRef = useRef(new Set());
 
   // ==================== UTILIDADES ====================
 
@@ -355,24 +359,35 @@ const useConductorCache = (markersData, aggressiveStates) => {
         const existing = currentCache.get(conductor.conductorId);
 
         if (existing) {
-          // Conductor existente: actualizar con datos más recientes
-          const finalCount = Math.max(
-            existing.count || 1,
-            conductor.count || 1
-          );
+          // Si llega un evento más reciente, actualizar y encolar para reprocesar historial
+          const isNewer =
+            new Date(conductor.lastTime).getTime() >
+            new Date(existing.lastTime || 0).getTime();
 
-          updates.push({
-            conductorId: conductor.conductorId,
-            data: {
-              ...existing,
-              lastUnit: conductor.lastUnit,
-              lastTime: conductor.lastTime,
-              count: finalCount,
-            },
-            action: "upsert",
-          });
+          if (isNewer) {
+            updates.push({
+              conductorId: conductor.conductorId,
+              data: {
+                // mantener datos existentes
+                ...existing,
+                // actualizar referencia del último evento
+                lastUnit: conductor.lastUnit,
+                lastTime: conductor.lastTime,
+                // disparar reproceso
+                needsHistoryFetch: true,
+                isLoading: true,
+                // no tocar count aquí: se actualizará con la API
+              },
+              action: "upsert",
+            });
+
+            // Encolar para procesamiento basado en eventos
+            pendingQueueRef.current.add(conductor.conductorId);
+            setPendingSignal((s) => s + 1);
+          }
+          // Si no es más reciente, no hacemos nada para no pisar el count consolidado
         } else {
-          // Nuevo conductor: marcar para procesamiento
+          // Nuevo conductor: marcar para procesamiento y encolar
           updates.push({
             conductorId: conductor.conductorId,
             data: {
@@ -384,6 +399,10 @@ const useConductorCache = (markersData, aggressiveStates) => {
             },
             action: "upsert",
           });
+
+          // Encolar para procesamiento basado en eventos
+          pendingQueueRef.current.add(conductor.conductorId);
+          setPendingSignal((s) => s + 1);
         }
       });
 
@@ -412,17 +431,27 @@ const useConductorCache = (markersData, aggressiveStates) => {
       return;
     }
 
-    const currentCache = cacheRef.current;
+    // Tomar snapshot de la cola de pendientes y vaciarla para esta corrida
+    const queuedIdsSnapshot = new Set(pendingQueueRef.current);
+    pendingQueueRef.current.clear();
 
-    // CORREGIR FILTRO: No excluir conductores que están en loadingConductors
-    // porque pueden ser nuevos que necesitan procesamiento inicial
-    const newConductors = Array.from(currentCache.values()).filter(
-      (conductor) =>
-        conductor.needsHistoryFetch &&
-        conductor.isLoading &&
-        !processedConductorsRef.current.has(conductor.conductorId)
-      // REMOVIDO: && !loadingConductors.has(conductor.conductorId)
-    );
+    // Elegir candidatos: si hay snapshot, procesar solo esos; si no, usar fallback por flags
+    const currentCache = cacheRef.current;
+    const candidates =
+      queuedIdsSnapshot.size > 0
+        ? Array.from(currentCache.values()).filter(
+            (conductor) =>
+              queuedIdsSnapshot.has(conductor.conductorId) &&
+              conductor.needsHistoryFetch &&
+              conductor.isLoading &&
+              !processedConductorsRef.current.has(conductor.conductorId)
+          )
+        : Array.from(currentCache.values()).filter(
+            (conductor) =>
+              conductor.needsHistoryFetch &&
+              conductor.isLoading &&
+              !processedConductorsRef.current.has(conductor.conductorId)
+          );
 
     console.log(`🔍 FILTROS APLICADOS:`);
     console.log(`    Total conductores en cache: ${currentCache.size}`);
@@ -439,21 +468,22 @@ const useConductorCache = (markersData, aggressiveStates) => {
     );
     console.log(`    Ya procesados: ${processedConductorsRef.current.size}`);
     console.log(`    En loadingSet: ${loadingConductors.size}`);
+    console.log(`    En cola snapshot: ${queuedIdsSnapshot.size}`);
     console.log(
-      `    Resultado final: ${newConductors.length} conductores para procesar`
+      `    Resultado final: ${candidates.length} conductores para procesar`
     );
 
-    if (newConductors.length === 0) {
+    if (candidates.length === 0) {
       console.log("⏭️ No hay conductores nuevos para procesar");
       return;
     }
 
     console.log(
-      `🔄 INICIANDO PROCESAMIENTO de ${newConductors.length} conductores nuevos`
+      `🔄 INICIANDO PROCESAMIENTO de ${candidates.length} conductores nuevos`
     );
 
     // LOG DETALLADO para debugging
-    newConductors.forEach((conductor, index) => {
+    candidates.forEach((conductor, index) => {
       console.log(
         `  ${index + 1}. ${conductor.nombre} (ID: ${conductor.conductorId})`
       );
@@ -475,21 +505,21 @@ const useConductorCache = (markersData, aggressiveStates) => {
     lastProcessTimeRef.current = now;
 
     // Marcar como procesados inmediatamente
-    newConductors.forEach((c) => {
+    candidates.forEach((c) => {
       processedConductorsRef.current.add(c.conductorId);
     });
 
     // Marcar como en carga (si no están ya)
     setLoadingConductors((prev) => {
       const newSet = new Set(prev);
-      newConductors.forEach((c) => newSet.add(c.conductorId));
+      candidates.forEach((c) => newSet.add(c.conductorId));
       return newSet;
     });
 
     try {
       const batchUpdates = [];
 
-      for (const conductor of newConductors) {
+      for (const conductor of candidates) {
         if (conductor.lastUnit) {
           const conductorInfo = getConductorInfo(conductor.lastUnit);
 
@@ -549,6 +579,8 @@ const useConductorCache = (markersData, aggressiveStates) => {
                 newSet.delete(conductor.conductorId);
                 return newSet;
               });
+              // Permitir reprocesos futuros del mismo conductor
+              processedConductorsRef.current.delete(conductor.conductorId);
             }
           } else {
             console.warn(
@@ -626,6 +658,8 @@ const useConductorCache = (markersData, aggressiveStates) => {
               data: {
                 count: Math.max(updatedCount, conductor.count || 1, 1),
                 lastHistoryUpdate: new Date().toISOString(),
+                needsHistoryFetch: false,
+                isLoading: false,
               },
               action: "upsert",
             });
@@ -663,6 +697,9 @@ const useConductorCache = (markersData, aggressiveStates) => {
     isProcessingRef.current = false;
     lastProcessTimeRef.current = 0;
     setLoadingConductors(new Set());
+    // Limpiar cola y señal
+    pendingQueueRef.current.clear();
+    setPendingSignal(0);
 
     // Cargar datos persistentes
     const storedData = loadFromStorage();
@@ -724,16 +761,14 @@ const useConductorCache = (markersData, aggressiveStates) => {
     }
   }, [isInitialized, detectRealtimeConductors, mergeRealtimeWithCache]);
 
-  // Procesamiento de nuevos conductores - REDUCIR DELAY
+  // Nuevo: procesamiento basado en eventos (cola + señal)
   useEffect(() => {
     if (!isInitialized) return;
+    if (isProcessingRef.current) return;
+    if (pendingQueueRef.current.size === 0) return;
 
-    const timer = setTimeout(() => {
-      processNewConductors();
-    }, 500); // Cambio aquí: de 1000ms a 500ms
-
-    return () => clearTimeout(timer);
-  }, [isInitialized, processNewConductors]);
+    processNewConductors();
+  }, [isInitialized, pendingSignal, processNewConductors]);
 
   // AGREGAR NUEVO EFECTO para debugging del cache
   useEffect(() => {
@@ -815,7 +850,12 @@ const useConductorCache = (markersData, aggressiveStates) => {
               updateCache([
                 {
                   conductorId,
-                  data: { count: Math.max(updatedCount, 1) },
+                  data: {
+                    count: Math.max(updatedCount, 1),
+                    needsHistoryFetch: false,
+                    isLoading: false,
+                    lastHistoryUpdate: new Date().toISOString(),
+                  },
                   action: "upsert",
                 },
               ]);
