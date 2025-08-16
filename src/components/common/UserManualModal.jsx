@@ -19,6 +19,9 @@ import {
   Card,
   CardContent,
   Link,
+  Drawer,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -35,6 +38,7 @@ import {
   Security as SecurityIcon,
   Update as UpdateIcon,
   CropFree as CropFreeIcon,
+  Menu as MenuIcon,
 } from "@mui/icons-material";
 
 const UserManualModal = ({ open, onClose }) => {
@@ -44,6 +48,7 @@ const UserManualModal = ({ open, onClose }) => {
     reportes: false,
     soporte: false,
   });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -52,6 +57,13 @@ const UserManualModal = ({ open, onClose }) => {
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  const handleSectionSelect = (sectionId) => {
+    setSelectedSection(sectionId);
+    if (isMobile) {
+      setMobileMenuOpen(false);
+    }
   };
 
   const menuSections = [
@@ -83,6 +95,10 @@ const UserManualModal = ({ open, onClose }) => {
         { id: "informacion-detallada", title: "Información Detallada" },
         { id: "alertas-ralenti", title: "⭐ Alertas de Ralentí" },
         { id: "alertas-infracciones", title: "🚨 Alertas de Infracciones" },
+        {
+          id: "alertas-conduccion-agresiva",
+          title: "🟣 Alertas de Conducción Agresiva",
+        },
         { id: "tipos-mapas", title: "Tipos de Mapas" },
       ],
     },
@@ -993,7 +1009,7 @@ const UserManualModal = ({ open, onClose }) => {
                   </li>
                   <li>
                     <Typography variant="body2">
-                      <strong>Tiempo objetivo:</strong> Máximo 3-5 minutos en
+                      <strong>Tiempo objetivo:</strong> Máximo 3-5 minutos in
                       ralentí por parada
                     </Typography>
                   </li>
@@ -1350,6 +1366,139 @@ const UserManualModal = ({ open, onClose }) => {
                     </Typography>
                   </li>
                 </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "alertas-conduccion-agresiva":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: "bold" }}
+            >
+              🟣 Alertas de Conducción Agresiva ⭐ NUEVO
+            </Typography>
+
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: "rgba(156, 39, 176, 0.1)",
+                border: "1px solid",
+                borderColor: "#9c27b0",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#9c27b0" }}>
+                  🎯 ¿Qué es el Sistema de Alertas de Conducción Agresiva?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El sistema detecta automáticamente conductores que acumulan
+                  múltiples preavisos de manejo agresivo durante el día,
+                  permitiendo identificar patrones de conducta no defensiva y
+                  tomar medidas preventivas para mejorar la seguridad vial.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#9c27b0" }}>
+                  🎨 Sistema de Colores por Severidad
+                </Typography>
+                <Box sx={{ display: "grid", gap: 2 }}>
+                  <Box
+                    sx={{
+                      p: 1,
+                      bgcolor: "rgba(76, 175, 80, 0.1)",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#4caf50", fontWeight: "bold" }}
+                    >
+                      🟢 Nivel Bajo (Menos de 10 preavisos)
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      p: 1,
+                      bgcolor: "rgba(255, 152, 0, 0.1)",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#f57c00", fontWeight: "bold" }}
+                    >
+                      🟡 Nivel Medio (10-14 preavisos)
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      p: 1,
+                      bgcolor: "rgba(211, 47, 47, 0.1)",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#d32f2f", fontWeight: "bold" }}
+                    >
+                      🔴 Nivel Alto (15+ preavisos)
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#9c27b0" }}>
+                  📋 Información del Ranking
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Nombre del conductor</strong> con número de
+                  preavisos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Hora del último preaviso</strong> en tiempo real
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Vehículo actual</strong> (patente y marca)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Reset automático</strong> diario a las 00:00
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "rgba(156, 39, 176, 0.1)",
+                border: "1px solid #9c27b0",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#9c27b0" }}>
+                  💡 Casos de Uso
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Supervisores:</strong> Identificación temprana de
+                  conductores de riesgo
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>RRHH:</strong> Evaluaciones objetivas y programas de
+                  capacitación
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Seguridad:</strong> Prevención proactiva de
+                  infracciones y accidentes
+                </Typography>
               </CardContent>
             </Card>
           </Box>
@@ -2175,7 +2324,7 @@ const UserManualModal = ({ open, onClose }) => {
                 <Typography variant="body2" paragraph>
                   • Cierre sesión al terminar de usar el sistema
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" paragraph>
                   • Guarde reportes importantes en su dispositivo
                 </Typography>
               </CardContent>
@@ -2337,480 +2486,9 @@ const UserManualModal = ({ open, onClose }) => {
                   • <strong>Análisis de datos:</strong> Use filtros y tablas
                   dinámicas para análisis avanzados
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" paragraph>
                   • <strong>Tiempo de descarga:</strong> Depende del período
                   seleccionado, sea paciente con períodos largos
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
-        );
-
-      case "informes-parciales":
-        return (
-          <Box>
-            <Typography
-              variant="h4"
-              gutterBottom
-              sx={{ fontWeight: "bold", color: "green" }}
-            >
-              🏗️ Informes Parciales
-            </Typography>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📋 ¿Qué son los Informes Parciales?
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Los Informes Parciales son reportes especializados por
-                  contrato que permiten generar documentación específica para
-                  obras, proyectos o contratos de servicios.
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Estos reportes son ideales para facturación, control de
-                  cumplimiento de contratos y documentación oficial de
-                  actividades por período.
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  🚀 Cómo Generar un Informe Parcial
-                </Typography>
-                <Box component="ol" sx={{ pl: 2 }}>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Acceder al menú:</strong> Haga clic en el menú ☰ y
-                      seleccione "Informes Parciales"
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Seleccionar contrato:</strong> Elija el contrato
-                      del cual desea generar el informe
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Elegir período:</strong> Puede usar vista simple
-                      (por mes) o avanzada (rango personalizado)
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Descargar:</strong> El informe se genera
-                      automáticamente en formato Excel
-                    </Typography>
-                  </li>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📊 Tipos de Vista Disponibles
-                </Typography>
-                <Box sx={{ display: "grid", gap: 2 }}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ color: "green", fontWeight: "bold" }}
-                      >
-                        📅 Vista Simple (Mensual)
-                      </Typography>
-                      <Typography variant="body2" paragraph>
-                        Seleccione un mes específico del contrato
-                      </Typography>
-                      <Typography variant="body2">
-                        • Rápido y fácil de usar
-                        <br />
-                        • Períodos predefinidos
-                        <br />• Ideal para informes mensuales regulares
-                      </Typography>
-                    </CardContent>
-                  </Card>
-
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ color: "green", fontWeight: "bold" }}
-                      >
-                        ⚙️ Vista Avanzada (Rango Personalizado)
-                      </Typography>
-                      <Typography variant="body2" paragraph>
-                        Defina fechas específicas de inicio y fin
-                      </Typography>
-                      <Typography variant="body2">
-                        • Control total sobre el período
-                        <br />
-                        • Informes parciales de mes
-                        <br />• Ideal para períodos específicos de obra
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card
-              sx={{
-                bgcolor: "rgba(0, 128, 0, 0.1)",
-                border: "1px solid green",
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📄 Contenido del Informe Parcial
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Resumen ejecutivo</strong> del período seleccionado
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Detalle de actividades</strong> por vehículo y por
-                  día
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Estadísticas de uso</strong> (horas de trabajo,
-                  kilometraje, etc.)
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Gráficos y tablas</strong> para análisis visual
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Información del contrato</strong> y datos de
-                  facturación
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
-        );
-
-      case "certificados":
-        return (
-          <Box>
-            <Typography
-              variant="h4"
-              gutterBottom
-              sx={{ fontWeight: "bold", color: "green" }}
-            >
-              📜 Certificado de Funcionamiento
-            </Typography>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  🏛️ ¿Qué es el Certificado de Funcionamiento?
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  El Certificado de Funcionamiento es un documento oficial en
-                  formato PDF que certifica el correcto funcionamiento del
-                  equipo GPS instalado en el vehículo durante un período
-                  específico.
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Este documento tiene validez legal y es requerido por
-                  organismos oficiales, compañías de seguros y entidades
-                  gubernamentales.
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📋 Cómo Obtener un Certificado
-                </Typography>
-                <Box component="ol" sx={{ pl: 2 }}>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Seleccionar vehículo:</strong> Haga clic en
-                      cualquier vehículo del mapa para seleccionarlo
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Acceder al menú:</strong> Haga clic en el menú ☰ y
-                      seleccione "Certificado de Funcionamiento"
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Generar certificado:</strong> El sistema generará
-                      automáticamente el documento en PDF
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2" paragraph>
-                      <strong>Descargar:</strong> El certificado se descargará
-                      directamente a su dispositivo
-                    </Typography>
-                  </li>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📄 Información Incluida en el Certificado
-                </Typography>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                    gap: 2,
-                  }}
-                >
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ color: "green" }}>
-                      Datos del Vehículo:
-                    </Typography>
-                    <Typography variant="body2">
-                      • Patente del vehículo
-                    </Typography>
-                    <Typography variant="body2">• Marca y modelo</Typography>
-                    <Typography variant="body2">
-                      • Empresa propietaria
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ color: "green" }}>
-                      Datos del Equipo:
-                    </Typography>
-                    <Typography variant="body2">
-                      • ID del dispositivo GPS
-                    </Typography>
-                    <Typography variant="body2">
-                      • Estado de funcionamiento
-                    </Typography>
-                    <Typography variant="body2">
-                      • Fecha de instalación
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ color: "green" }}>
-                      Validación Oficial:
-                    </Typography>
-                    <Typography variant="body2">• Fecha de emisión</Typography>
-                    <Typography variant="body2">• Firma digital</Typography>
-                    <Typography variant="body2">
-                      • Número de certificado
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card
-              sx={{
-                mb: 3,
-                bgcolor: "rgba(255, 193, 7, 0.1)",
-                border: "1px solid orange",
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "orange" }}>
-                  ⚠️ Requisitos Importantes
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Vehículo seleccionado:</strong> Debe tener un
-                  vehículo seleccionado en el mapa
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Equipo activo:</strong> El dispositivo GPS debe
-                  estar funcionando correctamente
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Datos recientes:</strong> El vehículo debe haber
-                  reportado en las últimas 24 horas
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card
-              sx={{
-                bgcolor: "rgba(0, 128, 0, 0.1)",
-                border: "1px solid green",
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📋 Usos del Certificado
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
-                  <Chip
-                    label="Trámites municipales"
-                    sx={{ bgcolor: "rgba(0, 128, 0, 0.2)" }}
-                    size="small"
-                  />
-                  <Chip
-                    label="Seguros vehiculares"
-                    sx={{ bgcolor: "rgba(0, 128, 0, 0.2)" }}
-                    size="small"
-                  />
-                  <Chip
-                    label="Verificaciones técnicas"
-                    sx={{ bgcolor: "rgba(0, 128, 0, 0.2)" }}
-                    size="small"
-                  />
-                  <Chip
-                    label="Auditorías de flota"
-                    sx={{ bgcolor: "rgba(0, 128, 0, 0.2)" }}
-                    size="small"
-                  />
-                </Box>
-                <Typography variant="body2" paragraph>
-                  • <strong>Validez legal:</strong> Documento con firma digital
-                  y validez oficial
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Formato estándar:</strong> PDF compatible con todos
-                  los organismos
-                </Typography>
-                <Typography variant="body2">
-                  • <strong>Disponibilidad inmediata:</strong> Generación
-                  instantánea 24/7
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
-        );
-
-      case "flotas":
-        return (
-          <Box>
-            <Typography
-              variant="h4"
-              gutterBottom
-              sx={{ fontWeight: "bold", color: "green" }}
-            >
-              🏢 Gestión de Flotas
-            </Typography>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  🚗 ¿Qué son las Flotas?
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Las flotas le permiten agrupar vehículos por criterios
-                  específicos como obras, proyectos, zonas geográficas o tipos
-                  de servicio para una gestión más eficiente.
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  📋 Selector de Flotas
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  En la pantalla principal encontrará el ícono de vehículo 🚗
-                  junto al selector de unidades:
-                </Typography>
-                <Box component="ol" sx={{ pl: 2 }}>
-                  <li>
-                    <Typography variant="body2">
-                      Haga clic en el ícono de vehículo
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2">
-                      Seleccione la flota deseada de la lista
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2">
-                      Automáticamente se mostrarán solo los vehículos de esa
-                      flota
-                    </Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2">
-                      Para quitar la selección, haga clic en la X
-                    </Typography>
-                  </li>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  ⚙️ Administración de Flotas
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Desde el menú ☰ → "Flotas", puede administrar sus flotas:
-                </Typography>
-                <Box sx={{ display: "grid", gap: 2 }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ color: "green" }}>
-                      ✅ Crear Flotas Nuevas:
-                    </Typography>
-                    <Typography variant="body2">
-                      • Asigne un nombre descriptivo (mínimo 5 caracteres)
-                    </Typography>
-                    <Typography variant="body2">
-                      • Las flotas se crean vacías inicialmente
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ color: "green" }}>
-                      🔄 Gestionar Vehículos:
-                    </Typography>
-                    <Typography variant="body2">
-                      • Agregue vehículos de la lista "Disponibles"
-                    </Typography>
-                    <Typography variant="body2">
-                      • Quite vehículos de la flota cuando sea necesario
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ color: "green" }}>
-                      🗑️ Eliminar Flotas:
-                    </Typography>
-                    <Typography variant="body2">
-                      • Seleccione la flota a eliminar
-                    </Typography>
-                    <Typography variant="body2">
-                      • Los vehículos vuelven a estar disponibles
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card
-              sx={{
-                bgcolor: "rgba(0, 128, 0, 0.1)",
-                border: "1px solid green",
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
-                  💡 Casos de Uso Recomendados
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Por obra/proyecto:</strong> "Obra Centro Comercial",
-                  "Proyecto Ruta 22"
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Por zona geográfica:</strong> "Zona Norte", "Región
-                  Patagonia"
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>Por tipo de servicio:</strong> "Transporte Carga",
-                  "Servicios Urbanos"
-                </Typography>
-                <Typography variant="body2">
-                  • <strong>Por cliente:</strong> "Cliente ABC", "Contrato XYZ"
                 </Typography>
               </CardContent>
             </Card>
@@ -2825,6 +2503,134 @@ const UserManualModal = ({ open, onClose }) => {
         );
     }
   };
+
+  // Renderizar el menú lateral
+  const renderSidebarMenu = () => (
+    <Box
+      sx={{
+        width: isMobile ? "280px" : "320px",
+        height: "100%",
+        bgcolor: "grey.50",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          p: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: "green",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: "bold",
+            fontSize: isMobile ? "1rem" : "1.25rem",
+          }}
+        >
+          📚 Manual de Usuario
+        </Typography>
+        {isMobile && (
+          <IconButton
+            onClick={() => setMobileMenuOpen(false)}
+            sx={{ color: "white" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
+      </Box>
+
+      {/* Navigation List */}
+      <List dense sx={{ flexGrow: 1, p: 0, overflowY: "auto" }}>
+        {menuSections.map((section) => (
+          <React.Fragment key={section.id}>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={selectedSection === section.id}
+                onClick={() => {
+                  if (section.hasChildren) {
+                    handleSectionToggle(section.id);
+                  } else {
+                    handleSectionSelect(section.id);
+                  }
+                }}
+                sx={{
+                  py: 1,
+                  "&.Mui-selected": {
+                    bgcolor: "primary.100",
+                    borderRight: "4px solid",
+                    borderColor: "primary.main",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  {section.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={section.title}
+                  primaryTypographyProps={{
+                    fontSize: "0.9rem",
+                    fontWeight:
+                      selectedSection === section.id ? "bold" : "normal",
+                  }}
+                />
+                {section.hasChildren &&
+                  (expandedSections[section.id] ? (
+                    <ExpandLess />
+                  ) : (
+                    <ExpandMore />
+                  ))}
+              </ListItemButton>
+            </ListItem>
+
+            {section.hasChildren && (
+              <Collapse
+                in={expandedSections[section.id]}
+                timeout="auto"
+                unmountOnExit
+              >
+                <List component="div" disablePadding>
+                  {section.children.map((child) => (
+                    <ListItem key={child.id} disablePadding>
+                      <ListItemButton
+                        selected={selectedSection === child.id}
+                        onClick={() => handleSectionSelect(child.id)}
+                        sx={{
+                          pl: 4,
+                          py: 0.5,
+                          "&.Mui-selected": {
+                            bgcolor: "primary.50",
+                            borderRight: "3px solid",
+                            borderColor: "primary.main",
+                          },
+                        }}
+                      >
+                        <ListItemText
+                          primary={child.title}
+                          primaryTypographyProps={{
+                            fontSize: "0.8rem",
+                            fontWeight:
+                              selectedSection === child.id ? "bold" : "normal",
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            )}
+          </React.Fragment>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="user-manual-title">
@@ -2845,135 +2651,31 @@ const UserManualModal = ({ open, onClose }) => {
           overflow: "hidden",
         }}
       >
-        {/* Sidebar Navigation */}
-        <Box
-          sx={{
-            width: isMobile ? "100%" : "320px",
-            height: isMobile ? "auto" : "100%",
-            borderRight: isMobile ? "none" : "1px solid",
-            borderBottom: isMobile ? "1px solid" : "none",
-            borderColor: "divider",
-            bgcolor: "grey.50",
-            display: "flex",
-            flexDirection: "column",
-            maxHeight: isMobile ? "200px" : "100%",
-            overflowY: "auto",
-          }}
-        >
-          {/* Header */}
-          <Box
+        {/* Desktop Sidebar */}
+        {!isMobile && renderSidebarMenu()}
+
+        {/* Mobile Drawer */}
+        {isMobile && (
+          <Drawer
+            variant="temporary"
+            anchor="left"
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            ModalProps={{
+              keepMounted: true, // Better open performance on mobile.
+              style: { zIndex: 1400 }, // Aumentar z-index para estar por encima del modal
+            }}
             sx={{
-              p: 2,
-              borderBottom: "1px solid",
-              borderColor: "divider",
-              bgcolor: "green",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              "& .MuiDrawer-paper": {
+                width: "280px",
+                boxSizing: "border-box",
+                zIndex: 1400, // Asegurar que el papel también tenga z-index alto
+              },
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: "bold",
-                fontSize: isMobile ? "1rem" : "1.25rem",
-              }}
-            >
-              📚 Manual de Usuario
-            </Typography>
-            {isMobile && (
-              <IconButton onClick={onClose} sx={{ color: "white" }}>
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-
-          {/* Navigation List */}
-          <List dense sx={{ flexGrow: 1, p: 0 }}>
-            {menuSections.map((section) => (
-              <React.Fragment key={section.id}>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    selected={selectedSection === section.id}
-                    onClick={() => {
-                      if (section.hasChildren) {
-                        handleSectionToggle(section.id);
-                      } else {
-                        setSelectedSection(section.id);
-                      }
-                    }}
-                    sx={{
-                      py: 1,
-                      "&.Mui-selected": {
-                        bgcolor: "primary.100",
-                        borderRight: "4px solid",
-                        borderColor: "primary.main",
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      {section.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={section.title}
-                      primaryTypographyProps={{
-                        fontSize: "0.9rem",
-                        fontWeight:
-                          selectedSection === section.id ? "bold" : "normal",
-                      }}
-                    />
-                    {section.hasChildren &&
-                      (expandedSections[section.id] ? (
-                        <ExpandLess />
-                      ) : (
-                        <ExpandMore />
-                      ))}
-                  </ListItemButton>
-                </ListItem>
-
-                {section.hasChildren && (
-                  <Collapse
-                    in={expandedSections[section.id]}
-                    timeout="auto"
-                    unmountOnExit
-                  >
-                    <List component="div" disablePadding>
-                      {section.children.map((child) => (
-                        <ListItem key={child.id} disablePadding>
-                          <ListItemButton
-                            selected={selectedSection === child.id}
-                            onClick={() => setSelectedSection(child.id)}
-                            sx={{
-                              pl: 4,
-                              py: 0.5,
-                              "&.Mui-selected": {
-                                bgcolor: "primary.50",
-                                borderRight: "3px solid",
-                                borderColor: "primary.main",
-                              },
-                            }}
-                          >
-                            <ListItemText
-                              primary={child.title}
-                              primaryTypographyProps={{
-                                fontSize: "0.8rem",
-                                fontWeight:
-                                  selectedSection === child.id
-                                    ? "bold"
-                                    : "normal",
-                              }}
-                            />
-                          </ListItemButton>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Collapse>
-                )}
-              </React.Fragment>
-            ))}
-          </List>
-        </Box>
+            {renderSidebarMenu()}
+          </Drawer>
+        )}
 
         {/* Main Content */}
         <Box
@@ -2985,36 +2687,42 @@ const UserManualModal = ({ open, onClose }) => {
           }}
         >
           {/* Content Header */}
-          {!isMobile && (
-            <Box
-              sx={{
-                p: 2,
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: "bold", color: "green" }}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {isMobile && (
+                <IconButton
+                  onClick={() => setMobileMenuOpen(true)}
+                  sx={{ mr: 1 }}
                 >
-                  FullControl GPS
-                </Typography>
-                <Chip
-                  label="v2025"
-                  size="small"
-                  sx={{ bgcolor: "green", color: "white" }}
-                />
-              </Box>
-              <IconButton onClick={onClose}>
-                <CloseIcon />
-              </IconButton>
+                  <MenuIcon />
+                </IconButton>
+              )}
+              <Typography
+                variant={isMobile ? "h6" : "h5"}
+                sx={{ fontWeight: "bold", color: "green" }}
+              >
+                FullControl GPS
+              </Typography>
+              <Chip
+                label="v2025"
+                size="small"
+                sx={{ bgcolor: "green", color: "white" }}
+              />
             </Box>
-          )}
+            <IconButton onClick={onClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
 
           {/* Content Body */}
           <Box
@@ -3045,7 +2753,7 @@ const UserManualModal = ({ open, onClose }) => {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              © FullControlGPS 2025 | Manual actualizado: Julio 2025
+              © FullControlGPS 2025 | Manual actualizado: Agosto 2025
             </Typography>
             <Link
               href="https://wa.me/+5492994119010"

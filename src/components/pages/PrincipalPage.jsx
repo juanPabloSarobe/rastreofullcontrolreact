@@ -31,6 +31,7 @@ import FleetSelectorButton, {
 import AreaSelectorButton from "../common/AreaSelectorButton";
 import IdleUnitsAlert from "../common/IdleUnitsAlert";
 import InfractionAlert from "../common/InfractionAlert";
+import AggressiveDrivingAlert from "../common/AggressiveDrivingAlert";
 import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
@@ -287,7 +288,9 @@ const PrincipalPage = () => {
 
       {state.viewMode === "rastreo" &&
         markersData.length > 0 &&
-        (prefLoading || liteLoading) && <LinearLoading />}
+        (prefLoading || liteLoading) &&
+        liteData?.GPS &&
+        Object.keys(liteData.GPS).length > 0 && <LinearLoading />}
 
       <Box
         display="flex"
@@ -323,6 +326,10 @@ const PrincipalPage = () => {
                   {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
                   <Box sx={{ display: { xs: "none", md: "block" } }}>
                     <InfractionAlert
+                      markersData={markersData}
+                      onUnitSelect={handleUnitSelect}
+                    />
+                    <AggressiveDrivingAlert
                       markersData={markersData}
                       onUnitSelect={handleUnitSelect}
                     />
