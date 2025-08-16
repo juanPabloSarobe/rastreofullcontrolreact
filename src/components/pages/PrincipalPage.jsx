@@ -288,7 +288,9 @@ const PrincipalPage = () => {
 
       {state.viewMode === "rastreo" &&
         markersData.length > 0 &&
-        (prefLoading || liteLoading) && <LinearLoading />}
+        (prefLoading || liteLoading) &&
+        liteData?.GPS &&
+        Object.keys(liteData.GPS).length > 0 && <LinearLoading />}
 
       <Box
         display="flex"

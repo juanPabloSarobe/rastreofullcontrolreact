@@ -91,9 +91,6 @@ const UpdateNotification = () => {
         >
           {changelog.split("\n").map((item, index) => (
             <ListItem key={index} sx={{ py: 0.5 }}>
-              <ListItemIcon sx={{ minWidth: 30 }}>
-                <CheckCircleOutlineIcon fontSize="small" color="success" />
-              </ListItemIcon>
               <ListItemText primary={item.replace(/^-\s*/, "")} />
             </ListItem>
           ))}
@@ -109,9 +106,6 @@ const UpdateNotification = () => {
         >
           {changelog.map((item, index) => (
             <ListItem key={index} sx={{ py: 0.5 }}>
-              <ListItemIcon sx={{ minWidth: 30 }}>
-                <CheckCircleOutlineIcon fontSize="small" color="success" />
-              </ListItemIcon>
               <ListItemText primary={item.replace(/^-\s*/, "")} />
             </ListItem>
           ))}

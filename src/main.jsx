@@ -15,10 +15,8 @@ window.addEventListener("orientationchange", updateHeight);
 updateHeight();
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <ContextProvider>
-      <CssBaseline />
-      <App />
-    </ContextProvider>
-  </StrictMode>
+  <ContextProvider>
+    <CssBaseline />
+    <App />
+  </ContextProvider>
 );
