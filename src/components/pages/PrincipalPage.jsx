@@ -35,6 +35,9 @@ import AggressiveDrivingAlert from "../common/AggressiveDrivingAlert";
 import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
+import DevSesion from "../dev/DevSesion";
+// Solo para desarrollo
+import UpdateTester from "../dev/UpdateTester";
 import { useNotifications } from "../../hooks/useNotifications";
 import { paymentService } from "../../services/paymentService";
 
@@ -313,7 +316,12 @@ const PrincipalPage = () => {
             position="relative"
           >
             <MenuButton selectedUnit={selectedUnit} />
-            {state.viewMode === "rastreo" && <UserChip />}
+            {/* DevSesion flotando a la izquierda de UserChip */}
+            {state.viewMode === "rastreo" && (
+              <>
+                <UserChip />
+              </>
+            )}
             {state.viewMode === "rastreo" &&
               liteData?.GPS &&
               Object.keys(liteData.GPS).length > 0 && (
@@ -396,6 +404,10 @@ const PrincipalPage = () => {
 
       {/* Indicador de versión */}
       <VersionIndicator />
+      {/* Aviso de entorno de desarrollo */}
+      <DevSesion />
+      {/* Tester de actualizaciones solo visible en desarrollo */}
+      {process.env.NODE_ENV === "development" && <UpdateTester />}
     </FleetSelectorProvider>
   );
 };

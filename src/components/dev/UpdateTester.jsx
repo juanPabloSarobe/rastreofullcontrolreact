@@ -84,7 +84,7 @@ const UpdateTester = () => {
         width: "350px",
         zIndex: 9999,
         boxShadow: 3,
-        display: process.env.NODE_ENV === "development" ? "block" : "none", // Solo mostrar en desarrollo
+        display: process.env.NODE_ENV === "none" ? "block" : "none", // Solo mostrar en desarrollo
       }}
     >
       <CardContent>
