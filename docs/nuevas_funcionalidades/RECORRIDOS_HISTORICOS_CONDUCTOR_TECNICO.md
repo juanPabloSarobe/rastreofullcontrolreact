@@ -1,12 +1,308 @@
 # RECORRIDOS HISTÓRICOS POR CONDUCTOR - ESPECIFICACIONES TÉCNICAS
 
-## Estructura general
+## RESUMEN EJECUTIVO - NUEVO FLUJO UX/UI (Actualizado 21/08/2025)
 
-La funcionalidad se divide en tres componentes principales:
+### **DECISIÓN DE DISEÑO FINAL:**
 
-1. **Histórico por Conductor** - Visualización en mapa (botón circular con acceso rápido)
-2. **Histórico Avanzado por Conductor** - Exportación a Excel (opción en menú)
+La funcionalidad será implementada como **componente superpuesto sobre el mapa** (NO modal), con progresión de estados y layout horizontal para desktop.
+
+### **COMPONENTES PRINCIPALES:**
+
+1. **ConductorHistoryPanel.jsx** - Panel flotante sobre mapa (reemplaza modal)
+2. **ConductorAdvancedHistoryModal.jsx** - Modal para histórico avanzado (desde menú)
 3. **ABM de Asignación de Conductores** - Sistema de administración
+
+---
+
+## FLUJO UX/UI DETALLADO - HISTÓRICO POR CONDUCTOR
+
+### **ARQUITECTURA DEL COMPONENTE:**
+
+- **Tipo**: Panel flotante superpuesto sobre mapa
+- **Posición**: Lado izquierdo del mapa
+- **Responsive**: Layout horizontal para desktop (mobile pendiente)
+- **Z-index**: Alto para estar sobre el mapa
+- **Inspiración**: Patrón similar a ContractReportsModal.jsx pero adaptado a panel
+
+### **FLUJO DE ESTADOS PROGRESIVOS:**
+
+#### **Estado 1: Selección de Conductor**
+
+```
+┌─────────────────────────────────┐
+│  Histórico por Conductor   [X]  │
+├─────────────────────────────────┤
+│ [Dropdown Conductor] (loading)  │
+│                                 │
+└─────────────────────────────────┘
+```
+
+- **Trigger**: Click en botón circular "Histórico por conductor"
+- **Acción automática**: Llamada a `/permisosConductores/215`
+- **Panel**: Pequeño, solo dropdown de conductor
+
+#### **Estado 2: Configuración de Período**
+
+```
+┌─────────────────────────────────┐
+│  Histórico por Conductor   [X]  │
+├─────────────────────────────────┤
+│ [Juan Pérez ▼]                  │
+│ [Dropdown Mes] [Switch Avanzado]│
+│                                 │
+└─────────────────────────────────┘
+```
+
+- **Trigger**: Selección de conductor
+- **Nuevos elementos**: Dropdown de mes + Switch de vista avanzada
+- **Vista simple**: Dropdown con últimos 6 meses
+- **Vista avanzada**: 2 calendarios desplegables (como ContractReportsModal)
+
+#### **Estado 3: Vista de Resultados - Layout Horizontal**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Histórico por Conductor                            [X]     │
+│  Juan Pérez > Agosto 2025                                   │
+├─────────────────────┬───────────────────────────────────────┤
+│ Lista Vehículos     │           Calendario                  │
+│ ┌─────────────────┐ │   Do Lu Ma Mi Ju Vi Sa                │
+│ │ ○ ABC123        │ │    1  2  3  4  5  6  7               │
+│ │   DEF456        │ │    8  9 10 11 12 13 14               │
+│ │   GHI789        │ │   15 16 17 18 19 20 21               │
+│ │   (scroll...)   │ │   22 23 24 25 26 27 28               │
+│ └─────────────────┘ │                                       │
+│                     │   Solo días con datos = clickables   │
+│                     │   Días sin datos = bloqueados        │
+└─────────────────────┴───────────────────────────────────────┘
+```
+
+- **Trigger**: Confirmación de período (cierre de calendarios si están abiertos)
+- **Llamada automática**: `/vehiculosPorConductor/` con rango de fechas
+- **Panel se expande horizontalmente** mostrando layout de 2 columnas
+- **Breadcrumb funcional**: "Juan Pérez > Agosto 2025"
+
+#### **Estado 4: Carga Automática del Recorrido**
+
+- **Trigger**: Click en día disponible del calendario
+- **Acción inmediata**: Sin botón "Ver Recorrido"
+- **Llamadas automáticas**:
+  - `/historico.php/optimo/` con parámetro conductor
+  - Panel se contrae/oculta
+  - Transición a vista de mapa con recorrido
+
+---
+
+## ESPECIFICACIONES TÉCNICAS DETALLADAS
+
+### **COMPONENTE PRINCIPAL: ConductorHistoryPanel.jsx**
+
+#### **Props y Estados:**
+
+```jsx
+// Estados principales
+const [currentStep, setCurrentStep] = useState("conductor"); // 'conductor' | 'period' | 'results'
+const [conductors, setConductors] = useState([]);
+const [selectedConductor, setSelectedConductor] = useState("");
+const [advancedView, setAdvancedView] = useState(false);
+const [selectedMonth, setSelectedMonth] = useState("");
+const [dateRange, setDateRange] = useState([null, null]);
+const [vehicles, setVehicles] = useState([]);
+const [selectedVehicle, setSelectedVehicle] = useState("");
+const [availableDays, setAvailableDays] = useState([]);
+```
+
+#### **Estilos y Layout:**
+
+```jsx
+// Panel base
+sx={{
+  position: 'absolute',
+  top: '16px',
+  left: '16px',
+  bgcolor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+  zIndex: 1000,
+  overflow: 'hidden',
+  transition: 'all 0.3s ease',
+  width: currentStep === 'results' ? '60%' : '320px',
+  height: 'auto',
+  maxHeight: '80vh'
+}}
+```
+
+#### **Integración con ContractReportsModal Pattern:**
+
+- **Switch vista avanzada**: Mismo comportamiento que ContractReportsModal
+- **Calendarios**: Reutilizar DateCalendar y MobileDatePicker
+- **Estados de loading**: Mismos patrones de CircularProgress
+- **Validaciones**: Similar lógica de deshabilitación de botones
+
+### **ENDPOINTS Y FLUJO DE DATOS:**
+
+#### **1. Carga inicial de conductores:**
+
+```
+GET /permisosConductores/215
+Response: Lista de conductores disponibles para el usuario
+Status: PLACEHOLDER - Endpoint no funcional actualmente
+```
+
+#### **2. Consulta de vehículos por conductor:**
+
+```
+GET /vehiculosPorConductor/?fechaInicial=2025-08-01&fechaFinal=2025-08-31&conductor=13864
+Response: {
+  "Vehiculos": [
+    {
+      "movil": 3147,
+      "patente": "ABC123",
+      "dias": ["2025-08-01", "2025-08-02", ...]
+    }
+  ]
+}
+```
+
+#### **3. Consulta de recorrido histórico:**
+
+```
+GET /historico.php/optimo/?movil=3147&fechaInicial=2025-08-01&fechaFinal=2025-08-02&conductor=13826
+Response: Mismo formato que historico.json pero filtrado por conductor
+```
+
+#### **4. Detalle histórico (HistoricalDetailView):**
+
+```
+GET /historico.php/historico?movil=6193&fechaInicial=2025-08-02&fechaFinal=2025-08-03&conductor=12183
+Response: Datos detallados con filtro de conductor
+```
+
+#### **5. Exportación Excel:**
+
+```
+GET /excel.php?movil=4503&fechaInicial=2025-08-12&fechaFinal=2025-08-13&conductor=13826
+Response: Archivo Excel con datos filtrados por conductor
+```
+
+---
+
+## COMPONENTES A CREAR/MODIFICAR
+
+### **NUEVOS COMPONENTES:**
+
+#### **1. ConductorHistoryPanel.jsx**
+
+```
+src/components/common/ConductorHistoryPanel.jsx
+```
+
+- Panel flotante sobre mapa con estados progresivos
+- Layout horizontal para desktop
+- Integración con Context para estados globales
+- Reutilización de patrones de ContractReportsModal
+
+#### **2. ConductorHistoryButton.jsx**
+
+```
+src/components/common/ConductorHistoryButton.jsx
+```
+
+- Botón circular junto a FleetSelectorButton
+- Ícono de persona, tooltip "Histórico por conductor"
+- Abre ConductorHistoryPanel
+
+#### **3. ConductorAdvancedHistoryModal.jsx**
+
+```
+src/components/common/ConductorAdvancedHistoryModal.jsx
+```
+
+- Modal desde menú principal
+- Reutiliza estructura de AdvancedHistoryModal
+- Descarga directa a Excel con parámetro conductor
+
+### **COMPONENTES A MODIFICAR:**
+
+#### **1. PrincipalPage.jsx**
+
+- Agregar ConductorHistoryButton junto a otros botones circulares
+- Renderizar ConductorHistoryPanel condicionalmente
+- Manejar estados de modo conductor
+
+#### **2. MenuButton.jsx**
+
+- Agregar opción "Histórico Avanzado por Conductor"
+- Importar y manejar ConductorAdvancedHistoryModal
+
+#### **3. Context.jsx**
+
+- Nuevos estados para modo conductor:
+  ```jsx
+  conductorMode: false,
+  selectedConductor: null,
+  conductorHistoryData: null,
+  conductorVehicles: []
+  ```
+
+#### **4. HistoricalDetailView.jsx**
+
+- Modificar endpoint para incluir parámetro conductor
+- Mostrar información del conductor en la vista
+
+---
+
+## NAVEGACIÓN Y INTERACCIONES
+
+### **Breadcrumb Navigation:**
+
+- **Formato**: "Juan Pérez > Agosto 2025"
+- **Funcionalidad**: Click en conductor = volver a selección de período
+- **Ubicación**: Parte superior del panel en estado de resultados
+
+### **Navegación de regreso:**
+
+- **Botón X**: Esquina superior derecha (siempre visible)
+- **ESC**: Cerrar panel completamente
+- **Click en breadcrumb**: Navegación hacia atrás por pasos
+
+### **Estados de carga:**
+
+- **Loading conductores**: Spinner en dropdown
+- **Loading vehículos**: Overlay en panel de resultados
+- **Loading recorrido**: Backdrop sobre mapa
+
+### **Validaciones y estados deshabilitados:**
+
+- **Días sin datos**: Bloqueados en calendario (gris, no clickeable)
+- **Vehículo no seleccionado**: Calendario deshabilitado
+- **Datos incompletos**: Navegación bloqueada hasta completar paso
+
+---
+
+## REUTILIZACIÓN DE CÓDIGO EXISTENTE
+
+### **Patrones de ContractReportsModal.jsx:**
+
+- Switch de vista simple/avanzada
+- Estructura de calendarios (DateCalendar/MobileDatePicker)
+- Estados de loading y validación
+- Manejo de rangos de fecha
+
+### **Componentes existentes a reutilizar:**
+
+- DateCalendar, MobileDatePicker (selección de fechas)
+- HistoricalMarkers.jsx (marcadores en mapa)
+- HistoricalDetailView.jsx (con modificación de endpoint)
+- ExportSpeedDial.jsx (exportación con parámetro conductor)
+
+### **Estilos y temas:**
+
+- Paleta de colores verde (consistencia visual)
+- Bordes redondeados y sombras existentes
+- Responsive patterns de isMobile
+
+---
 
 ## ANÁLISIS COMPLETO DE COMPONENTES (Actualizado 18/08/2025)
 
@@ -66,12 +362,12 @@ src/components/common/ConductorHistoryButton.jsx
 - Botón circular similar a `FleetSelectorButton.jsx`
 - Tooltip "Histórico por conductor"
 - Ícono de persona
-- Abre `ConductorHistoryModal`
+- Abre `ConductorHistoryPanel`
 
-#### 2. **ConductorHistoryModal.jsx** - Modal histórico simple
+#### 2. **ConductorHistoryPanel.jsx** - Panel histórico simple
 
 ```
-src/components/common/ConductorHistoryModal.jsx
+src/components/common/ConductorHistoryPanel.jsx
 ```
 
 - Selector de conductor (dropdown con búsqueda)
@@ -134,7 +430,7 @@ src/components/pages/ConductorHistoricalView.jsx
 
 #### **Fase 2: Modal histórico simple**
 
-1. Crear `ConductorHistoryModal.jsx`
+1. Crear `ConductorHistoryPanel.jsx`
 2. Integrar con `PrincipalPage.jsx`
 3. Conectar con endpoint `/vehiculosPorConductor/`
 
@@ -183,7 +479,7 @@ src/components/pages/ConductorHistoricalView.jsx
 - Posicionamiento: Alineado con los otros botones circulares
 - Icono: Silueta de persona
 
-### 2. Modal de selección para histórico simple:
+### 2. Panel de selección para histórico simple:
 
 - Selector de conductor: Dropdown con búsqueda
 - Selector de fecha: Calendario individual para seleccionar un día
@@ -215,7 +511,7 @@ conductorUnits: [], // Unidades manejadas por el conductor seleccionado
 ### 6. Nuevos componentes a crear:
 
 - `ConductorHistoryButton.jsx`: Botón circular para acceso rápido
-- `ConductorHistoryModal.jsx`: Modal para histórico simple por conductor
+- `ConductorHistoryPanel.jsx`: Panel para histórico simple por conductor
 - `ConductorAdvancedHistoryModal.jsx`: Modal para histórico avanzado
 - `ConductorSelector.jsx`: Componente reutilizable de selección de conductor
 
