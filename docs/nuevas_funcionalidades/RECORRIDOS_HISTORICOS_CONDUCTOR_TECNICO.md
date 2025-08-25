@@ -1,62 +1,88 @@
 # RECORRIDOS HISTÓRICOS POR CONDUCTOR - ESPECIFICACIONES TÉCNICAS
 
-## RESUMEN EJECUTIVO - NUEVO FLUJO UX/UI (Actualizado 21/08/2025)
+## RESUMEN EJECUTIVO - NUEVO FLUJO UX/UI (Actualizado 25/08/2025)
 
-### **DECISIÓN DE DISEÑO FINAL:**
+### **DECISIÓN DE DISEÑO FINAL - VERSIÓN 2.0:**
 
-La funcionalidad será implementada como **componente superpuesto sobre el mapa** (NO modal), con progresión de estados y layout horizontal para desktop.
+La funcionalidad será implementada como **vista completa** (NO panel superpuesto), con carga de conductores al login y cambio de modo de vista.
 
 ### **COMPONENTES PRINCIPALES:**
 
-1. **ConductorHistoryPanel.jsx** - Panel flotante sobre mapa (reemplaza modal)
+1. **ConductorHistoryView.jsx** - Vista completa de histórico por conductor (reemplaza panel)
 2. **ConductorAdvancedHistoryModal.jsx** - Modal para histórico avanzado (desde menú)
 3. **ABM de Asignación de Conductores** - Sistema de administración
 
+### **CAMBIOS ARQUITECTÓNICOS IMPORTANTES:**
+
+- **Carga de conductores**: Al momento del login exitoso (una sola vez)
+- **Almacenamiento global**: Conductores disponibles en Context para toda la app
+- **Cambio de vista**: Similar a modo "rastreo" vs "historico", ahora "rastreo" vs "conductor"
+- **Reutilización de datos**: No más llamadas repetitivas al endpoint de conductores
+
 ---
 
-## FLUJO UX/UI DETALLADO - HISTÓRICO POR CONDUCTOR
+## FLUJO UX/UI DETALLADO - HISTÓRICO POR CONDUCTOR (v2.0)
 
-### **ARQUITECTURA DEL COMPONENTE:**
-
-- **Tipo**: Panel flotante superpuesto sobre mapa
-- **Posición**: Lado izquierdo del mapa
-- **Responsive**: Layout horizontal para desktop (mobile pendiente)
-- **Z-index**: Alto para estar sobre el mapa
-- **Inspiración**: Patrón similar a ContractReportsModal.jsx pero adaptado a panel
-
-### **FLUJO DE ESTADOS PROGRESIVOS:**
-
-#### **Estado 1: Selección de Conductor**
+### **FASE 0: Carga inicial en Login**
 
 ```
 ┌─────────────────────────────────┐
-│  Histórico por Conductor   [X]  │
+│     Proceso de Login            │
 ├─────────────────────────────────┤
-│ [Dropdown Conductor] (loading)  │
-│                                 │
+│ 1. Autenticación exitosa        │
+│ 2. Llamada automática:          │
+│    /permisosConductores/215     │
+│ 3. Datos guardados en Context   │
+│ 4. Disponible para toda la app  │
+└─────────────────────────────────┘
+```
+
+### **ARQUITECTURA DEL COMPONENTE:**
+
+- **Tipo**: Vista completa (como HistoricalView.jsx)
+- **Modo**: state.viewMode = "conductor" (nuevo)
+- **Datos**: Conductores ya disponibles en Context
+- **Layout**: Desktop horizontal, mobile pendiente
+- **Inspiración**: Combinación de HistoricalView + ContractReportsModal patterns
+
+### **FLUJO DE ESTADOS PROGRESIVOS:**
+
+#### **Estado 1: Transición a Vista Conductor**
+
+```
+┌─────────────────────────────────┐
+│  Vista Principal (Rastreo)      │
+│  [Click botón Histórico x Cond] │
+│         ↓                       │
+│  state.viewMode = "conductor"   │
+│         ↓                       │
+│  ConductorHistoryView.jsx       │
 └─────────────────────────────────┘
 ```
 
 - **Trigger**: Click en botón circular "Histórico por conductor"
-- **Acción automática**: Llamada a `/permisosConductores/215`
-- **Panel**: Pequeño, solo dropdown de conductor
+- **Acción**: dispatch({ type: "SET_VIEW_MODE", payload: "conductor" })
+- **Sin llamadas**: Conductores ya en Context desde login
 
-#### **Estado 2: Configuración de Período**
+#### **Estado 2: Selección de Conductor y Período**
 
 ```
-┌─────────────────────────────────┐
-│  Histórico por Conductor   [X]  │
-├─────────────────────────────────┤
-│ [Juan Pérez ▼]                  │
-│ [Dropdown Mes] [Switch Avanzado]│
-│                                 │
-└─────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  [← Volver]  Histórico por Conductor                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [Dropdown Conductor ▼] (datos desde Context)              │
+│                                                             │
+│  [Dropdown Mes ▼] [Switch Vista Avanzada]                  │
+│                                                             │
+│  [Calendarios desplegables si Vista Avanzada = ON]         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-- **Trigger**: Selección de conductor
-- **Nuevos elementos**: Dropdown de mes + Switch de vista avanzada
-- **Vista simple**: Dropdown con últimos 6 meses
-- **Vista avanzada**: 2 calendarios desplegables (como ContractReportsModal)
+- **Datos de conductores**: Desde Context (ya cargados en login)
+- **Dropdown mes**: Últimos 6 meses
+- **Vista avanzada**: 2 calendarios (patrón ContractReportsModal)
 
 #### **Estado 3: Vista de Resultados - Layout Horizontal**
 
