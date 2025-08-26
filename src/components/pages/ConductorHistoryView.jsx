@@ -38,7 +38,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 
 // Mock de conductores (del plan de implementación)
-const mockConductores = {
+/* const mockConductores = {
   Permisos: [
     {
       idCon: 11777,
@@ -57,7 +57,7 @@ const mockConductores = {
       email: "jorge@gmail.com",
     },
   ],
-};
+}; */
 
 // Generar últimos 6 meses
 const generateLast6Months = () => {
@@ -254,17 +254,6 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
     }
   }, [selectedConductor, selectedMonth, dateRange, advancedView, showResults]);
 
-  // Efecto para cargar conductores mock al Context (simula la carga desde login)
-  useEffect(() => {
-    // Solo cargar si no hay conductores en el Context
-    if (conductores.length === 0) {
-      dispatch({ 
-        type: "SET_CONDUCTORES", 
-        payload: mockConductores.Permisos 
-      });
-    }
-  }, [dispatch, conductores.length]);
-
   // Encontrar el vehículo seleccionado actual
   const currentSelectedVehicle = vehiclesToShow.find(v => 
     v.movil?.toString() === selectedVehicle || v.id === selectedVehicle
@@ -376,15 +365,50 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
 
         {/* Contenido */}
         <Box sx={{ p: 2, paddingTop: 0 }}>
-          {/* Selector de Conductor */}
-          <Box sx={{ mb: 2 }}>
-            <ConductorSelector
-              conductores={conductores}
-              selectedConductor={selectedConductor}
-              onConductorSelect={handleConductorSelect}
-              placeholder="Seleccionar Conductor"
-            />
-          </Box>
+          {/* Verificar si hay conductores disponibles */}
+          {conductores.length === 0 ? (
+            // Mensaje cuando no hay conductores asignados
+            <Box
+              sx={{
+                p: 3,
+                textAlign: "center",
+                bgcolor: "rgba(158, 158, 158, 0.1)",
+                borderRadius: "8px",
+                border: "1px solid rgba(158, 158, 158, 0.3)",
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: "bold",
+                  color: "rgba(0, 0, 0, 0.6)",
+                  fontSize: "16px",
+                  mb: 1,
+                }}
+              >
+                👤 Sin conductores asignados
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: "14px" }}
+              >
+                No hay conductores disponibles para consultar históricos.
+                <br />
+                Contacte al administrador para asignar conductores a su cuenta.
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {/* Selector de Conductor */}
+              <Box sx={{ mb: 2 }}>
+                <ConductorSelector
+                  conductores={conductores}
+                  selectedConductor={selectedConductor}
+                  onConductorSelect={handleConductorSelect}
+                  placeholder="Seleccionar Conductor"
+                />
+              </Box>
 
           {/* Selector de Período */}
           <Box
@@ -548,6 +572,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
                       variant="outlined"
                       sx={{
                         maxHeight: "200px",
+                        maxWidth: "200px",
                         overflow: "auto",
                         border: "1px solid #e0e0e0",
                         position: "relative",
@@ -571,7 +596,8 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
                       ) : vehiclesToShow.length > 0 ? (
                         // Lista de vehículos
                         <RadioGroup
-                          value={selectedVehicle}
+                                    value={selectedVehicle}
+                                    size="small"
                           onChange={(e) => {
                             // Limpiar recorrido del mapa al cambiar vehículo
                             if (selectedVehicle !== e.target.value) {
@@ -582,7 +608,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
                             setSelectedVehicle(e.target.value);
                           }}
                         >
-                          <List dense>
+                          <List dense >
                             {vehiclesToShow.map((vehicle) => {
                               // Adaptar para datos reales y mock
                               const vehicleId = vehicle.movil?.toString() || vehicle.id;
@@ -592,7 +618,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
                                 : `${vehicle.dias?.length || 0} días con datos`;
                               
                               return (
-                                <ListItem key={vehicleId} disablePadding>
+                                <ListItem key={vehicleId} disablePadding >
                                   <ListItemButton
                                     onClick={() => setSelectedVehicle(vehicleId)}
                                     sx={{ py: 0.5 }}
@@ -719,6 +745,8 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
               )}
             </Box>
           )}
+          </>
+        )}
         </Box>
       </Box>
       

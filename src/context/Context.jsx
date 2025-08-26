@@ -21,6 +21,8 @@ export const ContextProvider = ({ children }) => {
     selectedConductor: null, // Conductor seleccionado actualmente
     conductorVehicles: [], // Vehículos del conductor seleccionado
     loadingConductorVehicles: false, // Estado de carga de vehículos
+    loadingConductores: false, // Estado de carga inicial de conductores
+    conductoresLoaded: false, // Si ya se intentó cargar conductores
   };
 
   const reducer = (state, action) => {
@@ -94,6 +96,10 @@ export const ContextProvider = ({ children }) => {
         return { ...state, conductorVehicles: action.payload };
       case "SET_LOADING_CONDUCTOR_VEHICLES":
         return { ...state, loadingConductorVehicles: action.payload };
+      case "SET_LOADING_CONDUCTORES":
+        return { ...state, loadingConductores: action.payload };
+      case "SET_CONDUCTORES_LOADED":
+        return { ...state, conductoresLoaded: action.payload };
       case "CLEAR_CONDUCTOR_DATA":
         return { 
           ...state, 

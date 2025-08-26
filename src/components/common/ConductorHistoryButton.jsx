@@ -1,18 +1,60 @@
 import React, { useState } from "react";
-import { Box, IconButton, Tooltip, Typography, Grow } from "@mui/material";
+import { Box, IconButton, Tooltip, Typography, Grow, CircularProgress } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
+import PersonOffIcon from "@mui/icons-material/PersonOff";
 import { useContextValue } from "../../context/Context";
 import { useFleetSelectorState } from "./FleetSelectorButton";
 import { useAreaSelectorState } from "./AreaSelectorButton";
 
 const ConductorHistoryButton = () => {
-  const { dispatch } = useContextValue();
+  const { state, dispatch } = useContextValue();
   const { fleetSelectorWidth } = useFleetSelectorState();
   const { areaSelectorWidth } = useAreaSelectorState();
   const [isHovered, setIsHovered] = useState(false);
 
+  // Estados de conductores del Context
+  const { conductores, loadingConductores, conductoresLoaded } = state;
+  
+  // Determinar el estado del botón
+  const hasConductores = conductores.length > 0;
+  const isDisabled = conductoresLoaded && !hasConductores;
+  const isLoading = loadingConductores && !conductoresLoaded;
+
   const handleClick = () => {
-    dispatch({ type: "SET_VIEW_MODE", payload: "conductor" });
+    if (!isDisabled && !isLoading) {
+      dispatch({ type: "SET_VIEW_MODE", payload: "conductor" });
+    }
+  };
+
+  // Determinar el texto del tooltip
+  const getTooltipTitle = () => {
+    if (isLoading) return "Cargando conductores...";
+    if (isDisabled) return "Sin conductores asignados";
+    return "Histórico por conductor";
+  };
+
+  // Determinar el icono a mostrar
+  const getIcon = () => {
+    if (isLoading) {
+      return <CircularProgress size={24} sx={{ color: "green" }} />;
+    }
+    if (isDisabled) {
+      return <PersonOffIcon />;
+    }
+    return <PersonIcon />;
+  };
+
+  // Determinar el color del botón
+  const getButtonColor = () => {
+    if (isDisabled) return "rgba(0, 0, 0, 0.26)"; // Gris deshabilitado
+    return "green"; // Verde normal
+  };
+
+  // Determinar el texto del hover
+  const getHoverText = () => {
+    if (isLoading) return "Cargando conductores...";
+    if (isDisabled) return "Sin conductores asignados";
+    return "Histórico por conductor";
   };
 
   // Calcular posición dinámica considerando FleetSelectorButton y AreaSelectorButton
@@ -56,19 +98,26 @@ const ConductorHistoryButton = () => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Tooltip title="Histórico por conductor">
+      <Tooltip title={getTooltipTitle()}>
         <IconButton
           onClick={handleClick}
+          disabled={isDisabled || isLoading}
           sx={{
-            color: "green",
+            color: getButtonColor(),
             height: "48px",
             width: "48px",
+            cursor: isDisabled ? "not-allowed" : "pointer",
             "&:hover": {
-              backgroundColor: "rgba(0, 128, 0, 0.1)",
+              backgroundColor: isDisabled 
+                ? "transparent" 
+                : "rgba(0, 128, 0, 0.1)",
+            },
+            "&.Mui-disabled": {
+              color: "rgba(0, 0, 0, 0.26)",
             },
           }}
         >
-          <PersonIcon />
+          {getIcon()}
         </IconButton>
       </Tooltip>
 
@@ -85,9 +134,10 @@ const ConductorHistoryButton = () => {
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
+              color: isDisabled ? "rgba(0, 0, 0, 0.26)" : "inherit",
             }}
           >
-            Histórico por conductor
+            {getHoverText()}
           </Typography>
         </Grow>
       )}
