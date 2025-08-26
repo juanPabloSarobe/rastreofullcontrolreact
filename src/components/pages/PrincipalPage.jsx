@@ -98,6 +98,7 @@ const PrincipalPage = () => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [historicalData, setHistoricalData] = useState(null);
+  const [conductorHistoricalData, setConductorHistoricalData] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const mapRef = useRef(null);
@@ -385,13 +386,21 @@ const PrincipalPage = () => {
                   <HistoricalMarkers historicalData={historicalData} />
                 )}
 
+                {state.viewMode === "conductor" && conductorHistoricalData && (
+                  <HistoricalMarkers historicalData={conductorHistoricalData} />
+                )}
+
                 <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
 
                 {isMobile || <AddZoomControl />}
               </MapContainer>
 
               {/* Vista de Histórico por Conductor */}
-              {state.viewMode === "conductor" && <ConductorHistoryView />}
+              {state.viewMode === "conductor" && (
+                <ConductorHistoryView 
+                  onConductorHistoricalDataFetched={setConductorHistoricalData}
+                />
+              )}
             </Box>
           </Box>
         </Box>

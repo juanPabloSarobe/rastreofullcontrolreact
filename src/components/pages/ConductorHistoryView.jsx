@@ -20,6 +20,7 @@ import {
   RadioGroup,
   Grid,
   CircularProgress,
+  Backdrop,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
@@ -69,7 +70,7 @@ const generateLast6Months = () => {
   return months;
 };
 
-const ConductorHistoryView = () => {
+const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
   const { state, dispatch } = useContextValue();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -78,6 +79,8 @@ const ConductorHistoryView = () => {
   const [dateRange, setDateRange] = useState([null, null]);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [localConductorHistoricalData, setLocalConductorHistoricalData] = useState(null);
 
   // Usar conductores del Context
   const selectedConductor = state.selectedConductor;
@@ -95,12 +98,18 @@ const ConductorHistoryView = () => {
     setDateRange([null, null]);
     // Limpiar vehículos del conductor anterior
     dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: [] });
+    // Limpiar recorrido del mapa al cambiar conductor
+    onConductorHistoricalDataFetched(null);
+    setLocalConductorHistoricalData(null);
   };
 
   // Función para cargar vehículos por conductor
   const loadVehiculosPorConductor = async (conductor, fechaInicial, fechaFinal) => {
     try {
       dispatch({ type: "SET_LOADING_CONDUCTOR_VEHICLES", payload: true });
+      
+      console.log('Cargando vehículos para conductor:', conductor.nombre);
+      console.log('Período:', { fechaInicial, fechaFinal });
       
       const response = await conductorService.getVehiculosPorConductor(
         fechaInicial,
@@ -110,6 +119,7 @@ const ConductorHistoryView = () => {
       
       // Transformar los datos al formato esperado por el componente
       const vehiclesData = response.Vehiculos || [];
+      console.log('Vehículos cargados:', vehiclesData);
       dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: vehiclesData });
       
     } catch (error) {
@@ -140,6 +150,46 @@ const ConductorHistoryView = () => {
     }
   };
 
+  // Función para cargar datos históricos del conductor
+  const fetchConductorHistoricalData = async (date, vehicleId, conductor) => {
+    if (!date || !vehicleId || !conductor) return;
+
+    // Limpiar datos anteriores
+    onConductorHistoricalDataFetched(null);
+    setLocalConductorHistoricalData(null);
+    setLoading(true);
+
+    try {
+      const fechaInicial = date.format("YYYY-MM-DD");
+      // La fecha final debe ser un día mayor que la inicial
+      const fechaFinal = date.add(1, 'day').format("YYYY-MM-DD");
+
+      const url = `/api/servicio/historico.php/optimo/?movil=${vehicleId}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}&conductor=${conductor.idCon}`;
+      
+      console.log('Llamando al endpoint:', url);
+      console.log('Fechas:', { fechaInicial, fechaFinal });
+      
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al obtener los datos históricos del conductor");
+      }
+
+      const data = await response.json();
+      console.log('Datos recibidos del conductor:', data);
+      setLocalConductorHistoricalData(data);
+      onConductorHistoricalDataFetched(data);
+    } catch (error) {
+      console.error("Error al cargar histórico del conductor:", error);
+      onConductorHistoricalDataFetched(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calcular showResults antes de usarlo en useEffect
   const showResults =
     selectedConductor &&
@@ -160,6 +210,9 @@ const ConductorHistoryView = () => {
       if (!vehicleExists) {
         setSelectedVehicle("");
         setSelectedDate(null);
+        // Limpiar recorrido del mapa cuando el vehículo ya no existe
+        onConductorHistoricalDataFetched(null);
+        setLocalConductorHistoricalData(null);
       }
     }
   }, [conductorVehicles, selectedVehicle]);
@@ -172,16 +225,28 @@ const ConductorHistoryView = () => {
       if (advancedView && dateRange[0] && dateRange[1]) {
         // Vista avanzada: usar rango de fechas
         fechaInicial = dateRange[0].format("YYYY-MM-DD");
-        fechaFinal = dateRange[1].format("YYYY-MM-DD");
+        // Asegurar que fechaFinal sea al menos un día mayor que fechaInicial
+        const finalDate = dateRange[1].isSame(dateRange[0], 'day') 
+          ? dateRange[1].add(1, 'day') 
+          : dateRange[1];
+        fechaFinal = finalDate.format("YYYY-MM-DD");
       } else if (!advancedView && selectedMonth) {
         // Vista simple: usar mes seleccionado
         const startOfMonth = dayjs(selectedMonth).startOf('month');
         const endOfMonth = dayjs(selectedMonth).endOf('month');
         fechaInicial = startOfMonth.format("YYYY-MM-DD");
+        // Para el mes completo, la fecha final ya es naturalmente mayor
         fechaFinal = endOfMonth.format("YYYY-MM-DD");
       } else {
         return; // No hay período válido
       }
+      
+      console.log('Cargando vehículos con fechas:', { fechaInicial, fechaFinal });
+      
+      // Limpiar recorrido del mapa al cambiar período
+      onConductorHistoricalDataFetched(null);
+      setLocalConductorHistoricalData(null);
+      setSelectedDate(null);
       
       loadVehiculosPorConductor(selectedConductor, fechaInicial, fechaFinal);
     }
@@ -220,12 +285,30 @@ const ConductorHistoryView = () => {
 
   const handleBack = () => {
     // Limpiar datos del conductor al salir
+    onConductorHistoricalDataFetched(null);
     dispatch({ type: "CLEAR_CONDUCTOR_DATA" });
     dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" });
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+      <Backdrop
+        sx={{
+          color: "#fff",
+          zIndex: 9999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        open={loading}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Cargando datos históricos del conductor...
+        </Typography>
+      </Backdrop>
+
       {/* Componente flotante principal - igual que HistoricalView */}
       <Box
         sx={{
@@ -306,7 +389,15 @@ const ConductorHistoryView = () => {
                   labelId="month-select-label"
                   id="month-select"
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  onChange={(e) => {
+                    // Limpiar recorrido del mapa al cambiar mes
+                    if (selectedMonth !== e.target.value) {
+                      onConductorHistoricalDataFetched(null);
+                      setLocalConductorHistoricalData(null);
+                      setSelectedDate(null);
+                    }
+                    setSelectedMonth(e.target.value);
+                  }}
                   disabled={!selectedConductor}
                   label="Seleccionar mes"
                   size="small"
@@ -326,9 +417,15 @@ const ConductorHistoryView = () => {
                 <DatePicker
                   label="Fecha inicial"
                   value={dateRange[0]}
-                  onChange={(newValue) =>
-                    setDateRange([newValue, dateRange[1]])
-                  }
+                  onChange={(newValue) => {
+                    // Limpiar recorrido del mapa al cambiar fecha inicial
+                    if (dateRange[0] !== newValue) {
+                      onConductorHistoricalDataFetched(null);
+                      setLocalConductorHistoricalData(null);
+                      setSelectedDate(null);
+                    }
+                    setDateRange([newValue, dateRange[1]]);
+                  }}
                   disabled={!selectedConductor}
                   maxDate={dayjs()}
                   slotProps={{ textField: { size: "small" } }}
@@ -337,9 +434,15 @@ const ConductorHistoryView = () => {
                 <DatePicker
                   label="Fecha final"
                   value={dateRange[1]}
-                  onChange={(newValue) =>
-                    setDateRange([dateRange[0], newValue])
-                  }
+                  onChange={(newValue) => {
+                    // Limpiar recorrido del mapa al cambiar fecha final
+                    if (dateRange[1] !== newValue) {
+                      onConductorHistoricalDataFetched(null);
+                      setLocalConductorHistoricalData(null);
+                      setSelectedDate(null);
+                    }
+                    setDateRange([dateRange[0], newValue]);
+                  }}
                   disabled={!selectedConductor || !dateRange[0]}
                   minDate={dateRange[0]}
                   maxDate={dayjs()}
@@ -354,7 +457,14 @@ const ConductorHistoryView = () => {
               control={
                 <Switch
                   checked={advancedView}
-                  onChange={(e) => setAdvancedView(e.target.checked)}
+                  onChange={(e) => {
+                    // Limpiar recorrido del mapa al cambiar vista
+                    onConductorHistoricalDataFetched(null);
+                    setLocalConductorHistoricalData(null);
+                    setSelectedDate(null);
+                    setSelectedVehicle("");
+                    setAdvancedView(e.target.checked);
+                  }}
                   color="success"
                   size="small"
                 />
@@ -447,7 +557,15 @@ const ConductorHistoryView = () => {
                         // Lista de vehículos
                         <RadioGroup
                           value={selectedVehicle}
-                          onChange={(e) => setSelectedVehicle(e.target.value)}
+                          onChange={(e) => {
+                            // Limpiar recorrido del mapa al cambiar vehículo
+                            if (selectedVehicle !== e.target.value) {
+                              onConductorHistoricalDataFetched(null);
+                              setLocalConductorHistoricalData(null);
+                              setSelectedDate(null);
+                            }
+                            setSelectedVehicle(e.target.value);
+                          }}
                         >
                           <List dense>
                             {vehiclesToShow.map((vehicle) => {
@@ -523,7 +641,12 @@ const ConductorHistoryView = () => {
                     >
                       <DateCalendar
                         value={selectedDate}
-                        onChange={(newValue) => setSelectedDate(newValue)}
+                        onChange={(newValue) => {
+                          setSelectedDate(newValue);
+                          if (newValue && selectedVehicle && selectedConductor) {
+                            fetchConductorHistoricalData(newValue, selectedVehicle, selectedConductor);
+                          }
+                        }}
                         disabled={!selectedVehicle}
                         disableFuture
                         shouldDisableDate={(date) => {
@@ -576,48 +699,7 @@ const ConductorHistoryView = () => {
                     )}
                   </Grid>
 
-                  {/* Mensaje de resultado */}
-                  {selectedDate && selectedVehicle && (
-                    <Grid item xs={12}>
-                      <Box
-                        sx={{
-                          mt: 2,
-                          p: 1.5,
-                          bgcolor: "rgba(76, 175, 80, 0.1)",
-                          borderRadius: "8px",
-                          border: "1px solid rgba(76, 175, 80, 0.3)",
-                          maxWidth: "400px",
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: "bold",
-                            color: "green",
-                            fontSize: "13px",
-                          }}
-                        >
-                          ✅ Recorrido Encontrado
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "12px" }}
-                        >
-                          Vehículo:{" "}
-                          {currentSelectedVehicle?.patente || "N/A"}{" "}
-                          • Fecha: {selectedDate.format("DD/MM/YYYY")} • Conductor: {selectedConductor?.nombre}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "11px", mt: 0.5 }}
-                        >
-                          🚧 Próxima implementación: Mostrar recorrido en el mapa
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
+                  
                 </Grid>
               )}
             </Box>
