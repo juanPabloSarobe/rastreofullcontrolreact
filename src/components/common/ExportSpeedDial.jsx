@@ -11,7 +11,7 @@ import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
 
-const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
+const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData, selectedConductor }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
@@ -35,7 +35,14 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       const fechaInicial = selectedDate.format("YYYY-MM-DD");
 
       // Construir la URL con los parámetros requeridos
-      const url = `/api/servicio/excel.php?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaInicial}`;
+      let url = `/api/servicio/excel.php?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaInicial}`;
+      
+      // Agregar parámetro conductor si está disponible
+      if (selectedConductor && selectedConductor.idCon) {
+        url += `&&conductor=${selectedConductor.idCon}`;
+      }
+
+      console.log('ExportSpeedDial Excel URL:', url);
 
       // Realizar la solicitud fetch
       const response = await fetch(url, {
@@ -56,7 +63,13 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       // Crear un elemento <a> para la descarga
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = `Historial_${selectedUnit.patente}_${fechaInicial}.xlsx`;
+      
+      // Nombre del archivo con conductor si está disponible
+      const fileName = selectedConductor 
+        ? `Historial_${selectedUnit.patente}_${selectedConductor.nombre.replace(/\s+/g, '_')}_${fechaInicial}.xlsx`
+        : `Historial_${selectedUnit.patente}_${fechaInicial}.xlsx`;
+      
+      link.download = fileName;
 
       // Añadir al DOM, hacer clic y luego eliminar
       document.body.appendChild(link);
@@ -101,8 +114,8 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Recorrido histórico de ${patente} (${fechaInicial})</name>
-    <description>Historial de recorrido del móvil ${movilId}</description>
+    <name>Recorrido histórico de ${patente} (${fechaInicial})${selectedConductor ? ` - ${selectedConductor.nombre}` : ''}</name>
+    <description>Historial de recorrido del móvil ${movilId}${selectedConductor ? ` conducido por ${selectedConductor.nombre}` : ''}</description>
     
     <!-- Estilo para los marcadores -->
     <Style id="markerIconStyle">
@@ -199,7 +212,13 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Recorrido_${patente}_${fechaInicial}.kml`;
+      
+      // Nombre del archivo con conductor si está disponible
+      const fileName = selectedConductor 
+        ? `Recorrido_${patente}_${selectedConductor.nombre.replace(/\s+/g, '_')}_${fechaInicial}.kml`
+        : `Recorrido_${patente}_${fechaInicial}.kml`;
+      
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -255,7 +274,7 @@ const ExportSpeedDial = ({ selectedUnit, selectedDate, historicalData }) => {
         sx={{
           position: "absolute",
           bottom: isMobile ? 140 : null,
-          top: isMobile ? null : 450,
+          top: isMobile ? null : selectedConductor ? 610 : 450, // Más abajo si hay conductor
           left: isMobile ? null : 20,
           right: isMobile ? 14 : null,
           zIndex: 900,

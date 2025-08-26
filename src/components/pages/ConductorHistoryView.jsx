@@ -32,6 +32,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import ConductorSelector from "../common/ConductorSelector";
 import HistoricalDetailView from "../common/HistoricalDetailView";
+import ExportSpeedDial from "../common/ExportSpeedDial";
 import conductorService from "../../services/conductorService";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -309,6 +310,19 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
           Cargando datos históricos del conductor...
         </Typography>
       </Backdrop>
+
+      {/* ExportSpeedDial - Solo cuando hay recorrido visible */}
+      {selectedDate && localConductorHistoricalData && (
+        <ExportSpeedDial
+          selectedUnit={{
+            Movil_ID: selectedVehicle,
+            patente: currentSelectedVehicle?.patente || "Vehículo"
+          }}
+          selectedDate={selectedDate}
+          historicalData={localConductorHistoricalData}
+          selectedConductor={selectedConductor}
+        />
+      )}
 
       {/* Componente flotante principal - igual que HistoricalView */}
       <Box
