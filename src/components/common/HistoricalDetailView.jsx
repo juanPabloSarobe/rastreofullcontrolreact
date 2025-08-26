@@ -18,14 +18,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
+const HistoricalDetailView = ({ selectedUnit, selectedDate, selectedConductor }) => {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const tableContainerRef = useRef(null);
-  const lastFetchRef = useRef({ unitId: null, date: null });
+  const lastFetchRef = useRef({ unitId: null, date: null, conductorId: null });
 
   // Función para cargar los datos históricos detallados
   const fetchHistoricalDetail = async () => {
@@ -40,7 +40,15 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
         .add(1, "day")
         .format("YYYY-MM-DD");
 
-      const url = `/api/servicio/historico.php/historico?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
+      // Construir URL base
+      let url = `/api/servicio/historico.php/historico?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
+      
+      // Agregar parámetro conductor si está disponible
+      if (selectedConductor && selectedConductor.idCon) {
+        url += `&&conductor=${selectedConductor.idCon}`;
+      }
+
+      console.log('HistoricalDetailView URL:', url);
 
       const response = await fetch(url, {
         method: "GET",
@@ -61,6 +69,7 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
       lastFetchRef.current = {
         unitId: movilId,
         date: fechaInicial,
+        conductorId: selectedConductor?.idCon || null,
       };
     } catch (error) {
       console.error("Error al cargar detalle histórico:", error);
@@ -75,7 +84,8 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
       !expanded &&
       (!detailData.length ||
         lastFetchRef.current.unitId !== selectedUnit?.Movil_ID ||
-        lastFetchRef.current.date !== selectedDate?.format("YYYY-MM-DD"));
+        lastFetchRef.current.date !== selectedDate?.format("YYYY-MM-DD") ||
+        lastFetchRef.current.conductorId !== (selectedConductor?.idCon || null));
 
     if (shouldFetchData) {
       fetchHistoricalDetail();
@@ -89,13 +99,14 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate }) => {
     if (
       expanded &&
       (lastFetchRef.current.unitId !== selectedUnit?.Movil_ID ||
-        lastFetchRef.current.date !== selectedDate?.format("YYYY-MM-DD"))
+        lastFetchRef.current.date !== selectedDate?.format("YYYY-MM-DD") ||
+        lastFetchRef.current.conductorId !== (selectedConductor?.idCon || null))
     ) {
       // Limpiamos el texto del filtro cuando cambia la fecha o unidad
       setSearchQuery("");
       fetchHistoricalDetail();
     }
-  }, [selectedUnit, selectedDate, expanded]);
+  }, [selectedUnit, selectedDate, selectedConductor, expanded]);
 
   // Función para manejar la búsqueda
   const handleSearch = (event) => {

@@ -31,6 +31,7 @@ import { useContextValue } from "../../context/Context";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import ConductorSelector from "../common/ConductorSelector";
+import HistoricalDetailView from "../common/HistoricalDetailView";
 import conductorService from "../../services/conductorService";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -706,6 +707,18 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
           )}
         </Box>
       </Box>
+      
+      {/* HistoricalDetailView - Solo cuando hay recorrido visible */}
+      {localConductorHistoricalData && selectedDate && selectedVehicle && selectedConductor && (
+        <HistoricalDetailView
+          selectedUnit={{
+            Movil_ID: selectedVehicle,
+            patente: currentSelectedVehicle?.patente || "Vehículo"
+          }}
+          selectedDate={selectedDate}
+          selectedConductor={selectedConductor}
+        />
+      )}
     </LocalizationProvider>
   );
 };
