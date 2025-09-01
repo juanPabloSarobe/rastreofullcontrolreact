@@ -1,8 +1,8 @@
 // Servicio para manejar conductores desde login
 class PermisosConductorService {
-  async getPermisosConductores(userId) {
+  async getPermisosConductores() {
     try {
-      const url = `api/servicio/usuarios.php/permisosConductores/${userId}`;
+      const url = `api/servicio/usuarios.php/permisosConductores`;
 
       console.log("Cargando conductores desde login:", url);
 

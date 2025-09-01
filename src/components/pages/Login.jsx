@@ -78,9 +78,9 @@ const Login = () => {
           dispatch({ type: "SET_ACCESS_GRANTED", payload: true });
           dispatch({ type: "SET_ROLE", payload: result.rol });
           dispatch({ type: "SET_USER", payload: username });
-          
+
           // Cargar conductores automáticamente después del login exitoso
-          loadConductores(result.idUser || 415); // Usar el ID del usuario del resultado o fallback
+          loadConductores(); // Usar el ID del usuario del resultado o fallback
         } else {
           toggleOnLoginError();
         }
@@ -91,17 +91,17 @@ const Login = () => {
   };
 
   // Función para cargar conductores después del login
-  const loadConductores = async (userId) => {
+  const loadConductores = async () => {
     try {
       dispatch({ type: "SET_LOADING_CONDUCTORES", payload: true });
-      
-      const conductores = await permisosConductorService.getPermisosConductores(userId);
-      
+
+      const conductores =
+        await permisosConductorService.getPermisosConductores();
+
       dispatch({ type: "SET_CONDUCTORES", payload: conductores });
       dispatch({ type: "SET_CONDUCTORES_LOADED", payload: true });
-      
+
       console.log(`Conductores cargados: ${conductores.length} encontrados`);
-      
     } catch (error) {
       console.error("Error al cargar conductores:", error);
       dispatch({ type: "SET_CONDUCTORES", payload: [] });
