@@ -151,7 +151,13 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
         // La fecha final debe ser un día mayor que la inicial
         const fechaFinal = date.add(1, "day").format("YYYY-MM-DD");
 
-        const url = `/api/servicio/historico.php/optimo/?movil=${vehicleId}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}&conductor=${conductor.idCon}`;
+        const params = new URLSearchParams({
+          movil: vehicleId,
+          fechaInicial: fechaInicial,
+          fechaFinal: fechaFinal,
+          conductor: conductor.idCon,
+        });
+        const url = `/api/servicio/historico.php/optimo/?${params.toString()}`;
 
         const response = await fetch(url, {
           method: "GET",
