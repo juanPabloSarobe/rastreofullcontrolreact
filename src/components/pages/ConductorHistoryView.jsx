@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -37,29 +37,7 @@ import conductorService from "../../services/conductorService";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
-// Mock de conductores (del plan de implementación)
-/* const mockConductores = {
-  Permisos: [
-    {
-      idCon: 11777,
-      nombre: "Abad Francisco",
-      empresa: "OPS SRL",
-      dni: 12345678,
-      telefono: "+5492996911111",
-      email: "abad@gmail.com",
-    },
-    {
-      idCon: 13845,
-      nombre: "Abel Jorge Navarrete",
-      empresa: "OPS SRL",
-      dni: 87654321,
-      telefono: "+5492996922222",
-      email: "jorge@gmail.com",
-    },
-  ],
-}; */
-
-// Generar últimos 6 meses
+// Memoizar la generación de meses para evitar recálculos
 const generateLast6Months = () => {
   const months = [];
   for (let i = 0; i < 6; i++) {
@@ -71,6 +49,9 @@ const generateLast6Months = () => {
   }
   return months;
 };
+
+// Memoizar la lista de meses
+const LAST_6_MONTHS = generateLast6Months();
 
 const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
   const { state, dispatch } = useContextValue();
@@ -91,115 +72,159 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
   const conductorVehicles = state.conductorVehicles;
   const loadingConductorVehicles = state.loadingConductorVehicles;
 
-  // Handler para seleccionar conductor
-  const handleConductorSelect = (conductor) => {
-    dispatch({ type: "SET_SELECTED_CONDUCTOR", payload: conductor });
-    // Limpiar selecciones cuando cambia el conductor
-    setSelectedVehicle("");
-    setSelectedDate(null);
-    setSelectedMonth("");
-    setDateRange([null, null]);
-    // Limpiar vehículos del conductor anterior
-    dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: [] });
-    // Limpiar recorrido del mapa al cambiar conductor
-    onConductorHistoricalDataFetched(null);
-    setLocalConductorHistoricalData(null);
-  };
-
-  // Función para cargar vehículos por conductor
-  const loadVehiculosPorConductor = async (
-    conductor,
-    fechaInicial,
-    fechaFinal
-  ) => {
-    try {
-      dispatch({ type: "SET_LOADING_CONDUCTOR_VEHICLES", payload: true });
-
-      const response = await conductorService.getVehiculosPorConductor(
-        fechaInicial,
-        fechaFinal,
-        conductor.idCon
-      );
-
-      // Transformar los datos al formato esperado por el componente
-      const vehiclesData = response.Vehiculos || [];
-
-      dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: vehiclesData });
-    } catch (error) {
-      console.error("Error al cargar vehículos:", error);
-      // En caso de error, mostrar mock para no romper la funcionalidad
-      const mockVehicles = [
-        {
-          movil: 1,
-          patente: "ABC123",
-          dias: [
-            dayjs().subtract(1, "day").format("YYYY-MM-DD"),
-            dayjs().subtract(3, "day").format("YYYY-MM-DD"),
-            dayjs().subtract(5, "day").format("YYYY-MM-DD"),
-          ],
-        },
-        {
-          movil: 2,
-          patente: "DEF456",
-          dias: [
-            dayjs().subtract(2, "day").format("YYYY-MM-DD"),
-            dayjs().subtract(4, "day").format("YYYY-MM-DD"),
-          ],
-        },
-      ];
-      dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: mockVehicles });
-    } finally {
-      dispatch({ type: "SET_LOADING_CONDUCTOR_VEHICLES", payload: false });
-    }
-  };
-
-  // Función para cargar datos históricos del conductor
-  const fetchConductorHistoricalData = async (date, vehicleId, conductor) => {
-    if (!date || !vehicleId || !conductor) return;
-
-    // Limpiar datos anteriores
-    onConductorHistoricalDataFetched(null);
-    setLocalConductorHistoricalData(null);
-    setLoading(true);
-
-    try {
-      const fechaInicial = date.format("YYYY-MM-DD");
-      // La fecha final debe ser un día mayor que la inicial
-      const fechaFinal = date.add(1, "day").format("YYYY-MM-DD");
-
-      const url = `/api/servicio/historico.php/optimo/?movil=${vehicleId}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}&conductor=${conductor.idCon}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al obtener los datos históricos del conductor");
-      }
-
-      const data = await response.json();
-
-      setLocalConductorHistoricalData(data);
-      onConductorHistoricalDataFetched(data);
-    } catch (error) {
-      console.error("Error al cargar histórico del conductor:", error);
+  // Memoizar el handler para seleccionar conductor
+  const handleConductorSelect = useCallback(
+    (conductor) => {
+      dispatch({ type: "SET_SELECTED_CONDUCTOR", payload: conductor });
+      // Limpiar selecciones cuando cambia el conductor
+      setSelectedVehicle("");
+      setSelectedDate(null);
+      setSelectedMonth("");
+      setDateRange([null, null]);
+      // Limpiar vehículos del conductor anterior
+      dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: [] });
+      // Limpiar recorrido del mapa al cambiar conductor
       onConductorHistoricalDataFetched(null);
-    } finally {
-      setLoading(false);
+      setLocalConductorHistoricalData(null);
+    },
+    [dispatch, onConductorHistoricalDataFetched]
+  );
+
+  // Memoizar la función para cargar vehículos por conductor
+  const loadVehiculosPorConductor = useCallback(
+    async (conductor, fechaInicial, fechaFinal) => {
+      try {
+        dispatch({ type: "SET_LOADING_CONDUCTOR_VEHICLES", payload: true });
+
+        const response = await conductorService.getVehiculosPorConductor(
+          fechaInicial,
+          fechaFinal,
+          conductor.idCon
+        );
+
+        // Transformar los datos al formato esperado por el componente
+        const vehiclesData = response.Vehiculos || [];
+
+        dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: vehiclesData });
+      } catch (error) {
+        console.error("Error al cargar vehículos:", error);
+        // En caso de error, mostrar mock para no romper la funcionalidad
+        const mockVehicles = [
+          {
+            movil: 1,
+            patente: "ABC123",
+            dias: [
+              dayjs().subtract(1, "day").format("YYYY-MM-DD"),
+              dayjs().subtract(3, "day").format("YYYY-MM-DD"),
+              dayjs().subtract(5, "day").format("YYYY-MM-DD"),
+            ],
+          },
+          {
+            movil: 2,
+            patente: "DEF456",
+            dias: [
+              dayjs().subtract(2, "day").format("YYYY-MM-DD"),
+              dayjs().subtract(4, "day").format("YYYY-MM-DD"),
+            ],
+          },
+        ];
+        dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: mockVehicles });
+      } finally {
+        dispatch({ type: "SET_LOADING_CONDUCTOR_VEHICLES", payload: false });
+      }
+    },
+    [dispatch]
+  );
+
+  // Memoizar la función para cargar datos históricos del conductor
+  const fetchConductorHistoricalData = useCallback(
+    async (date, vehicleId, conductor) => {
+      if (!date || !vehicleId || !conductor) return;
+
+      // Limpiar datos anteriores
+      onConductorHistoricalDataFetched(null);
+      setLocalConductorHistoricalData(null);
+      setLoading(true);
+
+      try {
+        const fechaInicial = date.format("YYYY-MM-DD");
+        // La fecha final debe ser un día mayor que la inicial
+        const fechaFinal = date.add(1, "day").format("YYYY-MM-DD");
+
+        const url = `/api/servicio/historico.php/optimo/?movil=${vehicleId}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}&conductor=${conductor.idCon}`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            "Error al obtener los datos históricos del conductor"
+          );
+        }
+
+        const data = await response.json();
+
+        setLocalConductorHistoricalData(data);
+        onConductorHistoricalDataFetched(data);
+      } catch (error) {
+        console.error("Error al cargar histórico del conductor:", error);
+        onConductorHistoricalDataFetched(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onConductorHistoricalDataFetched]
+  );
+
+  // Memoizar showResults para evitar recálculos
+  const showResults = useMemo(
+    () =>
+      selectedConductor &&
+      (advancedView ? dateRange[0] && dateRange[1] : selectedMonth),
+    [selectedConductor, advancedView, dateRange, selectedMonth]
+  );
+
+  // Memoizar hasLoadedRealData para evitar recálculos
+  const hasLoadedRealData = useMemo(
+    () =>
+      conductorVehicles.length > 0 ||
+      (!loadingConductorVehicles && showResults),
+    [conductorVehicles.length, loadingConductorVehicles, showResults]
+  );
+
+  // Memoizar vehiclesToShow para evitar recálculos
+  const vehiclesToShow = useMemo(
+    () => (hasLoadedRealData ? conductorVehicles : []),
+    [hasLoadedRealData, conductorVehicles]
+  );
+
+  // Memoizar currentSelectedVehicle para evitar búsquedas repetidas
+  const currentSelectedVehicle = useMemo(
+    () =>
+      vehiclesToShow.find(
+        (v) =>
+          v.movil?.toString() === selectedVehicle || v.id === selectedVehicle
+      ),
+    [vehiclesToShow, selectedVehicle]
+  );
+
+  // Memoizar mockAvailableDays para evitar recálculos
+  const mockAvailableDays = useMemo(() => {
+    if (currentSelectedVehicle?.dias) {
+      return currentSelectedVehicle.dias.map((dia) => dayjs(dia));
     }
-  };
-
-  // Calcular showResults antes de usarlo en useEffect
-  const showResults =
-    selectedConductor &&
-    (advancedView ? dateRange[0] && dateRange[1] : selectedMonth);
-
-  // Determinar si mostrar datos mock o reales
-  // Solo usar mock si no se han cargado datos reales aún (estado inicial)
-  const hasLoadedRealData =
-    conductorVehicles.length > 0 || (!loadingConductorVehicles && showResults);
-  const vehiclesToShow = hasLoadedRealData ? conductorVehicles : [];
+    return selectedVehicle
+      ? [
+          dayjs().subtract(1, "day"),
+          dayjs().subtract(3, "day"),
+          dayjs().subtract(5, "day"),
+          dayjs().subtract(7, "day"),
+          dayjs().subtract(10, "day"),
+        ]
+      : [];
+  }, [currentSelectedVehicle?.dias, selectedVehicle]);
 
   // Efecto para limpiar selección de vehículo cuando cambian los vehículos disponibles
   useEffect(() => {
@@ -251,32 +276,13 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
     }
   }, [selectedConductor, selectedMonth, dateRange, advancedView, showResults]);
 
-  // Encontrar el vehículo seleccionado actual
-  const currentSelectedVehicle = vehiclesToShow.find(
-    (v) => v.movil?.toString() === selectedVehicle || v.id === selectedVehicle
-  );
-
-  // Mock de días disponibles - actualizar basado en el vehículo seleccionado real
-  const mockAvailableDays = currentSelectedVehicle?.dias
-    ? currentSelectedVehicle.dias.map((dia) => dayjs(dia))
-    : selectedVehicle
-    ? [
-        dayjs().subtract(1, "day"),
-        dayjs().subtract(3, "day"),
-        dayjs().subtract(5, "day"),
-        dayjs().subtract(7, "day"),
-        dayjs().subtract(10, "day"),
-      ]
-    : [];
-
-  const last6Months = generateLast6Months();
-
-  const handleBack = () => {
+  // Memoizar el handler para volver
+  const handleBack = useCallback(() => {
     // Limpiar datos del conductor al salir
     onConductorHistoricalDataFetched(null);
     dispatch({ type: "CLEAR_CONDUCTOR_DATA" });
     dispatch({ type: "SET_VIEW_MODE", payload: "rastreo" });
-  };
+  }, [dispatch, onConductorHistoricalDataFetched]);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
@@ -442,7 +448,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
                       label="Seleccionar mes"
                       size="small"
                     >
-                      {last6Months.map((month) => (
+                      {LAST_6_MONTHS.map((month) => (
                         <MenuItem key={month.value} value={month.value}>
                           {month.label}
                         </MenuItem>
