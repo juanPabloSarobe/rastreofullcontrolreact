@@ -4,8 +4,6 @@ class PermisosConductorService {
     try {
       const url = `api/servicio/usuarios.php/permisosConductores`;
 
-      console.log("Cargando conductores desde login:", url);
-
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",
@@ -16,7 +14,6 @@ class PermisosConductorService {
       }
 
       const data = await response.json();
-      console.log("Conductores recibidos:", data);
 
       // El endpoint devuelve el mismo formato que el mock pero sin dni, telefono, email
       return data.Permisos || [];

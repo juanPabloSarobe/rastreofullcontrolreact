@@ -82,7 +82,8 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [localConductorHistoricalData, setLocalConductorHistoricalData] = useState(null);
+  const [localConductorHistoricalData, setLocalConductorHistoricalData] =
+    useState(null);
 
   // Usar conductores del Context
   const selectedConductor = state.selectedConductor;
@@ -106,44 +107,44 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
   };
 
   // Función para cargar vehículos por conductor
-  const loadVehiculosPorConductor = async (conductor, fechaInicial, fechaFinal) => {
+  const loadVehiculosPorConductor = async (
+    conductor,
+    fechaInicial,
+    fechaFinal
+  ) => {
     try {
       dispatch({ type: "SET_LOADING_CONDUCTOR_VEHICLES", payload: true });
-      
-      console.log('Cargando vehículos para conductor:', conductor.nombre);
-      console.log('Período:', { fechaInicial, fechaFinal });
-      
+
       const response = await conductorService.getVehiculosPorConductor(
         fechaInicial,
         fechaFinal,
         conductor.idCon
       );
-      
+
       // Transformar los datos al formato esperado por el componente
       const vehiclesData = response.Vehiculos || [];
-      console.log('Vehículos cargados:', vehiclesData);
+
       dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: vehiclesData });
-      
     } catch (error) {
-      console.error('Error al cargar vehículos:', error);
+      console.error("Error al cargar vehículos:", error);
       // En caso de error, mostrar mock para no romper la funcionalidad
       const mockVehicles = [
-        { 
-          movil: 1, 
-          patente: "ABC123", 
+        {
+          movil: 1,
+          patente: "ABC123",
           dias: [
             dayjs().subtract(1, "day").format("YYYY-MM-DD"),
             dayjs().subtract(3, "day").format("YYYY-MM-DD"),
             dayjs().subtract(5, "day").format("YYYY-MM-DD"),
-          ]
+          ],
         },
-        { 
-          movil: 2, 
-          patente: "DEF456", 
+        {
+          movil: 2,
+          patente: "DEF456",
           dias: [
             dayjs().subtract(2, "day").format("YYYY-MM-DD"),
             dayjs().subtract(4, "day").format("YYYY-MM-DD"),
-          ]
+          ],
         },
       ];
       dispatch({ type: "SET_CONDUCTOR_VEHICLES", payload: mockVehicles });
@@ -164,13 +165,10 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
     try {
       const fechaInicial = date.format("YYYY-MM-DD");
       // La fecha final debe ser un día mayor que la inicial
-      const fechaFinal = date.add(1, 'day').format("YYYY-MM-DD");
+      const fechaFinal = date.add(1, "day").format("YYYY-MM-DD");
 
       const url = `/api/servicio/historico.php/optimo/?movil=${vehicleId}&fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}&conductor=${conductor.idCon}`;
-      
-      console.log('Llamando al endpoint:', url);
-      console.log('Fechas:', { fechaInicial, fechaFinal });
-      
+
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",
@@ -181,7 +179,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
       }
 
       const data = await response.json();
-      console.log('Datos recibidos del conductor:', data);
+
       setLocalConductorHistoricalData(data);
       onConductorHistoricalDataFetched(data);
     } catch (error) {
@@ -199,15 +197,16 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
 
   // Determinar si mostrar datos mock o reales
   // Solo usar mock si no se han cargado datos reales aún (estado inicial)
-  const hasLoadedRealData = conductorVehicles.length > 0 || (!loadingConductorVehicles && showResults);
+  const hasLoadedRealData =
+    conductorVehicles.length > 0 || (!loadingConductorVehicles && showResults);
   const vehiclesToShow = hasLoadedRealData ? conductorVehicles : [];
 
   // Efecto para limpiar selección de vehículo cuando cambian los vehículos disponibles
   useEffect(() => {
     if (conductorVehicles.length > 0 && selectedVehicle) {
       // Verificar si el vehículo seleccionado aún existe en la nueva lista
-      const vehicleExists = conductorVehicles.some(v => 
-        v.movil?.toString() === selectedVehicle
+      const vehicleExists = conductorVehicles.some(
+        (v) => v.movil?.toString() === selectedVehicle
       );
       if (!vehicleExists) {
         setSelectedVehicle("");
@@ -223,45 +222,43 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
   useEffect(() => {
     if (selectedConductor && showResults) {
       let fechaInicial, fechaFinal;
-      
+
       if (advancedView && dateRange[0] && dateRange[1]) {
         // Vista avanzada: usar rango de fechas
         fechaInicial = dateRange[0].format("YYYY-MM-DD");
         // Asegurar que fechaFinal sea al menos un día mayor que fechaInicial
-        const finalDate = dateRange[1].isSame(dateRange[0], 'day') 
-          ? dateRange[1].add(1, 'day') 
+        const finalDate = dateRange[1].isSame(dateRange[0], "day")
+          ? dateRange[1].add(1, "day")
           : dateRange[1];
         fechaFinal = finalDate.format("YYYY-MM-DD");
       } else if (!advancedView && selectedMonth) {
         // Vista simple: usar mes seleccionado
-        const startOfMonth = dayjs(selectedMonth).startOf('month');
-        const endOfMonth = dayjs(selectedMonth).endOf('month');
+        const startOfMonth = dayjs(selectedMonth).startOf("month");
+        const endOfMonth = dayjs(selectedMonth).endOf("month");
         fechaInicial = startOfMonth.format("YYYY-MM-DD");
         // Para el mes completo, la fecha final ya es naturalmente mayor
         fechaFinal = endOfMonth.format("YYYY-MM-DD");
       } else {
         return; // No hay período válido
       }
-      
-      console.log('Cargando vehículos con fechas:', { fechaInicial, fechaFinal });
-      
+
       // Limpiar recorrido del mapa al cambiar período
       onConductorHistoricalDataFetched(null);
       setLocalConductorHistoricalData(null);
       setSelectedDate(null);
-      
+
       loadVehiculosPorConductor(selectedConductor, fechaInicial, fechaFinal);
     }
   }, [selectedConductor, selectedMonth, dateRange, advancedView, showResults]);
 
   // Encontrar el vehículo seleccionado actual
-  const currentSelectedVehicle = vehiclesToShow.find(v => 
-    v.movil?.toString() === selectedVehicle || v.id === selectedVehicle
+  const currentSelectedVehicle = vehiclesToShow.find(
+    (v) => v.movil?.toString() === selectedVehicle || v.id === selectedVehicle
   );
 
   // Mock de días disponibles - actualizar basado en el vehículo seleccionado real
   const mockAvailableDays = currentSelectedVehicle?.dias
-    ? currentSelectedVehicle.dias.map(dia => dayjs(dia))
+    ? currentSelectedVehicle.dias.map((dia) => dayjs(dia))
     : selectedVehicle
     ? [
         dayjs().subtract(1, "day"),
@@ -305,7 +302,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
         <ExportSpeedDial
           selectedUnit={{
             Movil_ID: selectedVehicle,
-            patente: currentSelectedVehicle?.patente || "Vehículo"
+            patente: currentSelectedVehicle?.patente || "Vehículo",
           }}
           selectedDate={selectedDate}
           historicalData={localConductorHistoricalData}
@@ -410,357 +407,398 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
                 />
               </Box>
 
-          {/* Selector de Período */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 1,
-              alignItems: { xs: "stretch", sm: "flex-end" },
-              mb: 2,
-            }}
-          >
-            {/* Vista simple: Selector de mes */}
-            {!advancedView && (
-              <FormControl sx={{ flex: 1, maxWidth: "400px", marginRight: "15px" }}>
-                <InputLabel id="month-select-label" size="small">Seleccionar mes</InputLabel>
-                <Select
-                  labelId="month-select-label"
-                  id="month-select"
-                  value={selectedMonth}
-                  onChange={(e) => {
-                    // Limpiar recorrido del mapa al cambiar mes
-                    if (selectedMonth !== e.target.value) {
-                      onConductorHistoricalDataFetched(null);
-                      setLocalConductorHistoricalData(null);
-                      setSelectedDate(null);
-                    }
-                    setSelectedMonth(e.target.value);
-                  }}
-                  disabled={!selectedConductor}
-                  label="Seleccionar mes"
-                  size="small"
-                >
-                  {last6Months.map((month) => (
-                    <MenuItem key={month.value} value={month.value}>
-                      {month.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
+              {/* Selector de Período */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  gap: 1,
+                  alignItems: { xs: "stretch", sm: "flex-end" },
+                  mb: 2,
+                }}
+              >
+                {/* Vista simple: Selector de mes */}
+                {!advancedView && (
+                  <FormControl
+                    sx={{ flex: 1, maxWidth: "400px", marginRight: "15px" }}
+                  >
+                    <InputLabel id="month-select-label" size="small">
+                      Seleccionar mes
+                    </InputLabel>
+                    <Select
+                      labelId="month-select-label"
+                      id="month-select"
+                      value={selectedMonth}
+                      onChange={(e) => {
+                        // Limpiar recorrido del mapa al cambiar mes
+                        if (selectedMonth !== e.target.value) {
+                          onConductorHistoricalDataFetched(null);
+                          setLocalConductorHistoricalData(null);
+                          setSelectedDate(null);
+                        }
+                        setSelectedMonth(e.target.value);
+                      }}
+                      disabled={!selectedConductor}
+                      label="Seleccionar mes"
+                      size="small"
+                    >
+                      {last6Months.map((month) => (
+                        <MenuItem key={month.value} value={month.value}>
+                          {month.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
 
-            {/* Vista avanzada: Calendarios */}
-            {advancedView && (
-              <Box sx={{ display: "flex", gap: 1, flex: 1, maxWidth: "450px" }}>
-                <DatePicker
-                  label="Fecha inicial"
-                  value={dateRange[0]}
-                  onChange={(newValue) => {
-                    // Limpiar recorrido del mapa al cambiar fecha inicial
-                    if (dateRange[0] !== newValue) {
-                      onConductorHistoricalDataFetched(null);
-                      setLocalConductorHistoricalData(null);
-                      setSelectedDate(null);
-                    }
-                    setDateRange([newValue, dateRange[1]]);
+                {/* Vista avanzada: Calendarios */}
+                {advancedView && (
+                  <Box
+                    sx={{ display: "flex", gap: 1, flex: 1, maxWidth: "450px" }}
+                  >
+                    <DatePicker
+                      label="Fecha inicial"
+                      value={dateRange[0]}
+                      onChange={(newValue) => {
+                        // Limpiar recorrido del mapa al cambiar fecha inicial
+                        if (dateRange[0] !== newValue) {
+                          onConductorHistoricalDataFetched(null);
+                          setLocalConductorHistoricalData(null);
+                          setSelectedDate(null);
+                        }
+                        setDateRange([newValue, dateRange[1]]);
+                      }}
+                      disabled={!selectedConductor}
+                      maxDate={dayjs()}
+                      slotProps={{ textField: { size: "small" } }}
+                      sx={{ flex: 1, maxWidth: "210px" }}
+                    />
+                    <DatePicker
+                      label="Fecha final"
+                      value={dateRange[1]}
+                      onChange={(newValue) => {
+                        // Limpiar recorrido del mapa al cambiar fecha final
+                        if (dateRange[1] !== newValue) {
+                          onConductorHistoricalDataFetched(null);
+                          setLocalConductorHistoricalData(null);
+                          setSelectedDate(null);
+                        }
+                        setDateRange([dateRange[0], newValue]);
+                      }}
+                      disabled={!selectedConductor || !dateRange[0]}
+                      minDate={dateRange[0]}
+                      maxDate={dayjs()}
+                      slotProps={{ textField: { size: "small" } }}
+                      sx={{ flex: 1, maxWidth: "210px" }}
+                    />
+                  </Box>
+                )}
+
+                {/* Switch Vista Avanzada */}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={advancedView}
+                      onChange={(e) => {
+                        // Limpiar recorrido del mapa al cambiar vista
+                        onConductorHistoricalDataFetched(null);
+                        setLocalConductorHistoricalData(null);
+                        setSelectedDate(null);
+                        setSelectedVehicle("");
+                        setAdvancedView(e.target.checked);
+                      }}
+                      color="success"
+                      size="small"
+                    />
+                  }
+                  label="Avanzado"
+                  sx={{
+                    "& .MuiFormControlLabel-label": { fontSize: "0.875rem" },
                   }}
-                  disabled={!selectedConductor}
-                  maxDate={dayjs()}
-                  slotProps={{ textField: { size: "small" } }}
-                  sx={{ flex: 1, maxWidth: "210px" }}
-                />
-                <DatePicker
-                  label="Fecha final"
-                  value={dateRange[1]}
-                  onChange={(newValue) => {
-                    // Limpiar recorrido del mapa al cambiar fecha final
-                    if (dateRange[1] !== newValue) {
-                      onConductorHistoricalDataFetched(null);
-                      setLocalConductorHistoricalData(null);
-                      setSelectedDate(null);
-                    }
-                    setDateRange([dateRange[0], newValue]);
-                  }}
-                  disabled={!selectedConductor || !dateRange[0]}
-                  minDate={dateRange[0]}
-                  maxDate={dayjs()}
-                  slotProps={{ textField: { size: "small" } }}
-                  sx={{ flex: 1, maxWidth: "210px" }}
                 />
               </Box>
-            )}
 
-            {/* Switch Vista Avanzada */}
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={advancedView}
-                  onChange={(e) => {
-                    // Limpiar recorrido del mapa al cambiar vista
-                    onConductorHistoricalDataFetched(null);
-                    setLocalConductorHistoricalData(null);
-                    setSelectedDate(null);
-                    setSelectedVehicle("");
-                    setAdvancedView(e.target.checked);
-                  }}
-                  color="success"
-                  size="small"
-                />
-              }
-              label="Avanzado"
-              sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
-            />
-          </Box>
-
-          {/* Layout de Resultados */}
-          {showResults && (
-            <Box sx={{ mt: 2 }}>
-              {/* Verificar si hay datos después de cargar */}
-              {!loadingConductorVehicles && hasLoadedRealData && vehiclesToShow.length === 0 ? (
-                // Mensaje cuando no hay vehículos para el período seleccionado
-                <Box
-                  sx={{
-                    p: 3,
-                    textAlign: "center",
-                    bgcolor: "rgba(255, 152, 0, 0.1)",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 152, 0, 0.3)",
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: "bold",
-                      color: "orange",
-                      fontSize: "16px",
-                      mb: 1,
-                    }}
-                  >
-                    📅 Sin datos para el período
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: "14px", mb: 1 }}
-                  >
-                    El conductor <strong>{selectedConductor?.nombre}</strong> no ha conducido ningún vehículo en el período seleccionado.
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: "12px" }}
-                  >
-                    {advancedView
-                      ? `Período: ${dateRange[0]?.format("DD/MM/YYYY")} - ${dateRange[1]?.format("DD/MM/YYYY")}`
-                      : `Mes: ${dayjs(selectedMonth).format("MMMM YYYY")}`}
-                  </Typography>
-                </Box>
-              ) : (
-                // Layout normal con vehículos y calendario
-                <Grid container spacing={2}>
-                  {/* Lista de Vehículos */}
-                  <Grid item xs={12} md={6}>
-                    <Typography
-                      variant="subtitle1"
-                      gutterBottom
-                      sx={{ fontWeight: "bold", fontSize: "14px" }}
-                    >
-                      Vehículos del Conductor
-                    </Typography>
-                    <Paper
-                      variant="outlined"
+              {/* Layout de Resultados */}
+              {showResults && (
+                <Box sx={{ mt: 2 }}>
+                  {/* Verificar si hay datos después de cargar */}
+                  {!loadingConductorVehicles &&
+                  hasLoadedRealData &&
+                  vehiclesToShow.length === 0 ? (
+                    // Mensaje cuando no hay vehículos para el período seleccionado
+                    <Box
                       sx={{
-                        maxHeight: "200px",
-                        maxWidth: "200px",
-                        overflow: "auto",
-                        border: "1px solid #e0e0e0",
-                        position: "relative",
+                        p: 3,
+                        textAlign: "center",
+                        bgcolor: "rgba(255, 152, 0, 0.1)",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255, 152, 0, 0.3)",
                       }}
                     >
-                      {loadingConductorVehicles ? (
-                        // Indicador de carga
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            py: 4,
-                          }}
-                        >
-                          <CircularProgress size={32} color="success" />
-                          <Typography variant="body2" sx={{ ml: 2, fontSize: "12px" }}>
-                            Cargando vehículos...
-                          </Typography>
-                        </Box>
-                      ) : vehiclesToShow.length > 0 ? (
-                        // Lista de vehículos
-                        <RadioGroup
-                                    value={selectedVehicle}
-                                    size="small"
-                          onChange={(e) => {
-                            // Limpiar recorrido del mapa al cambiar vehículo
-                            if (selectedVehicle !== e.target.value) {
-                              onConductorHistoricalDataFetched(null);
-                              setLocalConductorHistoricalData(null);
-                              setSelectedDate(null);
-                            }
-                            setSelectedVehicle(e.target.value);
-                          }}
-                        >
-                          <List dense >
-                            {vehiclesToShow.map((vehicle) => {
-                              // Adaptar para datos reales y mock
-                              const vehicleId = vehicle.movil?.toString() || vehicle.id;
-                              const vehiclePatente = vehicle.patente;
-                              const vehicleInfo = vehicle.marca && vehicle.modelo 
-                                ? `${vehicle.marca} ${vehicle.modelo}`
-                                : `${vehicle.dias?.length || 0} días con datos`;
-                              
-                              return (
-                                <ListItem key={vehicleId} disablePadding >
-                                  <ListItemButton
-                                    onClick={() => setSelectedVehicle(vehicleId)}
-                                    sx={{ py: 0.5 }}
-                                  >
-                                    <ListItemIcon sx={{ minWidth: "32px" }}>
-                                      <Radio
-                                        edge="start"
-                                        value={vehicleId}
-                                        tabIndex={-1}
-                                        disableRipple
-                                        color="success"
-                                        size="small"
-                                      />
-                                    </ListItemIcon>
-                                    <ListItemIcon sx={{ minWidth: "32px" }}>
-                                      <DirectionsCarIcon
-                                        color="primary"
-                                        sx={{ fontSize: "20px" }}
-                                      />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                      primary={vehiclePatente}
-                                      secondary={vehicleInfo}
-                                      primaryTypographyProps={{ fontSize: "14px" }}
-                                      secondaryTypographyProps={{ fontSize: "12px" }}
-                                    />
-                                  </ListItemButton>
-                                </ListItem>
-                              );
-                            })}
-                          </List>
-                        </RadioGroup>
-                      ) : (
-                        // Sin vehículos
-                        <Box sx={{ p: 2, textAlign: "center" }}>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "12px" }}>
-                            No hay vehículos disponibles para el período seleccionado
-                          </Typography>
-                        </Box>
-                      )}
-                    </Paper>
-                  </Grid>
-
-                  {/* Calendario */}
-                  <Grid item xs={12} md={6}>
-                    <Typography
-                      variant="subtitle1"
-                      gutterBottom
-                      sx={{ fontWeight: "bold", fontSize: "14px" }}
-                    >
-                      Días Disponibles
-                    </Typography>
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 1,
-                        border: "1px solid #e0e0e0",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <DateCalendar
-                        value={selectedDate}
-                        onChange={(newValue) => {
-                          setSelectedDate(newValue);
-                          if (newValue && selectedVehicle && selectedConductor) {
-                            fetchConductorHistoricalData(newValue, selectedVehicle, selectedConductor);
-                          }
-                        }}
-                        disabled={!selectedVehicle}
-                        disableFuture
-                        shouldDisableDate={(date) => {
-                          if (!selectedVehicle) return true;
-                          return !mockAvailableDays.some((availableDay) =>
-                            date.isSame(availableDay, "day")
-                          );
-                        }}
-                        sx={{
-                          "& .MuiPickersDay-root": {
-                            fontSize: "12px",
-                            "&.Mui-disabled": {
-                              color: "text.disabled",
-                            },
-                            "&:not(.Mui-disabled)": {
-                              backgroundColor: "rgba(76, 175, 80, 0.1)",
-                              "&:hover": {
-                                backgroundColor: "rgba(76, 175, 80, 0.2)",
-                              },
-                            },
-                            "&.Mui-selected": {
-                              backgroundColor: "green !important",
-                              "&:hover": {
-                                backgroundColor: "darkgreen !important",
-                              },
-                            },
-                          },
-                          "& .MuiPickersCalendarHeader-label": {
-                            fontSize: "14px",
-                          },
-                          "& .MuiDayCalendar-weekDayLabel": {
-                            fontSize: "12px",
-                          },
-                        }}
-                      />
-                    </Paper>
-                    {!selectedVehicle && (
                       <Typography
-                        variant="caption"
-                        color="text.secondary"
+                        variant="h6"
                         sx={{
-                          display: "block",
-                          textAlign: "center",
-                          mt: 1,
-                          fontSize: "11px",
+                          fontWeight: "bold",
+                          color: "orange",
+                          fontSize: "16px",
+                          mb: 1,
                         }}
                       >
-                        Seleccione un vehículo para habilitar el calendario
+                        📅 Sin datos para el período
                       </Typography>
-                    )}
-                  </Grid>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "14px", mb: 1 }}
+                      >
+                        El conductor{" "}
+                        <strong>{selectedConductor?.nombre}</strong> no ha
+                        conducido ningún vehículo en el período seleccionado.
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "12px" }}
+                      >
+                        {advancedView
+                          ? `Período: ${dateRange[0]?.format(
+                              "DD/MM/YYYY"
+                            )} - ${dateRange[1]?.format("DD/MM/YYYY")}`
+                          : `Mes: ${dayjs(selectedMonth).format("MMMM YYYY")}`}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    // Layout normal con vehículos y calendario
+                    <Grid container spacing={2}>
+                      {/* Lista de Vehículos */}
+                      <Grid item xs={12} md={6}>
+                        <Typography
+                          variant="subtitle1"
+                          gutterBottom
+                          sx={{ fontWeight: "bold", fontSize: "14px" }}
+                        >
+                          Vehículos del Conductor
+                        </Typography>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            maxHeight: "200px",
+                            maxWidth: "200px",
+                            overflow: "auto",
+                            border: "1px solid #e0e0e0",
+                            position: "relative",
+                          }}
+                        >
+                          {loadingConductorVehicles ? (
+                            // Indicador de carga
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                py: 4,
+                              }}
+                            >
+                              <CircularProgress size={32} color="success" />
+                              <Typography
+                                variant="body2"
+                                sx={{ ml: 2, fontSize: "12px" }}
+                              >
+                                Cargando vehículos...
+                              </Typography>
+                            </Box>
+                          ) : vehiclesToShow.length > 0 ? (
+                            // Lista de vehículos
+                            <RadioGroup
+                              value={selectedVehicle}
+                              size="small"
+                              onChange={(e) => {
+                                // Limpiar recorrido del mapa al cambiar vehículo
+                                if (selectedVehicle !== e.target.value) {
+                                  onConductorHistoricalDataFetched(null);
+                                  setLocalConductorHistoricalData(null);
+                                  setSelectedDate(null);
+                                }
+                                setSelectedVehicle(e.target.value);
+                              }}
+                            >
+                              <List dense>
+                                {vehiclesToShow.map((vehicle) => {
+                                  // Adaptar para datos reales y mock
+                                  const vehicleId =
+                                    vehicle.movil?.toString() || vehicle.id;
+                                  const vehiclePatente = vehicle.patente;
+                                  const vehicleInfo =
+                                    vehicle.marca && vehicle.modelo
+                                      ? `${vehicle.marca} ${vehicle.modelo}`
+                                      : `${
+                                          vehicle.dias?.length || 0
+                                        } días con datos`;
 
-                  
-                </Grid>
+                                  return (
+                                    <ListItem key={vehicleId} disablePadding>
+                                      <ListItemButton
+                                        onClick={() =>
+                                          setSelectedVehicle(vehicleId)
+                                        }
+                                        sx={{ py: 0.5 }}
+                                      >
+                                        <ListItemIcon sx={{ minWidth: "32px" }}>
+                                          <Radio
+                                            edge="start"
+                                            value={vehicleId}
+                                            tabIndex={-1}
+                                            disableRipple
+                                            color="success"
+                                            size="small"
+                                          />
+                                        </ListItemIcon>
+                                        <ListItemIcon sx={{ minWidth: "32px" }}>
+                                          <DirectionsCarIcon
+                                            color="primary"
+                                            sx={{ fontSize: "20px" }}
+                                          />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                          primary={vehiclePatente}
+                                          secondary={vehicleInfo}
+                                          primaryTypographyProps={{
+                                            fontSize: "14px",
+                                          }}
+                                          secondaryTypographyProps={{
+                                            fontSize: "12px",
+                                          }}
+                                        />
+                                      </ListItemButton>
+                                    </ListItem>
+                                  );
+                                })}
+                              </List>
+                            </RadioGroup>
+                          ) : (
+                            // Sin vehículos
+                            <Box sx={{ p: 2, textAlign: "center" }}>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontSize: "12px" }}
+                              >
+                                No hay vehículos disponibles para el período
+                                seleccionado
+                              </Typography>
+                            </Box>
+                          )}
+                        </Paper>
+                      </Grid>
+
+                      {/* Calendario */}
+                      <Grid item xs={12} md={6}>
+                        <Typography
+                          variant="subtitle1"
+                          gutterBottom
+                          sx={{ fontWeight: "bold", fontSize: "14px" }}
+                        >
+                          Días Disponibles
+                        </Typography>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            p: 1,
+                            border: "1px solid #e0e0e0",
+                            display: "flex",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <DateCalendar
+                            value={selectedDate}
+                            onChange={(newValue) => {
+                              setSelectedDate(newValue);
+                              if (
+                                newValue &&
+                                selectedVehicle &&
+                                selectedConductor
+                              ) {
+                                fetchConductorHistoricalData(
+                                  newValue,
+                                  selectedVehicle,
+                                  selectedConductor
+                                );
+                              }
+                            }}
+                            disabled={!selectedVehicle}
+                            disableFuture
+                            shouldDisableDate={(date) => {
+                              if (!selectedVehicle) return true;
+                              return !mockAvailableDays.some((availableDay) =>
+                                date.isSame(availableDay, "day")
+                              );
+                            }}
+                            sx={{
+                              "& .MuiPickersDay-root": {
+                                fontSize: "12px",
+                                "&.Mui-disabled": {
+                                  color: "text.disabled",
+                                },
+                                "&:not(.Mui-disabled)": {
+                                  backgroundColor: "rgba(76, 175, 80, 0.1)",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(76, 175, 80, 0.2)",
+                                  },
+                                },
+                                "&.Mui-selected": {
+                                  backgroundColor: "green !important",
+                                  "&:hover": {
+                                    backgroundColor: "darkgreen !important",
+                                  },
+                                },
+                              },
+                              "& .MuiPickersCalendarHeader-label": {
+                                fontSize: "14px",
+                              },
+                              "& .MuiDayCalendar-weekDayLabel": {
+                                fontSize: "12px",
+                              },
+                            }}
+                          />
+                        </Paper>
+                        {!selectedVehicle && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: "block",
+                              textAlign: "center",
+                              mt: 1,
+                              fontSize: "11px",
+                            }}
+                          >
+                            Seleccione un vehículo para habilitar el calendario
+                          </Typography>
+                        )}
+                      </Grid>
+                    </Grid>
+                  )}
+                </Box>
               )}
-            </Box>
+            </>
           )}
-          </>
-        )}
         </Box>
       </Box>
-      
+
       {/* HistoricalDetailView - Solo cuando hay recorrido visible */}
-      {localConductorHistoricalData && selectedDate && selectedVehicle && selectedConductor && (
-        <HistoricalDetailView
-          selectedUnit={{
-            Movil_ID: selectedVehicle,
-            patente: currentSelectedVehicle?.patente || "Vehículo"
-          }}
-          selectedDate={selectedDate}
-          selectedConductor={selectedConductor}
-        />
-      )}
+      {localConductorHistoricalData &&
+        selectedDate &&
+        selectedVehicle &&
+        selectedConductor && (
+          <HistoricalDetailView
+            selectedUnit={{
+              Movil_ID: selectedVehicle,
+              patente: currentSelectedVehicle?.patente || "Vehículo",
+            }}
+            selectedDate={selectedDate}
+            selectedConductor={selectedConductor}
+          />
+        )}
     </LocalizationProvider>
   );
 };

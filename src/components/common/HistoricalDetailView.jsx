@@ -18,7 +18,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const HistoricalDetailView = ({ selectedUnit, selectedDate, selectedConductor }) => {
+const HistoricalDetailView = ({
+  selectedUnit,
+  selectedDate,
+  selectedConductor,
+}) => {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState([]);
@@ -42,13 +46,11 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate, selectedConductor })
 
       // Construir URL base
       let url = `/api/servicio/historico.php/historico?movil=${movilId}&&fechaInicial=${fechaInicial}&&fechaFinal=${fechaFinal}`;
-      
+
       // Agregar parámetro conductor si está disponible
       if (selectedConductor && selectedConductor.idCon) {
         url += `&&conductor=${selectedConductor.idCon}`;
       }
-
-      console.log('HistoricalDetailView URL:', url);
 
       const response = await fetch(url, {
         method: "GET",
@@ -85,7 +87,8 @@ const HistoricalDetailView = ({ selectedUnit, selectedDate, selectedConductor })
       (!detailData.length ||
         lastFetchRef.current.unitId !== selectedUnit?.Movil_ID ||
         lastFetchRef.current.date !== selectedDate?.format("YYYY-MM-DD") ||
-        lastFetchRef.current.conductorId !== (selectedConductor?.idCon || null));
+        lastFetchRef.current.conductorId !==
+          (selectedConductor?.idCon || null));
 
     if (shouldFetchData) {
       fetchHistoricalDetail();

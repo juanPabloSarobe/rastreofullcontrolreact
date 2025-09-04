@@ -49,7 +49,6 @@ if (process.argv[2] === "--file" && process.argv[3]) {
   try {
     // Leer el changelog desde el archivo
     changelogArg = fs.readFileSync(process.argv[3], "utf8").trim();
-    console.log("📄 Changelog leído desde archivo:", process.argv[3]);
   } catch (error) {
     console.error("❌ Error al leer el archivo de changelog:", error);
     process.exit(1);
@@ -101,14 +100,6 @@ try {
     JSON.stringify(versionData, null, 2),
     "utf8"
   );
-
-  console.log(`\n✅ Versión actualizada automáticamente:`);
-  console.log(`   📊 Anterior: ${oldVersion}`);
-  console.log(`   🆕 Nueva: ${versionData.version}`);
-  console.log(`   📅 Fecha: ${new Date().toLocaleDateString("es-AR")}`);
-  console.log(`   🕒 Hora: ${new Date().toLocaleTimeString("es-AR")}`);
-  console.log(`\n📝 Changelog actualizado:`);
-  console.log(`${versionData.changelog}`);
 } catch (error) {
   console.error("❌ Error al escribir el archivo de versión:", error);
   process.exit(1);

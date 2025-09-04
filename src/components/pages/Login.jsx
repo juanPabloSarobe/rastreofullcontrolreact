@@ -100,8 +100,6 @@ const Login = () => {
 
       dispatch({ type: "SET_CONDUCTORES", payload: conductores });
       dispatch({ type: "SET_CONDUCTORES_LOADED", payload: true });
-
-      console.log(`Conductores cargados: ${conductores.length} encontrados`);
     } catch (error) {
       console.error("Error al cargar conductores:", error);
       dispatch({ type: "SET_CONDUCTORES", payload: [] });
