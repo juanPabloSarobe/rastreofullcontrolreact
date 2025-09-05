@@ -29,7 +29,7 @@ import UserChip from "../common/UserChip";
 import FleetSelectorButton, {
   FleetSelectorProvider,
 } from "../common/FleetSelectorButton";
-import AreaSelectorButton, {
+import AreaSelectorMapHandler, {
   AreaSelectorProvider,
 } from "../common/AreaSelectorButton";
 import ConductorHistoryButton from "../common/ConductorHistoryButton";
@@ -291,42 +291,15 @@ const PrincipalPage = () => {
           autoCloseAfterCountdown={true}
         />
 
-
         {state.viewMode === "rastreo" && markersData.length === 0 && (
           <LoadingModal isLoading={isLoading} />
         )}
 
         {state.viewMode === "rastreo" &&
           markersData.length > 0 &&
-          (prefLoading || liteLoading) && <LinearLoading />}
-
-
-      )}
-
-      {/* Modal de Alertas de Pago */}
-      <PaymentAlertModal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        paymentStatus={paymentStatus}
-        autoCloseAfterCountdown={true}
-      />
-
-      {state.viewMode === "rastreo" && markersData.length === 0 && (
-        <LoadingModal isLoading={isLoading} />
-      )}
-
-      {state.viewMode === "rastreo" &&
-        markersData.length > 0 &&
-        (prefLoading || liteLoading) &&
-        liteData?.GPS &&
-        Object.keys(liteData.GPS).length > 0 && <LinearLoading />}
-
-      <Box
-        display="flex"
-        height="calc(var(--vh, 1vh) * 100)"
-        width="100vw"
-        bgcolor="grey"
-      >
+          (prefLoading || liteLoading) &&
+          liteData?.GPS &&
+          Object.keys(liteData.GPS).length > 0 && <LinearLoading />}
 
         <Box
           display="flex"
@@ -366,14 +339,20 @@ const PrincipalPage = () => {
                         markersData={markersData}
                         onUnitSelect={handleUnitSelect}
                       />
+                      <AggressiveDrivingAlert
+                        markersData={markersData}
+                        onUnitSelect={handleUnitSelect}
+                      />
                       <IdleUnitsAlert
                         markersData={markersData}
                         onUnitSelect={handleUnitSelect}
+                        isVisible={true}
                       />
                     </Box>
                     <UnitDetails unitData={selectedUnit} />
                   </>
                 )}
+              
               <MapContainer
                 center={center}
                 zoom={13}
@@ -395,36 +374,7 @@ const PrincipalPage = () => {
                   liteData?.GPS &&
                   Object.keys(liteData.GPS).length > 0 &&
                   markersData.length > 0 && (
-                    <AreaSelectorButton
-
-            <MenuButton selectedUnit={selectedUnit} />
-            {/* DevSesion flotando a la izquierda de UserChip */}
-            {state.viewMode === "rastreo" && (
-              <>
-                <UserChip />
-              </>
-            )}
-            {state.viewMode === "rastreo" &&
-              liteData?.GPS &&
-              Object.keys(liteData.GPS).length > 0 && (
-                <>
-                  <UnitSelector
-                    liteData={liteData}
-                    onUnitSelect={handleUnitSelect}
-                  />
-                  <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
-                  {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
-                  <Box sx={{ display: { xs: "none", md: "block" } }}>
-                    <InfractionAlert
-                      markersData={markersData}
-                      onUnitSelect={handleUnitSelect}
-                    />
-                    <AggressiveDrivingAlert
-                      markersData={markersData}
-                      onUnitSelect={handleUnitSelect}
-                    />
-                    <IdleUnitsAlert
-
+                    <AreaSelectorMapHandler
                       markersData={markersData}
                       onUnitSelect={handleUnitSelect}
                       isVisible={true}
@@ -437,6 +387,7 @@ const PrincipalPage = () => {
                     onMarkerClick={setSelectedUnit}
                   />
                 )}
+                
                 {state.viewMode === "historico" && selectedUnit && (
                   <HistoricalView
                     selectedUnit={selectedUnit}
@@ -454,6 +405,11 @@ const PrincipalPage = () => {
 
                 <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
 
+                <AreaSelectorMapHandler 
+                  markersData={markersData}
+                  onUnitSelect={handleUnitSelect}
+                />
+
                 {isMobile || <AddZoomControl />}
               </MapContainer>
 
@@ -467,18 +423,13 @@ const PrincipalPage = () => {
           </Box>
         </Box>
 
-
         {/* Indicador de versión */}
         <VersionIndicator />
+        {/* Aviso de entorno de desarrollo */}
+        <DevSesion />
+        {/* Tester de actualizaciones solo visible en desarrollo */}
+        {process.env.NODE_ENV === "development" && <UpdateTester />}
       </AreaSelectorProvider>
-
-      {/* Indicador de versión */}
-      <VersionIndicator />
-      {/* Aviso de entorno de desarrollo */}
-      <DevSesion />
-      {/* Tester de actualizaciones solo visible en desarrollo */}
-      {process.env.NODE_ENV === "development" && <UpdateTester />}
-
     </FleetSelectorProvider>
   );
 };
