@@ -23,12 +23,16 @@ import LoadingModal from "../common/LoadingModal";
 import LinearLoading from "../common/LinearLoading";
 import empresasAExcluir from "../../data/empresasAExcluir.json";
 import HistoricalView from "./HistoricalView";
+import ConductorHistoryView from "./ConductorHistoryView";
 import HistoricalMarkers from "../common/HistoricalMarkers";
 import UserChip from "../common/UserChip";
 import FleetSelectorButton, {
   FleetSelectorProvider,
 } from "../common/FleetSelectorButton";
-import AreaSelectorButton from "../common/AreaSelectorButton";
+import AreaSelectorButton, {
+  AreaSelectorProvider,
+} from "../common/AreaSelectorButton";
+import ConductorHistoryButton from "../common/ConductorHistoryButton";
 import IdleUnitsAlert from "../common/IdleUnitsAlert";
 import InfractionAlert from "../common/InfractionAlert";
 import AggressiveDrivingAlert from "../common/AggressiveDrivingAlert";
@@ -98,6 +102,7 @@ const PrincipalPage = () => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [historicalData, setHistoricalData] = useState(null);
+  const [conductorHistoricalData, setConductorHistoricalData] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const mapRef = useRef(null);
@@ -269,12 +274,33 @@ const PrincipalPage = () => {
 
   return (
     <FleetSelectorProvider>
-      {activeNotification && (
-        <NotificationModal
-          message={activeNotification}
-          onClose={() => markAsRead(activeNotification.id)}
-          onDismiss={dismissNotification}
+      <AreaSelectorProvider>
+        {activeNotification && (
+          <NotificationModal
+            message={activeNotification}
+            onClose={() => markAsRead(activeNotification.id)}
+            onDismiss={dismissNotification}
+          />
+        )}
+
+        {/* Modal de Alertas de Pago */}
+        <PaymentAlertModal
+          open={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          paymentStatus={paymentStatus}
+          autoCloseAfterCountdown={true}
         />
+
+
+        {state.viewMode === "rastreo" && markersData.length === 0 && (
+          <LoadingModal isLoading={isLoading} />
+        )}
+
+        {state.viewMode === "rastreo" &&
+          markersData.length > 0 &&
+          (prefLoading || liteLoading) && <LinearLoading />}
+
+
       )}
 
       {/* Modal de Alertas de Pago */}
@@ -301,20 +327,76 @@ const PrincipalPage = () => {
         width="100vw"
         bgcolor="grey"
       >
+
         <Box
           display="flex"
           height="calc(var(--vh, 1vh) * 100)"
-          padding="4px"
           width="100vw"
-          flexDirection="row"
-          justifyContent="center"
+          bgcolor="grey"
         >
           <Box
-            width="100%"
-            height="100%"
-            sx={{ borderRadius: "12px" }}
-            position="relative"
+            display="flex"
+            height="calc(var(--vh, 1vh) * 100)"
+            padding="4px"
+            width="100vw"
+            flexDirection="row"
+            justifyContent="center"
           >
+            <Box
+              width="100%"
+              height="100%"
+              sx={{ borderRadius: "12px" }}
+              position="relative"
+            >
+              <MenuButton selectedUnit={selectedUnit} />
+              {state.viewMode === "rastreo" && <UserChip />}
+              {state.viewMode === "rastreo" &&
+                liteData?.GPS &&
+                Object.keys(liteData.GPS).length > 0 && (
+                  <>
+                    <UnitSelector
+                      liteData={liteData}
+                      onUnitSelect={handleUnitSelect}
+                    />
+                    <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
+                    <ConductorHistoryButton />
+                    {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
+                    <Box sx={{ display: { xs: "none", md: "block" } }}>
+                      <InfractionAlert
+                        markersData={markersData}
+                        onUnitSelect={handleUnitSelect}
+                      />
+                      <IdleUnitsAlert
+                        markersData={markersData}
+                        onUnitSelect={handleUnitSelect}
+                      />
+                    </Box>
+                    <UnitDetails unitData={selectedUnit} />
+                  </>
+                )}
+              <MapContainer
+                center={center}
+                zoom={13}
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  borderRadius: "12px",
+                }}
+                zoomControl={false}
+                ref={mapRef}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+
+                {/* Componente de selección por área - renderizado condicional */}
+                {state.viewMode === "rastreo" &&
+                  liteData?.GPS &&
+                  Object.keys(liteData.GPS).length > 0 &&
+                  markersData.length > 0 && (
+                    <AreaSelectorButton
+
             <MenuButton selectedUnit={selectedUnit} />
             {/* DevSesion flotando a la izquierda de UserChip */}
             {state.viewMode === "rastreo" && (
@@ -342,65 +424,53 @@ const PrincipalPage = () => {
                       onUnitSelect={handleUnitSelect}
                     />
                     <IdleUnitsAlert
+
                       markersData={markersData}
                       onUnitSelect={handleUnitSelect}
+                      isVisible={true}
                     />
-                  </Box>
-                  <UnitDetails unitData={selectedUnit} />
-                </>
-              )}
-            <MapContainer
-              center={center}
-              zoom={13}
-              style={{
-                height: "100%",
-                width: "100%",
-                borderRadius: "12px",
-              }}
-              zoomControl={false}
-              ref={mapRef}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
+                  )}
 
-              {/* Componente de selección por área - renderizado condicional */}
-              {state.viewMode === "rastreo" &&
-                liteData?.GPS &&
-                Object.keys(liteData.GPS).length > 0 &&
-                markersData.length > 0 && (
-                  <AreaSelectorButton
-                    markersData={markersData}
-                    onUnitSelect={handleUnitSelect}
-                    isVisible={true}
+                {state.viewMode === "rastreo" && (
+                  <MarkersList
+                    markersData={filteredMarkersData}
+                    onMarkerClick={setSelectedUnit}
+                  />
+                )}
+                {state.viewMode === "historico" && selectedUnit && (
+                  <HistoricalView
+                    selectedUnit={selectedUnit}
+                    onHistoricalDataFetched={setHistoricalData}
                   />
                 )}
 
-              {state.viewMode === "rastreo" && (
-                <MarkersList
-                  markersData={filteredMarkersData}
-                  onMarkerClick={setSelectedUnit}
+                {state.viewMode === "historico" && historicalData && (
+                  <HistoricalMarkers historicalData={historicalData} />
+                )}
+
+                {state.viewMode === "conductor" && conductorHistoricalData && (
+                  <HistoricalMarkers historicalData={conductorHistoricalData} />
+                )}
+
+                <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
+
+                {isMobile || <AddZoomControl />}
+              </MapContainer>
+
+              {/* Vista de Histórico por Conductor */}
+              {state.viewMode === "conductor" && (
+                <ConductorHistoryView 
+                  onConductorHistoricalDataFetched={setConductorHistoricalData}
                 />
               )}
-              {state.viewMode === "historico" && selectedUnit && (
-                <HistoricalView
-                  selectedUnit={selectedUnit}
-                  onHistoricalDataFetched={setHistoricalData}
-                />
-              )}
-
-              {state.viewMode === "historico" && historicalData && (
-                <HistoricalMarkers historicalData={historicalData} />
-              )}
-
-              <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
-
-              {isMobile || <AddZoomControl />}
-            </MapContainer>
+            </Box>
           </Box>
         </Box>
-      </Box>
+
+
+        {/* Indicador de versión */}
+        <VersionIndicator />
+      </AreaSelectorProvider>
 
       {/* Indicador de versión */}
       <VersionIndicator />
@@ -408,6 +478,7 @@ const PrincipalPage = () => {
       <DevSesion />
       {/* Tester de actualizaciones solo visible en desarrollo */}
       {process.env.NODE_ENV === "development" && <UpdateTester />}
+
     </FleetSelectorProvider>
   );
 };

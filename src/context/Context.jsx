@@ -16,9 +16,19 @@ export const ContextProvider = ({ children }) => {
     infractionHistory: [], // Historial de infracciones resueltas
     loadingInfractionUnits: new Set(), // Unidades consultando detalles de infracción
     previousActiveInfractions: [], // Estado previo para detectar transiciones
+
+    // Estados para conductores
+    conductores: [], // Lista global de conductores disponibles
+    selectedConductor: null, // Conductor seleccionado actualmente
+    conductorVehicles: [], // Vehículos del conductor seleccionado
+    loadingConductorVehicles: false, // Estado de carga de vehículos
+    loadingConductores: false, // Estado de carga inicial de conductores
+    conductoresLoaded: false, // Si ya se intentó cargar conductores
+
     // Estados para sistema de conducción agresiva
     aggressiveDrivingHistory: [], // Historial de conductores con manejo agresivo
     previousActiveAggressiveDriving: [], // Estado previo para detectar transiciones
+
   };
 
   const reducer = (state, action) => {
@@ -83,6 +93,28 @@ export const ContextProvider = ({ children }) => {
         newLoadingUnits.delete(action.payload.unitId);
         return { ...state, loadingInfractionUnits: newLoadingUnits };
       }
+
+      // Acciones para sistema de conductores
+      case "SET_CONDUCTORES":
+        return { ...state, conductores: action.payload };
+      case "SET_SELECTED_CONDUCTOR":
+        return { ...state, selectedConductor: action.payload };
+      case "SET_CONDUCTOR_VEHICLES":
+        return { ...state, conductorVehicles: action.payload };
+      case "SET_LOADING_CONDUCTOR_VEHICLES":
+        return { ...state, loadingConductorVehicles: action.payload };
+      case "SET_LOADING_CONDUCTORES":
+        return { ...state, loadingConductores: action.payload };
+      case "SET_CONDUCTORES_LOADED":
+        return { ...state, conductoresLoaded: action.payload };
+      case "CLEAR_CONDUCTOR_DATA":
+        return { 
+          ...state, 
+          selectedConductor: null, 
+          conductorVehicles: [], 
+          loadingConductorVehicles: false 
+        };
+
       // Acciones para sistema de conducción agresiva
       case "SET_AGGRESSIVE_HISTORY":
         return { ...state, aggressiveDrivingHistory: action.payload };
@@ -121,6 +153,7 @@ export const ContextProvider = ({ children }) => {
       }
       case "CLEAR_AGGRESSIVE_HISTORY":
         return { ...state, aggressiveDrivingHistory: [] };
+
       default:
         return state;
     }
