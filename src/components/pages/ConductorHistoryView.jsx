@@ -260,7 +260,7 @@ const ConductorHistoryView = ({ onConductorHistoricalDataFetched }) => {
         // Asegurar que fechaFinal sea al menos un día mayor que fechaInicial
         const finalDate = dateRange[1].isSame(dateRange[0], "day")
           ? dateRange[1].add(1, "day")
-          : dateRange[1];
+          : dateRange[1].add(1, "day");
         fechaFinal = finalDate.format("YYYY-MM-DD");
       } else if (!advancedView && selectedMonth) {
         // Vista simple: usar mes seleccionado
