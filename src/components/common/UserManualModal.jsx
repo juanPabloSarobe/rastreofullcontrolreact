@@ -31,6 +31,7 @@ import {
   Computer as ComputerIcon,
   Map as MapIcon,
   History as HistoryIcon,
+  WorkHistory as WorkHistoryIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
   Phone as PhoneIcon,
@@ -40,6 +41,7 @@ import {
   CropFree as CropFreeIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
+
 
 const UserManualModal = ({ open, onClose }) => {
   const [selectedSection, setSelectedSection] = useState("inicio");
@@ -107,6 +109,12 @@ const UserManualModal = ({ open, onClose }) => {
       title: "Vista de Histórico",
       icon: <HistoryIcon />,
       content: "historico",
+    },
+    {
+      id: "historico-conductor",
+      title: " Histórico por Conductor",
+      icon: <WorkHistoryIcon />,
+      content: "historico-conductor",
     },
     {
       id: "reportes",
@@ -184,7 +192,12 @@ const UserManualModal = ({ open, onClose }) => {
                   </li>
                   <li>
                     <Typography variant="body2">
-                      📊 Generar reportes detallados
+                      � Histórico por conductor (NUEVA funcionalidad)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      �📊 Generar reportes detallados
                     </Typography>
                   </li>
                   <li>
@@ -484,6 +497,52 @@ const UserManualModal = ({ open, onClose }) => {
                     </Typography>
                   </li>
                 </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 1,
+                    color: "#2E7D32"
+                  }}
+                >
+                  👨‍💼 Histórico por Conductor (NUEVO)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Nueva funcionalidad:</strong> Consulte históricos filtrados
+                  por conductor específico:
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Haga clic en el botón 👨‍💼 (junto al selector de flotas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Seleccione el conductor deseado
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Elija el período (mes o rango de fechas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Seleccione vehículo y fecha para ver el recorrido
+                    </Typography>
+                  </li>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                  ⚠️ Requiere conductores previamente asignados en el sistema
+                </Typography>
               </CardContent>
             </Card>
 
@@ -1673,6 +1732,228 @@ const UserManualModal = ({ open, onClose }) => {
                     size="small"
                   />
                 </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "historico-conductor":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: "bold" }}
+            >
+               Histórico por Conductor
+            </Typography>
+
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: "rgba(76, 175, 80, 0.1)",
+                border: "2px solid #4CAF50",
+              }}
+            >
+              <CardContent>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    color: "#2E7D32",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  🆕 Nueva Funcionalidad
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Consulte el historial de recorridos filtrado por conductor específico.
+                  Esta funcionalidad permite rastrear qué conductor manejó cada vehículo
+                  en períodos determinados.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🚀 Acceder al Histórico por Conductor
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Haga clic en el botón{" "}
+                      <strong style={{ color: "#2E7D32" }}>👨‍💼</strong> (Histórico por Conductor)
+                      ubicado junto al selector de flotas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Seleccione el conductor desde la lista desplegable
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Elija el período de consulta (mes específico o rango de fechas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Seleccione el vehículo y fecha específica para ver el recorrido
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  ⚙️ Opciones de Búsqueda
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  📅 Vista Simple (Por Mes)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Seleccione uno de los últimos 6 meses disponibles
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Ideal para consultas rápidas y recientes
+                </Typography>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  📊 Vista Avanzada (Rango de Fechas)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Active el interruptor "Avanzado" para seleccionar fechas específicas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Defina fecha inicial y fecha final del período
+                </Typography>
+                <Typography variant="body2">
+                  • Útil para análisis de períodos específicos
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🚗 Selección de Vehículos y Fechas
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Lista de Vehículos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Se muestran solo los vehículos que el conductor manejó en el período
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Cada vehículo muestra la cantidad de días con datos disponibles
+                </Typography>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Calendario de Fechas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Los días disponibles aparecen resaltados en verde
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Solo se pueden seleccionar fechas con datos del conductor
+                </Typography>
+                <Typography variant="body2">
+                  • El calendario se habilita al seleccionar un vehículo
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📱 Información Mostrada
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Recorrido completo</strong> del conductor en el mapa
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Detalles del conductor</strong> (nombre, DNI, empresa)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Información del vehículo</strong> utilizado
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Velocidades y paradas</strong> durante el recorrido
+                </Typography>
+                <Typography variant="body2">
+                  • <strong>Horarios de inicio y fin</strong> de la jornada
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📥 Exportación de Datos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Al visualizar un recorrido de conductor, puede exportar:
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+                  <Chip
+                    icon={<DownloadIcon />}
+                    label="Histórico Excel"
+                    color="success"
+                    size="small"
+                  />
+                  <Chip
+                    icon={<DownloadIcon />}
+                    label="Resumen Excel"
+                    color="primary"
+                    size="small"
+                  />
+                  <Chip
+                    icon={<DownloadIcon />}
+                    label="Google Earth (.kml)"
+                    color="info"
+                    size="small"
+                  />
+                </Box>
+                <Typography variant="body2">
+                  Los archivos incluyen información específica del conductor seleccionado.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "warning.50",
+                border: "1px solid",
+                borderColor: "warning.200",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="warning.main">
+                  ⚠️ Consideraciones Importantes
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Esta funcionalidad requiere que los conductores estén previamente 
+                  asignados en el sistema
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Si no ve conductores disponibles, contacte al administrador
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Los datos mostrados dependen del registro de conductores en cada viaje
+                </Typography>
+                <Typography variant="body2">
+                  • En caso de no encontrar datos, verifique que el período seleccionado 
+                  tenga actividad registrada
+                </Typography>
               </CardContent>
             </Card>
           </Box>
