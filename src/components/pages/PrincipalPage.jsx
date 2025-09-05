@@ -35,9 +35,13 @@ import AreaSelectorButton, {
 import ConductorHistoryButton from "../common/ConductorHistoryButton";
 import IdleUnitsAlert from "../common/IdleUnitsAlert";
 import InfractionAlert from "../common/InfractionAlert";
+import AggressiveDrivingAlert from "../common/AggressiveDrivingAlert";
 import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
+import DevSesion from "../dev/DevSesion";
+// Solo para desarrollo
+import UpdateTester from "../dev/UpdateTester";
 import { useNotifications } from "../../hooks/useNotifications";
 import { paymentService } from "../../services/paymentService";
 
@@ -287,6 +291,7 @@ const PrincipalPage = () => {
           autoCloseAfterCountdown={true}
         />
 
+
         {state.viewMode === "rastreo" && markersData.length === 0 && (
           <LoadingModal isLoading={isLoading} />
         )}
@@ -294,6 +299,34 @@ const PrincipalPage = () => {
         {state.viewMode === "rastreo" &&
           markersData.length > 0 &&
           (prefLoading || liteLoading) && <LinearLoading />}
+
+
+      )}
+
+      {/* Modal de Alertas de Pago */}
+      <PaymentAlertModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        paymentStatus={paymentStatus}
+        autoCloseAfterCountdown={true}
+      />
+
+      {state.viewMode === "rastreo" && markersData.length === 0 && (
+        <LoadingModal isLoading={isLoading} />
+      )}
+
+      {state.viewMode === "rastreo" &&
+        markersData.length > 0 &&
+        (prefLoading || liteLoading) &&
+        liteData?.GPS &&
+        Object.keys(liteData.GPS).length > 0 && <LinearLoading />}
+
+      <Box
+        display="flex"
+        height="calc(var(--vh, 1vh) * 100)"
+        width="100vw"
+        bgcolor="grey"
+      >
 
         <Box
           display="flex"
@@ -363,6 +396,35 @@ const PrincipalPage = () => {
                   Object.keys(liteData.GPS).length > 0 &&
                   markersData.length > 0 && (
                     <AreaSelectorButton
+
+            <MenuButton selectedUnit={selectedUnit} />
+            {/* DevSesion flotando a la izquierda de UserChip */}
+            {state.viewMode === "rastreo" && (
+              <>
+                <UserChip />
+              </>
+            )}
+            {state.viewMode === "rastreo" &&
+              liteData?.GPS &&
+              Object.keys(liteData.GPS).length > 0 && (
+                <>
+                  <UnitSelector
+                    liteData={liteData}
+                    onUnitSelect={handleUnitSelect}
+                  />
+                  <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
+                  {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
+                  <Box sx={{ display: { xs: "none", md: "block" } }}>
+                    <InfractionAlert
+                      markersData={markersData}
+                      onUnitSelect={handleUnitSelect}
+                    />
+                    <AggressiveDrivingAlert
+                      markersData={markersData}
+                      onUnitSelect={handleUnitSelect}
+                    />
+                    <IdleUnitsAlert
+
                       markersData={markersData}
                       onUnitSelect={handleUnitSelect}
                       isVisible={true}
@@ -405,9 +467,18 @@ const PrincipalPage = () => {
           </Box>
         </Box>
 
+
         {/* Indicador de versión */}
         <VersionIndicator />
       </AreaSelectorProvider>
+
+      {/* Indicador de versión */}
+      <VersionIndicator />
+      {/* Aviso de entorno de desarrollo */}
+      <DevSesion />
+      {/* Tester de actualizaciones solo visible en desarrollo */}
+      {process.env.NODE_ENV === "development" && <UpdateTester />}
+
     </FleetSelectorProvider>
   );
 };

@@ -827,7 +827,8 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       title="Unidades en ralentí"
       count={idleUnits.length}
       tooltipText={`Unidades en ralentí: ${idleUnits.length}`}
-      verticalOffset={{ desktop: 300, mobile: 200 }}
+      verticalOffset={{ desktop: 300, mobile: 480 }} // Cuando hay unidades seleccionadas
+      noUnitsOffset={{ desktop: 80, mobile: 240 }} // Cuando NO hay unidades seleccionadas - posición inferior
       onUnitSelect={handleUnitSelect}
       // Nuevas props para ordenamiento
       sortBy={sortBy}
@@ -836,7 +837,7 @@ const IdleUnitsAlert = ({ markersData, onUnitSelect }) => {
       sortOptions={{ option1: "Patente", option2: "Tiempo" }}
       badgeColor="warning.main"
       iconColor="warning.main"
-      zIndex={1200}
+      zIndex={1200} // Abajo - más bajo
     >
       {renderIdleContent}
     </BaseExpandableAlert>

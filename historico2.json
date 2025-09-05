@@ -3225,6 +3225,19 @@
       "area": "Corcobo CNQ7A - Pluspetrol",
       "dist": "0.00369958267902796",
       "dir": "Acceso Base Contratistas  Distrito Agua Escondida  Departamento Malarg\u00fce  Mza.  Argentina"
-    }
+    },
+            {
+            "nom": "RIOS FRANCISCO",
+            "fec": "2025-08-04",
+            "hor": "08:20:52",
+            "lat": "-38.84",
+            "lng": "-68.18938",
+            "vel": 115,
+            "lla": "000019E2D532",
+            "evn": "Preaviso Manejo Agresivo",
+            "area": "Centenario 1 - Pluspetrol",
+            "dist": "0.0254229502614556",
+            "dir": "Bella Vista  Municipio de Centenario  Departamento Confluencia  NQN  Argentina"
+        }
   ]
 }

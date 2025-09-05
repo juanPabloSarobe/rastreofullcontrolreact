@@ -50,18 +50,44 @@ const VersionModal = ({ open, onClose }) => {
   const renderChangelog = (changelog) => {
     if (!changelog) return null;
 
-    const lines = changelog.split("\n").filter((line) => line.trim() !== "");
+    // Filtrar líneas vacías y líneas que solo tengan un check o espacios
+    const lines = changelog
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(
+        (line) =>
+          line !== "" &&
+          line !== "✅" &&
+          line !== "✅." &&
+          line !== "✅:" &&
+          line !== "-" &&
+          line.replace(/^✅\s*/i, "").trim() !== ""
+      );
+
+    // Prefijos de features
+    const featurePrefixes = [
+      /^✅\s*/i,
+      /^NUEVO:?\s*/i,
+      /^CORRECCIÓN:?\s*/i,
+      /^OPTIMIZACIÓN:?\s*/i,
+      /^MEJORA:?\s*/i,
+    ];
 
     return (
       <List dense>
         {lines.map((line, index) => {
           const isHeader = line.includes("📅") || line.includes("Versión");
-          const isFeature =
-            line.includes("✅") ||
-            line.includes("NUEVO") ||
-            line.includes("CORRECCIÓN") ||
-            line.includes("OPTIMIZACIÓN") ||
-            line.includes("MEJORA");
+
+          // Detectar si es feature y extraer el texto relevante
+          let featureText = null;
+          for (const prefix of featurePrefixes) {
+            if (prefix.test(line)) {
+              featureText = line.replace(prefix, "").trim();
+              break;
+            }
+          }
+          // Solo es feature si hay texto relevante después del prefijo
+          const isFeature = featureText && featureText.length > 0;
 
           if (isHeader) {
             return (
@@ -71,7 +97,7 @@ const VersionModal = ({ open, onClose }) => {
                   variant="subtitle1"
                   sx={{ fontWeight: "bold", color: "primary.main", mt: 1 }}
                 >
-                  {line.trim()}
+                  {line}
                 </Typography>
               </Box>
             );
@@ -80,11 +106,8 @@ const VersionModal = ({ open, onClose }) => {
           if (isFeature) {
             return (
               <ListItem key={index} sx={{ py: 0.5 }}>
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <CheckIcon color="success" fontSize="small" />
-                </ListItemIcon>
                 <ListItemText
-                  primary={line.replace(/^✅\s*/, "").trim()}
+                  primary={featureText}
                   primaryTypographyProps={{ variant: "body2" }}
                 />
               </ListItem>
@@ -94,7 +117,7 @@ const VersionModal = ({ open, onClose }) => {
           return (
             <ListItem key={index} sx={{ py: 0.25, pl: 4 }}>
               <ListItemText
-                primary={line.trim()}
+                primary={line}
                 primaryTypographyProps={{
                   variant: "body2",
                   color: "text.secondary",
