@@ -1,5 +1,5 @@
 {
-  "version": "2025.09.0",
-  "buildDate": "2025-09-05T18:51:47.386Z",
-  "changelog": "📅 Septiembre 2025 - Versión 2025.09\r\n\r\n✅ NUEVO: HISTORICO POR CONDUCTOR - Historial de recorridos filtrado por conductor. Esta funcionalidad permite rastrear qué vehiculos manejó un conductor en un período determinado.\r\n✅ NUEVO: SELECCION POR AREA - Nueva funcionalidad para seleccionar múltiples unidades dibujando un rectángulo en el mapa."
+  "version": "2025.09.1",
+  "buildDate": "2025-09-09T23:41:36.193Z",
+  "changelog": "📅 Septiembre 2025 - Versión 2025.09\r\n\r\n✅ NUEVO: SISTEMA DE NOTIFICACIONES WHATSAPP - Sistema completo de notificaciones por WhatsApp para alertas de monitoreo. Envío de mensajes automáticos para alertas de ralentí, infracciones y conducción agresiva.\r\n✅ NUEVO: HISTORICO POR CONDUCTOR - Historial de recorridos filtrado por conductor. Esta funcionalidad permite rastrear qué vehiculos manejó un conductor en un período determinado.\r\n✅ NUEVO: SELECCION POR AREA - Nueva funcionalidad para seleccionar múltiples unidades dibujando un rectángulo en el mapa."
 }
