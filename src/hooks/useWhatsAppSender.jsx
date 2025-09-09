@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import useCompanyData from "./useCompanyData";
+import { buildMessage } from "../services/whatsappService";
 
 // Constantes para la pestaña global de WhatsApp
 const WHATSAPP_WINDOW_NAME = "_whatsapp_fullcontrol_tab";
@@ -88,33 +89,11 @@ const useWhatsAppSender = () => {
   const messageHistoryRef = useRef(new Map()); // Para cooldown tracking
 
   /**
-   * Construir mensaje según tipo y variante
+   * Construir mensaje usando el servicio centralizado
    */
-  const buildMessage = useCallback((unitData, messageType, messageData, variant, companyName) => {
-    const conductorName = unitData.nombre || "Conductor";
-    const patente = unitData.patente || "Unidad";
-    const empresa = companyName || "FullControlGPS";
-
-    const baseMessages = {
-      RALENTI: {
-        conductor: `Estimado ${conductorName}, te contactamos desde la central de monitoreo de ${empresa}. Detectamos que la unidad ${patente} lleva ${messageData.tiempo || "un tiempo prolongado"} en estado ralentí. ¿Podrías indicarnos qué está pasando?`,
-        admin: `Hola, por favor, necesitamos el teléfono del conductor ${conductorName}, para contactarlo por una alerta de RALENTÍ en la unidad ${patente}. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`
-      },
-      INFRACCION: {
-        conductor: `Estimado ${conductorName}, nos contactamos desde la central de monitoreo de ${empresa}. Detectamos que has cometido una infracción de ${messageData.tipoInfraccion || "velocidad"} en la unidad ${patente}${messageData.ubicacion ? ` en ${messageData.ubicacion}` : ""}. Por favor, ¿podrías indicarnos qué está sucediendo? Recuerda que debes estar estacionado para utilizar el teléfono celular.`,
-        admin: `Hola, por favor, necesitamos el teléfono del conductor ${conductorName}, para contactarlo por una alerta de INFRACCIÓN en la unidad ${patente}. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`
-      },
-      CONDUCCION_AGRESIVA: {
-        conductor: `Estimado ${conductorName}, te contactamos desde la central de monitoreo de ${empresa}. Detectamos que llevas ${messageData.cantidad || "varios"} eventos de conducción agresiva${messageData.periodo ? ` en ${messageData.periodo}` : " en el día de hoy"}. Por favor, te pedimos que conduzcas defensivamente y no superes los límites de velocidad. Gracias.`,
-        admin: `Hola, por favor, necesitamos el teléfono del conductor ${conductorName}, para contactarlo por una alerta de CONDUCCIÓN AGRESIVA en la unidad ${patente}. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`
-      },
-      EXCESO_VELOCIDAD: {
-        conductor: `Estimado ${conductorName}, te contactamos desde la central de monitoreo de ${empresa}. Detectamos que la unidad ${patente} está excediendo los límites de velocidad${messageData.velocidad ? ` (${messageData.velocidad} km/h)` : ""}. Por favor, reduce la velocidad por tu seguridad y la de otros. Gracias.`,
-        admin: `Hola, por favor, necesitamos el teléfono del conductor ${conductorName}, para contactarlo por una alerta de EXCESO DE VELOCIDAD en la unidad ${patente}. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`
-      }
-    };
-
-    return baseMessages[messageType]?.[variant] || "";
+  const buildMessageFromService = useCallback((unitData, messageType, messageData, variant, companyName) => {
+    const companyData = { nombre: companyName };
+    return buildMessage(messageType, variant, unitData, messageData, companyData);
   }, []);
 
   /**
@@ -199,8 +178,8 @@ const useWhatsAppSender = () => {
           : "admin";
       }
 
-      // Construir mensaje
-      const message = buildMessage(unitData, type, data, variant, data.companyName);
+      // Construir mensaje usando el servicio centralizado
+      const message = buildMessageFromService(unitData, type, data, variant, data.companyName);
       if (!message) {
         throw new Error("No se pudo construir el mensaje");
       }
@@ -264,7 +243,7 @@ const useWhatsAppSender = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [buildMessage, checkCooldown]);
+  }, [buildMessageFromService, checkCooldown]);
 
   /**
    * Cerrar la pestaña global de WhatsApp si está abierta

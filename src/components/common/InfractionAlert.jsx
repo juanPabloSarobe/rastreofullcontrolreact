@@ -322,6 +322,13 @@ const InfractionItem = React.memo(
         </ListItemButton>
         
         <WhatsAppButton
+          unitData={{
+            Movil_ID: unit.Movil_ID,
+            patente: unit.patente || 'Sin patente',
+            nombre: unit.nombre || 'Conductor no identificado',
+            empresa_identificacion_OID: unit.empresa_identificacion_OID,
+            telefono: unit.telefono || null
+          }}
           messageType="INFRACCION"
           messageData={{
             conductor: unit.nombre || 'Conductor no identificado',
@@ -332,7 +339,8 @@ const InfractionItem = React.memo(
               hour: '2-digit',
               minute: '2-digit'
             }),
-            duracion: unit.duracion || null
+            duracion: unit.duracion || null,
+            velocidadMaxima: unit.maxVelocidad || null
           }}
           sx={{
             alignSelf: 'flex-start',

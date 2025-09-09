@@ -36,20 +36,45 @@ export const messageTemplates = {
   },
 
   INFRACCION: {
-    conductor: (data) =>
-      `Estimado ${
-        data.conductorName
-      }, nos contactamos desde la central de monitoreo de ${
-        data.empresa
-      }. Detectamos que has cometido una infracción de ${
-        data.tipoInfraccion || "velocidad"
-      } en la unidad ${data.patente}${
-        data.ubicacion ? ` en ${data.ubicacion}` : ""
-      }${
-        data.hora ? ` a las ${data.hora}` : ""
-      }. Por favor, ¿podrías indicarnos qué está sucediendo? Recuerda que debes estar estacionado para utilizar el teléfono celular.`,
-    admin: (data) =>
-      `Hola, por favor, necesitamos el teléfono del conductor ${data.conductorName}, para contactarlo por una alerta de INFRACCIÓN en la unidad ${data.patente}. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`,
+    conductor: (data) => {
+      let mensaje = `Estimado ${data.conductorName}, nos contactamos desde la central de monitoreo de ${data.empresa}. Detectamos que has cometido una infracción de velocidad en la unidad ${data.patente}`;
+
+      // Agregar velocidad máxima si está disponible
+      if (data.velocidadMaxima) {
+        mensaje += ` alcanzando ${data.velocidadMaxima} km/h`;
+      }
+
+      // Agregar hora si está disponible
+      if (data.hora) {
+        mensaje += ` a las ${data.hora}`;
+      }
+
+      // Agregar duración si está disponible
+      if (data.duracion) {
+        mensaje += ` con una duración de ${data.duracion}`;
+      }
+
+      mensaje += `. Por favor, ¿podrías indicarnos qué está sucediendo? Recuerda que debes estar estacionado para utilizar el teléfono celular.`;
+
+      return mensaje;
+    },
+    admin: (data) => {
+      let mensaje = `Hola, por favor, necesitamos el teléfono del conductor ${data.conductorName}, para contactarlo por una alerta de INFRACCIÓN de velocidad en la unidad ${data.patente}`;
+
+      // Agregar velocidad máxima si está disponible
+      if (data.velocidadMaxima) {
+        mensaje += ` (${data.velocidadMaxima})`;
+      }
+
+      // Agregar duración si está disponible
+      if (data.duracion) {
+        mensaje += ` con duración de ${data.duracion}`;
+      }
+
+      mensaje += `. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`;
+
+      return mensaje;
+    },
   },
 
   CONDUCCION_AGRESIVA: {
@@ -60,11 +85,9 @@ export const messageTemplates = {
         data.empresa
       }. Detectamos que llevas ${
         data.cantidad || "varios"
-      } eventos de conducción agresiva${
-        data.periodo ? ` en ${data.periodo}` : " en el día de hoy"
-      } en la unidad ${
+      } eventos de conducción agresiva en el día de hoy en la unidad ${
         data.patente
-      }. Por favor, te pedimos que conduzcas defensivamente y no superes los límites de velocidad. Gracias.`,
+      }. Por favor, te pedimos que conduzcas defensivamente y no superes los límites de velocidad. Recuerda que debes estar estacionado para utilizar el teléfono celular. Gracias.`,
     admin: (data) =>
       `Hola, por favor, necesitamos el teléfono del conductor ${data.conductorName}, para contactarlo por una alerta de CONDUCCIÓN AGRESIVA en la unidad ${data.patente}. ¿Podrías cargarlo en la plataforma FullControlGPS? Gracias.`,
   },
