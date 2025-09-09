@@ -17,6 +17,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import BaseExpandableAlert from "./BaseExpandableAlert";
+import WhatsAppButton from "./WhatsAppButton";
 import { useContextValue } from "../../context/Context";
 
 // Componente memoizado para cada item de la lista de infracciones
@@ -319,6 +320,25 @@ const InfractionItem = React.memo(
             }}
           />
         </ListItemButton>
+        
+        <WhatsAppButton
+          messageType="INFRACCION"
+          messageData={{
+            conductor: unit.nombre || 'Conductor no identificado',
+            unidad: unit.patente || 'Unidad sin patente',
+            tipoInfraccion: unit.estado || 'Infracción',
+            ubicacion: unit.detalles?.direccion || 'Ubicación no disponible',
+            hora: new Date().toLocaleTimeString('es-ES', {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            duracion: unit.duracion || null
+          }}
+          sx={{
+            alignSelf: 'flex-start',
+            mt: 0.5
+          }}
+        />
       </Box>
     </ListItem>
   )
