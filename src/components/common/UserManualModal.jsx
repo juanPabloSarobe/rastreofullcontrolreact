@@ -210,6 +210,11 @@ const UserManualModal = ({ open, onClose }) => {
                       🔒 Gestionar flotas de manera segura
                     </Typography>
                   </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#25D366", fontWeight: "bold" }}>
+                      📱 Notificaciones WhatsApp automáticas (NUEVO)
+                    </Typography>
+                  </li>
                 </Box>
               </CardContent>
             </Card>
@@ -229,6 +234,11 @@ const UserManualModal = ({ open, onClose }) => {
                 icon={<UpdateIcon />}
                 label="Actualizaciones Automáticas"
                 color="info"
+              />
+              <Chip
+                icon="📱"
+                label="Notificaciones WhatsApp"
+                sx={{ bgcolor: "#25D366", color: "white", fontWeight: "bold" }}
               />
             </Box>
 
@@ -1048,6 +1058,73 @@ const UserManualModal = ({ open, onClose }) => {
               </CardContent>
             </Card>
 
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#25D366", display: "flex", alignItems: "center", gap: 1 }}>
+                  📱 Notificaciones WhatsApp ⭐ NUEVO
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Cada unidad en ralentí incluye un botón de WhatsApp</strong> para 
+                  comunicación inmediata con conductores o administradores:
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Estados del Botón:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                      🟢 <strong>Verde:</strong> Conductor tiene teléfono registrado - Envía mensaje directo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#FF9800" }}>
+                      🟠 <strong>Naranja:</strong> Sin teléfono del conductor - Solicita al administrador
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#9E9E9E" }}>
+                      ⚪ <strong>Gris:</strong> Datos no disponibles - Botón deshabilitado
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Mensajes Automáticos:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para conductores:</strong> "Estimado [Nombre], detectamos que la unidad [Patente] 
+                      lleva [Tiempo] en estado ralentí. ¿Podrías indicarnos qué está pasando?"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para administradores:</strong> "Necesitamos el teléfono del conductor [Nombre], 
+                      para contactarlo por una alerta de RALENTÍ en la unidad [Patente]."
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Funciones Adicionales:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      ⏱️ <strong>Cooldown de 10 segundos</strong> para evitar spam
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📊 <strong>Incluye datos contextuales:</strong> tiempo en ralentí, ubicación, conductor
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
             <Card
               sx={{
                 bgcolor: "success.50",
@@ -1382,6 +1459,94 @@ const UserManualModal = ({ open, onClose }) => {
               </CardContent>
             </Card>
 
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#25D366", display: "flex", alignItems: "center", gap: 1 }}>
+                  📱 Notificaciones WhatsApp ⭐ NUEVO
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Cada infracción incluye un botón de WhatsApp</strong> para 
+                  comunicación inmediata durante infracciones activas y históricas:
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Estados del Botón:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                      🟢 <strong>Verde:</strong> Conductor con teléfono - Mensaje directo sobre la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#FF9800" }}>
+                      🟠 <strong>Naranja:</strong> Sin teléfono del conductor - Solicita al administrador
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#9E9E9E" }}>
+                      ⚪ <strong>Gris:</strong> Datos no disponibles - Botón deshabilitado
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Mensajes con Información Detallada:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para conductores:</strong> "Estimado [Nombre], detectamos una infracción de velocidad 
+                      en la unidad [Patente] alcanzando [Velocidad] km/h en [Ubicación] con duración de [Tiempo]."
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para administradores:</strong> "Necesitamos el teléfono del conductor [Nombre], 
+                      para contactarlo por una INFRACCIÓN de velocidad ([Velocidad] km/h) con duración de [Tiempo]."
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Datos Incluidos en Mensajes:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      🏎️ <strong>Velocidad máxima alcanzada</strong> durante la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      ⏱️ <strong>Duración completa</strong> de la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🕐 <strong>Hora precisa</strong> del evento
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Disponible en:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      🚨 <strong>Infracciones activas:</strong> Para respuesta inmediata
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📋 <strong>Historial de infracciones:</strong> Para seguimiento y capacitación
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
             <Card
               sx={{
                 bgcolor: "success.50",
@@ -1533,6 +1698,105 @@ const UserManualModal = ({ open, onClose }) => {
                 <Typography variant="body2" paragraph>
                   • <strong>Reset automático</strong> diario a las 00:00
                 </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#25D366", display: "flex", alignItems: "center", gap: 1 }}>
+                  📱 Notificaciones WhatsApp ⭐ NUEVO
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Cada conductor con alertas de conducción agresiva incluye un botón de WhatsApp</strong> 
+                  para comunicación directa sobre el patrón de conducta:
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Estados del Botón:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                      🟢 <strong>Verde:</strong> Conductor con teléfono registrado - Mensaje directo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#FF9800" }}>
+                      🟠 <strong>Naranja:</strong> Sin teléfono del conductor - Solicita al administrador
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#9E9E9E" }}>
+                      ⚪ <strong>Gris:</strong> Datos no disponibles - Botón deshabilitado
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Mensajes Adaptativos por Severidad:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para conductores:</strong> "Estimado [Nombre], detectamos que llevas [Cantidad] 
+                      eventos de conducción agresiva en el día de hoy en la unidad [Patente]. 
+                      Te pedimos que conduzcas defensivamente y no superes los límites de velocidad."
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para administradores:</strong> "Necesitamos el teléfono del conductor [Nombre], 
+                      para contactarlo por una alerta de CONDUCCIÓN AGRESIVA en la unidad [Patente]."
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Información Contextual:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      📊 <strong>Cantidad específica</strong> de eventos acumulados
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🚗 <strong>Vehículo actual</strong> donde ocurrieron los eventos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📅 <strong>Período del día</strong> para contexto temporal
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🎯 <strong>Mensaje educativo</strong> para promover conducción defensiva
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Uso Estratégico:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      📞 <strong>Intervención temprana:</strong> Contactar antes de llegar a niveles críticos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🎓 <strong>Capacitación proactiva:</strong> Momento ideal para recordar buenas prácticas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📋 <strong>Documentación:</strong> Registro de comunicaciones por temas de seguridad
+                    </Typography>
+                  </li>
+                </Box>
               </CardContent>
             </Card>
 

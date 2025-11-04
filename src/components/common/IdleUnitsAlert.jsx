@@ -14,6 +14,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import SortIcon from "@mui/icons-material/Sort";
 import BaseExpandableAlert from "./BaseExpandableAlert";
+import WhatsAppButton from "./WhatsAppButton";
 import { useContextValue } from "../../context/Context"; // Corregir la importación del contexto
 
 // Componente memoizado para cada item de la lista de ralentí
@@ -50,7 +51,7 @@ const IdleUnitItem = React.memo(
           onClick={(e) => onToggleIgnore(unit.Movil_ID, e)}
           sx={{
             color: isIgnored ? "text.disabled" : "text.secondary",
-            mx: 1,
+            mx: 0.5,
             "&:hover": {
               backgroundColor: isIgnored
                 ? "rgba(0, 0, 0, 0.04)"
@@ -206,6 +207,18 @@ const IdleUnitItem = React.memo(
             }}
           />
         </ListItemButton>
+
+        {/* Botón WhatsApp para contactar por ralentí - Movido a la derecha */}
+        <WhatsAppButton
+          unitData={unit}
+          messageType="RALENTI"
+          messageData={{ 
+            tiempo: idleTime,
+            ubicacion: unit.area || null
+          }}
+          size="small"
+          sx={{ mx: 0.5 }}
+        />
       </Box>
     </ListItem>
   )
