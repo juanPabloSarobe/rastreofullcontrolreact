@@ -1,0 +1,83 @@
+Presupuesto Técnico – Alerta de Unidades en Ralentí
+Cliente Solicitante: OPS SRL
+Proyecto: Sistema de alertas visuales para unidades en ralentí
+Responsable Técnico: Sarobe Juan Pablo
+Fecha: 22/07/2025
+
+1. Descripción del trabajo
+El cliente desea implementar un sistema de alertas visuales que permita detectar, visualizar y gestionar unidades que se encuentran en estado de ralentí. Esta funcionalidad tiene como objetivo optimizar el uso de recursos, reducir el consumo de combustible y facilitar la supervisión operativa de la flota.
+
+2. Alcance del trabajo
+•	Creación de botón circular con contador de unidades en ralentí
+•	Detección automática de unidades en ralentí según el estado reportado
+•	Posicionamiento dinámico del botón según el contexto de la interfaz
+•	Panel expandible con listado alfabético de unidades en ralentí
+•	Sistema para marcar unidades como "ignoradas"
+•	Selección directa de unidades desde el listado
+•	Código de colores según estado del motor
+•	Documentación técnica y manual de usuario
+•	Integración con el sistema de selección actual
+
+2.1 Comportamiento del sistema
+•	El botón se posiciona:
+o	Sin unidades seleccionadas: debajo del selector de unidades
+o	Con unidades seleccionadas: debajo del detalle de la unidad
+o	En vista móvil: siempre debajo del selector
+•	Al hacer clic en el botón:
+o	Se expande lateralmente con animación fluida
+o	Muestra un listado ordenado alfabéticamente de unidades en ralentí
+o	Cada ítem incluye:
+	Patente y conductor
+	Icono de ojo para ignorar
+	Código de color:
+	Rojo: "Inicio Ralenti" / "Reporte en Ralenti"
+	Negro: "Fin de ralenti"
+	Gris: ignorados (al final del listado)
+•	Las unidades ignoradas:
+o	Persisten durante la sesión
+o	Desaparecen si salen del estado de ralentí
+o	Reaparecen como activas si vuelven al estado de ralentí
+
+3. Estimación de tiempo y costo
+Tarea	Horas estimadas	Descripción
+Análisis y planificación	3	Estudio del código existente, definición de enfoque técnico
+Desarrollo de lógica de detección	4	Identificación de estados de ralentí
+Desarrollo de interfaz de usuario	6	Botón, panel expandible, animaciones
+Sistema de unidades ignoradas	3	Manejo de persistencia en sesión
+Posicionamiento adaptativo	4	Lógica de ubicación según estado de la vista
+Integración con sistema existente	3	Selección directa desde listado
+Pruebas y ajustes	5	Testing con distintos escenarios operativos
+Documentación	2	Manual de usuario y documentación técnica
+Total estimado: 30 horas
+Tarifa por hora: USD 60
+Costo estimado: USD 1.800
+
+3.1 Alcance del proyecto
+Este desarrollo será bonificado en su totalidad por su impacto positivo en la gestión de flota. El costo total (USD 1.800) será absorbido por FullControl GPS, sin costo para el cliente final.
+Bonificación aplicada: 100%
+Costo final para el cliente: USD 0
+ 
+
+4. Línea de tiempo estimada
+•	Análisis y planificación: 1 día
+•	Desarrollo principal: 3 días
+•	Pruebas y ajustes: 1-2 días
+Total estimado: 5-6 días laborables
+
+5. Entregables
+•	Botón de alerta visual integrado
+•	Sistema automático de detección de unidades en ralentí
+•	Panel expandible con listado gestionable
+•	Sistema de marcado de unidades como "ignoradas"
+•	Integración con el sistema de selección actual
+•	Documentación técnica y manual de usuario
+
+6. Condiciones técnicas
+•	Disponibilidad de personal para validaciones semanales durante el desarrollo
+
+7. Garantía y soporte
+•	Soporte de integración inicial sin cargo
+•	Funcionalidad disponible para todos los clientes de FullControl GPS
+•	No requiere cambios en infraestructura
+•	Mejora transversal que fortalece la supervisión operativa del sistema
+
