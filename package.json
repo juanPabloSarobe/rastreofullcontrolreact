@@ -28,7 +28,7 @@
     "react-leaflet": "^5.0.0-rc.2",
     "react-transition-group": "^4.4.5",
     "react-window": "^1.8.11",
-    "use-debounce": "^10.0.4",
+    "use-debounce": "^10.0.5",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

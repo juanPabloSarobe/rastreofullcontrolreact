@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import DriveEtaIcon from "@mui/icons-material/DriveEta";
 import BaseExpandableAlert from "./BaseExpandableAlert";
+import WhatsAppButton from "./WhatsAppButton";
 import { useContextValue } from "../../context/Context";
 import useConductorCache from "../../hooks/useConductorCache";
 
@@ -154,6 +155,22 @@ const AggressiveDrivingItem = React.memo(
             }
           />
         </ListItemButton>
+
+        {/* Botón WhatsApp para contactar por conducción agresiva - Ubicado a la derecha */}
+        <WhatsAppButton
+          unitData={{
+            ...conductor.lastUnit,
+            nombre: conductor.nombre // Asegurar que el nombre del conductor esté disponible
+          }}
+          messageType="CONDUCCION_AGRESIVA"
+          messageData={{ 
+            cantidad: conductor.count,
+            periodo: "en el día de hoy",
+            conductor: conductor.nombre
+          }}
+          size="small"
+          sx={{ mx: 0.5 }}
+        />
       </Box>
     </ListItem>
   )

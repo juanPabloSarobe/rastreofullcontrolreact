@@ -15,6 +15,7 @@ import { InfoOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useState } from "react";
 import logoFullcontrolLargo from "../../assets/logoFullcontrolLargo.webp";
 import { useContextValue } from "../../context/Context";
+import permisosConductorService from "../../services/permisosConductorService";
 
 const customTheme = extendTheme({ defaultColorScheme: "dark" });
 const Login = () => {
@@ -77,12 +78,34 @@ const Login = () => {
           dispatch({ type: "SET_ACCESS_GRANTED", payload: true });
           dispatch({ type: "SET_ROLE", payload: result.rol });
           dispatch({ type: "SET_USER", payload: username });
+
+          // Cargar conductores automáticamente después del login exitoso
+          loadConductores(); // Usar el ID del usuario del resultado o fallback
         } else {
           toggleOnLoginError();
         }
       }
     } catch (error) {
       console.error("Error:", error);
+    }
+  };
+
+  // Función para cargar conductores después del login
+  const loadConductores = async () => {
+    try {
+      dispatch({ type: "SET_LOADING_CONDUCTORES", payload: true });
+
+      const conductores =
+        await permisosConductorService.getPermisosConductores();
+
+      dispatch({ type: "SET_CONDUCTORES", payload: conductores });
+      dispatch({ type: "SET_CONDUCTORES_LOADED", payload: true });
+    } catch (error) {
+      console.error("Error al cargar conductores:", error);
+      dispatch({ type: "SET_CONDUCTORES", payload: [] });
+      dispatch({ type: "SET_CONDUCTORES_LOADED", payload: true });
+    } finally {
+      dispatch({ type: "SET_LOADING_CONDUCTORES", payload: false });
     }
   };
   return (

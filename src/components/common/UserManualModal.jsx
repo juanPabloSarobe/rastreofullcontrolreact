@@ -31,6 +31,7 @@ import {
   Computer as ComputerIcon,
   Map as MapIcon,
   History as HistoryIcon,
+  WorkHistory as WorkHistoryIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
   Phone as PhoneIcon,
@@ -40,6 +41,7 @@ import {
   CropFree as CropFreeIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
+
 
 const UserManualModal = ({ open, onClose }) => {
   const [selectedSection, setSelectedSection] = useState("inicio");
@@ -107,6 +109,12 @@ const UserManualModal = ({ open, onClose }) => {
       title: "Vista de Histórico",
       icon: <HistoryIcon />,
       content: "historico",
+    },
+    {
+      id: "historico-conductor",
+      title: " Histórico por Conductor",
+      icon: <WorkHistoryIcon />,
+      content: "historico-conductor",
     },
     {
       id: "reportes",
@@ -184,7 +192,12 @@ const UserManualModal = ({ open, onClose }) => {
                   </li>
                   <li>
                     <Typography variant="body2">
-                      📊 Generar reportes detallados
+                      � Histórico por conductor (NUEVA funcionalidad)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      �📊 Generar reportes detallados
                     </Typography>
                   </li>
                   <li>
@@ -195,6 +208,11 @@ const UserManualModal = ({ open, onClose }) => {
                   <li>
                     <Typography variant="body2">
                       🔒 Gestionar flotas de manera segura
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#25D366", fontWeight: "bold" }}>
+                      📱 Notificaciones WhatsApp automáticas (NUEVO)
                     </Typography>
                   </li>
                 </Box>
@@ -216,6 +234,11 @@ const UserManualModal = ({ open, onClose }) => {
                 icon={<UpdateIcon />}
                 label="Actualizaciones Automáticas"
                 color="info"
+              />
+              <Chip
+                icon="📱"
+                label="Notificaciones WhatsApp"
+                sx={{ bgcolor: "#25D366", color: "white", fontWeight: "bold" }}
               />
             </Box>
 
@@ -484,6 +507,52 @@ const UserManualModal = ({ open, onClose }) => {
                     </Typography>
                   </li>
                 </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 1,
+                    color: "#2E7D32"
+                  }}
+                >
+                  👨‍💼 Histórico por Conductor (NUEVO)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Nueva funcionalidad:</strong> Consulte históricos filtrados
+                  por conductor específico:
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      Haga clic en el botón 👨‍💼 (junto al selector de flotas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Seleccione el conductor deseado
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Elija el período (mes o rango de fechas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Seleccione vehículo y fecha para ver el recorrido
+                    </Typography>
+                  </li>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                  ⚠️ Requiere conductores previamente asignados en el sistema
+                </Typography>
               </CardContent>
             </Card>
 
@@ -989,6 +1058,73 @@ const UserManualModal = ({ open, onClose }) => {
               </CardContent>
             </Card>
 
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#25D366", display: "flex", alignItems: "center", gap: 1 }}>
+                  📱 Notificaciones WhatsApp ⭐ NUEVO
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Cada unidad en ralentí incluye un botón de WhatsApp</strong> para 
+                  comunicación inmediata con conductores o administradores:
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Estados del Botón:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                      🟢 <strong>Verde:</strong> Conductor tiene teléfono registrado - Envía mensaje directo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#FF9800" }}>
+                      🟠 <strong>Naranja:</strong> Sin teléfono del conductor - Solicita al administrador
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#9E9E9E" }}>
+                      ⚪ <strong>Gris:</strong> Datos no disponibles - Botón deshabilitado
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Mensajes Automáticos:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para conductores:</strong> "Estimado [Nombre], detectamos que la unidad [Patente] 
+                      lleva [Tiempo] en estado ralentí. ¿Podrías indicarnos qué está pasando?"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para administradores:</strong> "Necesitamos el teléfono del conductor [Nombre], 
+                      para contactarlo por una alerta de RALENTÍ en la unidad [Patente]."
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Funciones Adicionales:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      ⏱️ <strong>Cooldown de 10 segundos</strong> para evitar spam
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📊 <strong>Incluye datos contextuales:</strong> tiempo en ralentí, ubicación, conductor
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
             <Card
               sx={{
                 bgcolor: "success.50",
@@ -1323,6 +1459,94 @@ const UserManualModal = ({ open, onClose }) => {
               </CardContent>
             </Card>
 
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#25D366", display: "flex", alignItems: "center", gap: 1 }}>
+                  📱 Notificaciones WhatsApp ⭐ NUEVO
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Cada infracción incluye un botón de WhatsApp</strong> para 
+                  comunicación inmediata durante infracciones activas y históricas:
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Estados del Botón:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                      🟢 <strong>Verde:</strong> Conductor con teléfono - Mensaje directo sobre la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#FF9800" }}>
+                      🟠 <strong>Naranja:</strong> Sin teléfono del conductor - Solicita al administrador
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#9E9E9E" }}>
+                      ⚪ <strong>Gris:</strong> Datos no disponibles - Botón deshabilitado
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Mensajes con Información Detallada:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para conductores:</strong> "Estimado [Nombre], detectamos una infracción de velocidad 
+                      en la unidad [Patente] alcanzando [Velocidad] km/h en [Ubicación] con duración de [Tiempo]."
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para administradores:</strong> "Necesitamos el teléfono del conductor [Nombre], 
+                      para contactarlo por una INFRACCIÓN de velocidad ([Velocidad] km/h) con duración de [Tiempo]."
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Datos Incluidos en Mensajes:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      🏎️ <strong>Velocidad máxima alcanzada</strong> durante la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      ⏱️ <strong>Duración completa</strong> de la infracción
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🕐 <strong>Hora precisa</strong> del evento
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Disponible en:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      🚨 <strong>Infracciones activas:</strong> Para respuesta inmediata
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📋 <strong>Historial de infracciones:</strong> Para seguimiento y capacitación
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
             <Card
               sx={{
                 bgcolor: "success.50",
@@ -1474,6 +1698,105 @@ const UserManualModal = ({ open, onClose }) => {
                 <Typography variant="body2" paragraph>
                   • <strong>Reset automático</strong> diario a las 00:00
                 </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#25D366", display: "flex", alignItems: "center", gap: 1 }}>
+                  📱 Notificaciones WhatsApp ⭐ NUEVO
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  <strong>Cada conductor con alertas de conducción agresiva incluye un botón de WhatsApp</strong> 
+                  para comunicación directa sobre el patrón de conducta:
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Estados del Botón:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                      🟢 <strong>Verde:</strong> Conductor con teléfono registrado - Mensaje directo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#FF9800" }}>
+                      🟠 <strong>Naranja:</strong> Sin teléfono del conductor - Solicita al administrador
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ color: "#9E9E9E" }}>
+                      ⚪ <strong>Gris:</strong> Datos no disponibles - Botón deshabilitado
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Mensajes Adaptativos por Severidad:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para conductores:</strong> "Estimado [Nombre], detectamos que llevas [Cantidad] 
+                      eventos de conducción agresiva en el día de hoy en la unidad [Patente]. 
+                      Te pedimos que conduzcas defensivamente y no superes los límites de velocidad."
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      <strong>Para administradores:</strong> "Necesitamos el teléfono del conductor [Nombre], 
+                      para contactarlo por una alerta de CONDUCCIÓN AGRESIVA en la unidad [Patente]."
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Información Contextual:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      📊 <strong>Cantidad específica</strong> de eventos acumulados
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🚗 <strong>Vehículo actual</strong> donde ocurrieron los eventos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📅 <strong>Período del día</strong> para contexto temporal
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🎯 <strong>Mensaje educativo</strong> para promover conducción defensiva
+                    </Typography>
+                  </li>
+                </Box>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Uso Estratégico:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2">
+                      📞 <strong>Intervención temprana:</strong> Contactar antes de llegar a niveles críticos
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      🎓 <strong>Capacitación proactiva:</strong> Momento ideal para recordar buenas prácticas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      📋 <strong>Documentación:</strong> Registro de comunicaciones por temas de seguridad
+                    </Typography>
+                  </li>
+                </Box>
               </CardContent>
             </Card>
 
@@ -1673,6 +1996,228 @@ const UserManualModal = ({ open, onClose }) => {
                     size="small"
                   />
                 </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "historico-conductor":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: "bold" }}
+            >
+               Histórico por Conductor
+            </Typography>
+
+            <Card
+              sx={{
+                mb: 3,
+                bgcolor: "rgba(76, 175, 80, 0.1)",
+                border: "2px solid #4CAF50",
+              }}
+            >
+              <CardContent>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    color: "#2E7D32",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  🆕 Nueva Funcionalidad
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Consulte el historial de recorridos filtrado por conductor específico.
+                  Esta funcionalidad permite rastrear qué conductor manejó cada vehículo
+                  en períodos determinados.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🚀 Acceder al Histórico por Conductor
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Haga clic en el botón{" "}
+                      <strong style={{ color: "#2E7D32" }}>👨‍💼</strong> (Histórico por Conductor)
+                      ubicado junto al selector de flotas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Seleccione el conductor desde la lista desplegable
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Elija el período de consulta (mes específico o rango de fechas)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">
+                      Seleccione el vehículo y fecha específica para ver el recorrido
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  ⚙️ Opciones de Búsqueda
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  📅 Vista Simple (Por Mes)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Seleccione uno de los últimos 6 meses disponibles
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Ideal para consultas rápidas y recientes
+                </Typography>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  📊 Vista Avanzada (Rango de Fechas)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Active el interruptor "Avanzado" para seleccionar fechas específicas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Defina fecha inicial y fecha final del período
+                </Typography>
+                <Typography variant="body2">
+                  • Útil para análisis de períodos específicos
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🚗 Selección de Vehículos y Fechas
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Lista de Vehículos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Se muestran solo los vehículos que el conductor manejó en el período
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Cada vehículo muestra la cantidad de días con datos disponibles
+                </Typography>
+
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, fontWeight: "bold" }}>
+                  Calendario de Fechas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Los días disponibles aparecen resaltados en verde
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Solo se pueden seleccionar fechas con datos del conductor
+                </Typography>
+                <Typography variant="body2">
+                  • El calendario se habilita al seleccionar un vehículo
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📱 Información Mostrada
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Recorrido completo</strong> del conductor en el mapa
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Detalles del conductor</strong> (nombre, DNI, empresa)
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Información del vehículo</strong> utilizado
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Velocidades y paradas</strong> durante el recorrido
+                </Typography>
+                <Typography variant="body2">
+                  • <strong>Horarios de inicio y fin</strong> de la jornada
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📥 Exportación de Datos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Al visualizar un recorrido de conductor, puede exportar:
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+                  <Chip
+                    icon={<DownloadIcon />}
+                    label="Histórico Excel"
+                    color="success"
+                    size="small"
+                  />
+                  <Chip
+                    icon={<DownloadIcon />}
+                    label="Resumen Excel"
+                    color="primary"
+                    size="small"
+                  />
+                  <Chip
+                    icon={<DownloadIcon />}
+                    label="Google Earth (.kml)"
+                    color="info"
+                    size="small"
+                  />
+                </Box>
+                <Typography variant="body2">
+                  Los archivos incluyen información específica del conductor seleccionado.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "warning.50",
+                border: "1px solid",
+                borderColor: "warning.200",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="warning.main">
+                  ⚠️ Consideraciones Importantes
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Esta funcionalidad requiere que los conductores estén previamente 
+                  asignados en el sistema
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Si no ve conductores disponibles, contacte al administrador
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Los datos mostrados dependen del registro de conductores en cada viaje
+                </Typography>
+                <Typography variant="body2">
+                  • En caso de no encontrar datos, verifique que el período seleccionado 
+                  tenga actividad registrada
+                </Typography>
               </CardContent>
             </Card>
           </Box>

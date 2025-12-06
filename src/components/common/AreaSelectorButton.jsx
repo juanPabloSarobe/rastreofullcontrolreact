@@ -1,4 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  createContext,
+  useContext,
+} from "react";
 import {
   Box,
   IconButton,
@@ -16,6 +23,37 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { useContextValue } from "../../context/Context";
 import { useFleetSelectorState } from "./FleetSelectorButton";
+
+// Contexto para compartir el estado del AreaSelector
+const AreaSelectorContext = createContext();
+
+export const AreaSelectorProvider = ({ children }) => {
+  const [areaSelectorWidth, setAreaSelectorWidth] = useState(48); // Ancho inicial
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <AreaSelectorContext.Provider
+      value={{
+        areaSelectorWidth,
+        setAreaSelectorWidth,
+        isExpanded,
+        setIsExpanded,
+      }}
+    >
+      {children}
+    </AreaSelectorContext.Provider>
+  );
+};
+
+export const useAreaSelectorState = () => {
+  const context = useContext(AreaSelectorContext);
+  if (!context) {
+    throw new Error(
+      "useAreaSelectorState must be used within AreaSelectorProvider"
+    );
+  }
+  return context;
+};
 
 // Componente wrapper que maneja el contexto del mapa
 const AreaSelectorMapHandler = ({ markersData, onUnitSelect, isVisible }) => {
@@ -35,6 +73,8 @@ const AreaSelectorMapHandler = ({ markersData, onUnitSelect, isVisible }) => {
 const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
   const { state, dispatch } = useContextValue();
   const { fleetSelectorWidth } = useFleetSelectorState();
+  const { areaSelectorWidth, setAreaSelectorWidth, setIsExpanded } =
+    useAreaSelectorState();
   const [isHovered, setIsHovered] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -400,6 +440,21 @@ const AreaSelectorButton = ({ markersData, onUnitSelect, map }) => {
       }
     };
   }, [map]);
+
+  // Calcular y actualizar el ancho del componente
+  useEffect(() => {
+    let newWidth = 48; // Ancho base
+    let expanded = false;
+
+    if (isHovered || isDrawing) {
+      // Estado hover o dibujando
+      newWidth = 220;
+      expanded = true;
+    }
+
+    setAreaSelectorWidth(newWidth);
+    setIsExpanded(expanded);
+  }, [isHovered, isDrawing, setAreaSelectorWidth, setIsExpanded]);
 
   // Calcular posición dinámica a la derecha del FleetSelectorButton
   const getPositionStyles = () => {
