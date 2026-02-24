@@ -18,5 +18,5 @@ createRoot(document.getElementById("root")).render(
   <ContextProvider>
     <CssBaseline />
     <App />
-  </ContextProvider>
+  </ContextProvider> 
 );
