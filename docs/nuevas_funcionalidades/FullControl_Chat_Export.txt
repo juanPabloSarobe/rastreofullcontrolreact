@@ -1,0 +1,112 @@
+FULLCONTROL GPS – TRANSCRIPCIÓN Y RESUMEN COMPLETO DEL PROCESO
+
+============================== 1. CONTEXTO INICIAL
+==============================
+
+-   Proyecto: Plataforma FullControl GPS.
+-   Infraestructura: AWS EC2 + RDS + ALB.
+-   Backend legacy: PHP 5.4.16 sobre Apache (CentOS).
+-   Módulo core: Java Spring Boot (NO se toca).
+-   Frontend rastreo: moderno (funciona).
+-   Frontend informes: Grunt + Angular antiguo.
+-   Objetivo: Modernizar backend sin romper producción.
+
+Problema detectado: - Dependencia fuerte de desarrollador lento. - PHP
+legacy difícil de mantener. - Necesidad de nuevas funcionalidades. -
+Plan futuro de integración con IA.
+
+============================== 2. DECISIÓN ESTRATÉGICA
+==============================
+
+Crear backend paralelo (v2) en Node + Express.
+
+Requisitos: - No afectar sistema actual. - Rollback inmediato. -
+Migración incremental. - Base preparada para futura IA.
+
+============================== 3. IMPLEMENTACIÓN REALIZADA
+==============================
+
+3.1 Creación backend v2
+
+Ruta: /opt/fullcontrol/api-v2
+
+Stack: - Node 16.18.1 - Express - systemd - Puerto 3001
+
+Health endpoint: GET /servicio/v2/health
+
+Respuesta validada: HTTP 200 OK JSON: { “ok”: true, “service”:
+“fullcontrol-api-v2” }
+
+3.2 Configuración systemd
+
+Servicio: /etc/systemd/system/fullcontrol-api-v2.service
+
+Estado: active (running)
+
+Confirmación puerto: sudo ss -lntp | grep 3001 → *:3001
+
+3.3 Integración con ALB
+
+Creación Target Group: Target-Back-v2 Puerto: 3001 Health check:
+/servicio/v2/health
+
+Regla Listener HTTPS 443: IF path = /servicio/v2/* THEN forward →
+Target-Back-v2
+
+Verificación externa: curl
+https://plataforma.fullcontrolgps.com.ar/servicio/v2/health → HTTP/2 200
+OK
+
+Resultado: Backend v2 en producción sin afectar legacy.
+
+============================== 4. ARQUITECTURA ACTUAL
+==============================
+
+Cliente ↓ ALB (443) ↓ /servicio/v2/* → Express 3001 Else → Apache + PHP
+80
+
+============================== 5. APRENDIZAJES CLAVE
+==============================
+
+-   Diferencia SSH vs HTTP en Git.
+-   Permisos Linux (EACCES npm).
+-   systemd básico (daemon-reload, restart, journalctl).
+-   Diferencia 127.0.0.1 vs 0.0.0.0.
+-   Cómo funciona ALB + Target Groups.
+-   Qué significa estado “Unused”.
+-   Qué es realmente un microservicio.
+-   Cómo hacer despliegue sin downtime.
+-   Cómo diseñar rollback simple.
+
+============================== 6. PENDIENTES TÉCNICOS
+==============================
+
+1.  Ordenar estructura del backend v2.
+2.  Middleware autenticación por cookie.
+3.  Migrar endpoint ranking.
+4.  Logging centralizado.
+5.  Variables de entorno.
+6.  Hardening seguridad.
+7.  Plan formal de migración.
+8.  Diseño de arquitectura IA futura.
+
+============================== 7. PLAN FUTURO IA
+==============================
+
+Objetivo: - Detectar infracciones en tiempo real. - Validarlas. -
+Contactar conductor vía WhatsApp. - Generar resumen automático.
+
+Arquitectura sugerida futura:
+
+Express v2 ↓ Event Service ↓ AI Service ↓ WhatsApp Service
+
+Separación clara entre: - Lógica de negocio - Procesamiento IA -
+Integración externa
+
+============================== 8. ESTADO FINAL ACTUAL
+==============================
+
+Backend v2 operativo en producción. Sistema estable. ALB correctamente
+configurado. Rollback inmediato disponible. Base lista para evolución.
+
+FIN DE DOCUMENTO.
