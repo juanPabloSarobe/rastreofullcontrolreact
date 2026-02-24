@@ -11,6 +11,9 @@ jobs:
   build:
     name: Compilar Aplicación React
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-rastreo
 
     steps:
       - name: Checkout del código
@@ -50,7 +53,7 @@ jobs:
         with:
           name: archivos-compilados
           path: |
-            build/
-            dist/
+            frontend-rastreo/build/
+            frontend-rastreo/dist/
           if-no-files-found: warn
           retention-days: 7
