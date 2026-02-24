@@ -1,14 +1,15 @@
 {
-  "name": "fullcontrol-frontend-rastreo",
-  "description": "Frontend de rastreo en tiempo real - FullControl GPS",
+  "name": "rastreofullcontrolreact",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "prebuild": "node ./update-version.js",
     "build": "vite build",
+    "lint": "eslint .",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "uv": "node update-version.js --file changelog.txt"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
