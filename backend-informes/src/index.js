@@ -1,59 +1,98 @@
+/**
+ * BACKEND FULLCONTROL - INFORMES v2
+ * Servidor principal con gestión de secretos AWS y BD RDS
+ */
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 
-dotenv.config();
+import { initializePool, closePool } from './db/pool.js';
+import { getSecrets } from './config/secrets.js';
+import { logger, setLogLevel } from './utils/logger.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/requestLogger.js';
+
+import healthRoutes from './routes/health.js';
+import informesRoutes from './routes/informes.js';
 
 const app = express();
-const PORT = process.env.API_PORT || 3002;
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+// ============================================
+// INICIALIZACIÓN
+// ============================================
 
-// Health check endpoint
-app.get('/servicio/v2/health', (req, res) => {
-  res.json({
-    ok: true,
-    service: 'fullcontrol-informes-v2',
-    timestamp: new Date().toISOString(),
+async function bootstrap() {
+  try {
+    console.log('\n🚀 Iniciando Backend FullControl v2...\n');
+
+    // 1. Cargar configuración (secretos)
+    const config = await getSecrets();
+    
+    // 2. Configurar logger
+    setLogLevel(config.logging.level);
+    logger.info('Logger inicializado', { level: config.logging.level });
+
+    // 3. Inicializar pool de BD
+    await initializePool();
+
+    // 4. Configurar Express
+    app.use(cors({
+      origin: config.server.corsOrigin.split(','),
+      credentials: true,
+    }));
+    app.use(express.json());
+    app.use(requestLogger);
+
+    // 5. Rutas
+    app.use('/servicio/v2/health', healthRoutes);
+    app.use('/api/informes', informesRoutes);
+
+    // 6. Manejadores de errores
+    app.use(notFoundHandler);
+    app.use(errorHandler);
+
+    // 7. Iniciar servidor
+    const server = app.listen(config.server.port, () => {
+      logger.info(`✓ Servidor escuchando en http://localhost:${config.server.port}`);
+      logger.info(`✓ Entorno: ${config.server.env}`);
+    });
+
+    // 8. Manejo de señales de terminación
+    process.on('SIGINT', () => gracefulShutdown(server));
+    process.on('SIGTERM', () => gracefulShutdown(server));
+
+    return { app, server, config };
+  } catch (error) {
+    logger.error('Error fatal durante bootstrap:', error);
+    process.exit(1);
+  }
+}
+
+// ============================================
+// SHUTDOWN GRACEFUL
+// ============================================
+
+async function gracefulShutdown(server) {
+  logger.info('Recibida señal de terminación, cerrando conexiones...');
+
+  server.close(async () => {
+    await closePool();
+    logger.info('✓ Servidor cerrado correctamente');
+    process.exit(0);
   });
-});
 
-// Placeholder endpoints
-app.get('/api/informes', (req, res) => {
-  res.json({
-    message: 'GET /api/informes - Endpoint para listar informes',
-    status: 'pending',
-  });
-});
+  // Timeout de 10 segundos para forzar cierre
+  setTimeout(() => {
+    logger.error('Timeout de cierre, forzando salida');
+    process.exit(1);
+  }, 10000);
+}
 
-app.post('/api/informes/generar', (req, res) => {
-  res.json({
-    message: 'POST /api/informes/generar - Endpoint para generar nuevo informe',
-    status: 'pending',
-  });
-});
+// ============================================
+// INICIAR
+// ============================================
 
-app.get('/api/informes/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({
-    id,
-    message: `GET /api/informes/${id} - Endpoint para obtener informe específico`,
-    status: 'pending',
-  });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
-  res.status(500).json({
-    error: err.message,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✓ Backend Informes v2 iniciado en puerto ${PORT}`);
-  console.log(`✓ Health check: http://localhost:${PORT}/servicio/v2/health`);
+bootstrap().catch((error) => {
+  logger.error('Error fatal:', error);
+  process.exit(1);
 });
