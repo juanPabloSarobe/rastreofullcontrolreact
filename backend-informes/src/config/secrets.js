@@ -6,7 +6,7 @@
  * - Fallback a .env
  */
 
-import { SecretsManager } from '@aws-sdk/client-secrets-manager';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,7 +14,7 @@ dotenv.config();
 const ENV = process.env.NODE_ENV || 'development';
 const USE_AWS_SECRETS = process.env.USE_AWS_SECRETS === 'true';
 const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
-const SECRET_NAME = process.env.SECRET_NAME || 'fullcontrol/backend';
+const SECRET_NAME = process.env.SECRET_NAME || 'basededatosisis';
 
 let secretsCache = null;
 let lastFetchTime = 0;
@@ -32,9 +32,14 @@ async function fetchFromAWSSecrets() {
     }
 
     console.log('[SECRETS] Obteniendo secretos de AWS Secrets Manager...');
-    const client = new SecretsManager({ region: AWS_REGION });
+    const client = new SecretsManagerClient({ region: AWS_REGION });
 
-    const response = await client.getSecretValue({ SecretId: SECRET_NAME });
+    const response = await client.send(
+      new GetSecretValueCommand({
+        SecretId: SECRET_NAME,
+        VersionStage: 'AWSCURRENT',
+      })
+    );
     
     let secret;
     if ('SecretString' in response) {
@@ -71,6 +76,22 @@ function getFromEnvironment() {
 }
 
 /**
+ * Mapea campos de AWS Secrets Manager a formato interno
+ */
+function mapAWSSecretFields(secret) {
+  return {
+    db_host: secret.host,
+    db_port: secret.port,
+    db_name: secret.database,
+    db_user: secret.username,
+    db_password: secret.password,
+    api_port: secret.api_port || 3002,
+    log_level: secret.log_level || 'info',
+    cors_origin: secret.cors_origin || '*',
+  };
+}
+
+/**
  * Obtiene configuración final (AWS o variables de entorno)
  */
 export async function getSecrets() {
@@ -80,7 +101,10 @@ export async function getSecrets() {
   let secrets;
 
   if (USE_AWS_SECRETS && ENV === 'production') {
-    secrets = await fetchFromAWSSecrets();
+    const awsSecret = await fetchFromAWSSecrets();
+    if (awsSecret) {
+      secrets = mapAWSSecretFields(awsSecret);
+    }
   }
 
   // Fallback a variables de entorno

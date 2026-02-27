@@ -50,4 +50,4 @@ export const logger = {
   },
 };
 
-export { setLogLevel, logger };
+export default logger;
