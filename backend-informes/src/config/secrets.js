@@ -100,7 +100,7 @@ export async function getSecrets() {
 
   let secrets;
 
-  if (USE_AWS_SECRETS && ENV === 'production') {
+  if (USE_AWS_SECRETS) {
     const awsSecret = await fetchFromAWSSecrets();
     if (awsSecret) {
       secrets = mapAWSSecretFields(awsSecret);
