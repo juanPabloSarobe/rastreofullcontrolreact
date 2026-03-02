@@ -40,6 +40,7 @@ import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
 import DevSesion from "../dev/DevSesion";
+import RalentisTester from "../tools/RalentisTester";
 // Solo para desarrollo
 import UpdateTester from "../dev/UpdateTester";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -321,7 +322,11 @@ const PrincipalPage = () => {
               sx={{ borderRadius: "12px" }}
               position="relative"
             >
-              <MenuButton selectedUnit={selectedUnit} />
+              {state.viewMode === "ralentiTester" ? (
+                <RalentisTester />
+              ) : (
+                <>
+                  <MenuButton selectedUnit={selectedUnit} />
               {state.viewMode === "rastreo" && <UserChip />}
               {state.viewMode === "rastreo" &&
                 liteData?.GPS &&
@@ -418,6 +423,8 @@ const PrincipalPage = () => {
                 <ConductorHistoryView 
                   onConductorHistoricalDataFetched={setConductorHistoricalData}
                 />
+              )}
+                </>
               )}
             </Box>
           </Box>

@@ -14,6 +14,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 
 import healthRoutes from './routes/health.js';
 import informesRoutes from './routes/informes.js';
+import ralentisRoutes from './routes/ralentis.js';
 
 const app = express();
 
@@ -36,8 +37,14 @@ async function bootstrap() {
     await initializePool();
 
     // 4. Configurar Express
+    const rawCorsOrigin = (config.server.corsOrigin || '').trim();
+    const corsOrigin =
+      rawCorsOrigin === '*'
+        ? true
+        : rawCorsOrigin.split(',').map((origin) => origin.trim());
+
     app.use(cors({
-      origin: config.server.corsOrigin.split(','),
+      origin: corsOrigin,
       credentials: true,
     }));
     app.use(express.json());
@@ -46,6 +53,7 @@ async function bootstrap() {
     // 5. Rutas
     app.use('/servicio/v2/health', healthRoutes);
     app.use('/api/informes', informesRoutes);
+    app.use('/api/ralentis', ralentisRoutes);
 
     // 6. Manejadores de errores
     app.use(notFoundHandler);

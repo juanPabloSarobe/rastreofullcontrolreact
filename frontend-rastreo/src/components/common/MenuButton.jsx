@@ -253,6 +253,16 @@ const MenuButton = ({ selectedUnit }) => {
       disabled: isMenuRestricted,
     },
     {
+      icon: <HistoryIcon fontSize="small" />,
+      label: "Ralentí Tester",
+      show: true, // Mostrar a todos los usuarios
+      onClick: () => {
+        dispatch({ type: "SET_VIEW_MODE", payload: "ralentiTester" });
+        handleClose();
+      },
+      disabled: isMenuRestricted,
+    },
+    {
       icon: <LogoutIcon fontSize="small" />,
       label: "Cerrar Sesión",
       link: "/logout",
