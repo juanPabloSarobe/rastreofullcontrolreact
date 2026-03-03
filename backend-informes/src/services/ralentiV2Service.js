@@ -9,6 +9,7 @@ import { logger } from '../utils/logger.js';
 
 const ALGORITHM_VERSION = 1;
 const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+const FUTURE_EVENT_TOLERANCE_MS = 60 * 1000;
 
 function normalizeDateForLocalTimestamp(dateValue) {
   if (!dateValue || typeof dateValue !== 'string') {
@@ -16,6 +17,24 @@ function normalizeDateForLocalTimestamp(dateValue) {
   }
 
   return dateValue.trim().replace(/([zZ]|[+-]\d{2}:?\d{2})$/, '');
+}
+
+function toLocalTimestampString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  const second = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
+
+function getEffectiveFechaHasta(fechaHasta) {
+  const normalized = normalizeDateForLocalTimestamp(fechaHasta);
+  const requested = new Date(normalized);
+  const now = new Date();
+  const effective = now.getTime() < requested.getTime() ? now : requested;
+  return normalizeDateForLocalTimestamp(toLocalTimestampString(effective));
 }
 
 function cleanEstadoValue(estado) {
@@ -181,6 +200,21 @@ function buildInterval({
   };
 }
 
+function getEffectiveWindowCloseUtc(fechaHasta, openStartEventTsUtc) {
+  const windowClose = new Date(fechaHasta);
+  const now = new Date();
+  const effectiveClose = now.getTime() < windowClose.getTime() ? now : windowClose;
+
+  if (openStartEventTsUtc) {
+    const openStart = new Date(openStartEventTsUtc);
+    if (effectiveClose.getTime() < openStart.getTime()) {
+      return openStart.toISOString();
+    }
+  }
+
+  return effectiveClose.toISOString();
+}
+
 export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) {
   const sortedEvents = [...events].sort(
     (a, b) => new Date(a.event_ts_utc).getTime() - new Date(b.event_ts_utc).getTime()
@@ -248,7 +282,7 @@ export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) 
   if (idleState === 'IDLE_ON' && openStartEvent) {
     const endWindowEvent = {
       ...openStartEvent,
-      event_ts_utc: new Date(fechaHasta).toISOString(),
+      event_ts_utc: getEffectiveWindowCloseUtc(fechaHasta, openStartEvent.event_ts_utc),
     };
 
     intervals.push(
@@ -345,7 +379,17 @@ async function extractRawIdleEventsFromLegacy(movilId, fechaDesde, fechaHasta) {
     }
   }
 
-  return rawEvents;
+  const maxAcceptedLocalTs = new Date(fechaHastaNormalized).getTime() + FUTURE_EVENT_TOLERANCE_MS;
+
+  return rawEvents.filter((event) => {
+    const eventTsUtc = new Date(event.event_ts_utc).getTime();
+    if (!Number.isFinite(eventTsUtc)) {
+      return false;
+    }
+
+    const eventTsLocalLegacy = eventTsUtc - THREE_HOURS_MS;
+    return eventTsLocalLegacy <= maxAcceptedLocalTs;
+  });
 }
 
 async function persistRawEvents(events) {
@@ -450,6 +494,22 @@ async function persistCoverage({ movilId, fechaDesde, fechaHasta }) {
   );
 }
 
+async function purgeIntervalsInWindow({ movilId, fechaDesde, fechaHasta }) {
+  const fechaDesdeNormalized = normalizeDateForLocalTimestamp(fechaDesde);
+  const fechaHastaNormalized = normalizeDateForLocalTimestamp(fechaHasta);
+
+  await query(
+    `
+    DELETE FROM idle_intervals_v2
+    WHERE movil_id = $1
+      AND algorithm_version = $2
+      AND (start_ts_utc - interval '3 hour') >= $3::timestamp
+      AND (start_ts_utc - interval '3 hour') <= $4::timestamp
+    `,
+    [movilId, ALGORITHM_VERSION, fechaDesdeNormalized, fechaHastaNormalized]
+  );
+}
+
 export async function reconstructIdleIntervalsForRange({ movilId, fechaDesde, fechaHasta, persist = false }) {
   if (!movilId) {
     const error = new Error('movilId es requerido');
@@ -463,14 +523,17 @@ export async function reconstructIdleIntervalsForRange({ movilId, fechaDesde, fe
     throw error;
   }
 
-  const rawEvents = await extractRawIdleEventsFromLegacy(movilId, fechaDesde, fechaHasta);
+  const effectiveFechaHasta = getEffectiveFechaHasta(fechaHasta);
+
+  const rawEvents = await extractRawIdleEventsFromLegacy(movilId, fechaDesde, effectiveFechaHasta);
   const computeResult = computeIdleIntervalsFromEvents(rawEvents, {
     movilId,
-    fechaHasta,
+    fechaHasta: effectiveFechaHasta,
   });
 
   if (persist) {
     await persistRawEvents(rawEvents);
+    await purgeIntervalsInWindow({ movilId, fechaDesde, fechaHasta });
     await persistIntervals(computeResult.intervals);
     await persistCoverage({ movilId, fechaDesde, fechaHasta });
   }
@@ -479,6 +542,7 @@ export async function reconstructIdleIntervalsForRange({ movilId, fechaDesde, fe
     movilId,
     fechaDesde,
     fechaHasta,
+    effectiveFechaHasta,
     persist,
     inputEvents: computeResult.stats.input_events,
     intervalsBuilt: computeResult.stats.intervals_built,
