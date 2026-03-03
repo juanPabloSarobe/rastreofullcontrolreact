@@ -323,6 +323,42 @@ const PrincipalPage = () => {
     }
   };
 
+  const handleSelectUnitFromRalenti = useCallback(
+    (movilId) => {
+      const numericMovilId = Number(movilId);
+      if (!Number.isInteger(numericMovilId)) return;
+
+      const marker = markersData.find(
+        (item) => Number(item.Movil_ID) === numericMovilId
+      );
+
+      if (!marker) return;
+
+      const alreadySelected = state.selectedUnits.includes(numericMovilId);
+      const nextSelectedUnits = alreadySelected
+        ? [
+            ...state.selectedUnits.filter((id) => id !== numericMovilId),
+            numericMovilId,
+          ]
+        : [...state.selectedUnits, numericMovilId];
+
+      dispatch({ type: "SET_SELECTED_UNITS", payload: nextSelectedUnits });
+      setSelectedUnit(marker);
+
+      if (
+        mapRef.current &&
+        marker.latitud !== null &&
+        marker.longitud !== null
+      ) {
+        mapRef.current.setView(
+          [Number(marker.latitud) || 0, Number(marker.longitud) || 0],
+          13
+        );
+      }
+    },
+    [dispatch, markersData, state.selectedUnits]
+  );
+
   const filteredMarkersData = useMemo(() => {
     if (!state.selectedUnits.length || !markersData) return [];
     return markersData.filter(
@@ -412,6 +448,7 @@ const PrincipalPage = () => {
                 open={showRalentisDetail}
                 onClose={() => setShowRalentisDetail(false)}
                 markersData={markersData}
+                onSelectMovil={handleSelectUnitFromRalenti}
               />
               {state.viewMode === "ralentiTester" ? (
                 <RalentisTester />

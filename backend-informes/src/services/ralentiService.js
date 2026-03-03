@@ -6,6 +6,16 @@
 import { query } from '../db/pool.js';
 import { logger } from '../utils/logger.js';
 
+function normalizeDateForLocalTimestamp(dateValue) {
+  if (!dateValue || typeof dateValue !== 'string') {
+    return dateValue;
+  }
+
+  return dateValue
+    .trim()
+    .replace(/([zZ]|[+-]\d{2}:?\d{2})$/, '');
+}
+
 /**
  * Obtiene ralentís por IDs de móviles y rango de fechas
  * @param {Array<number>} movilIds - Lista de IDs de móviles (Movil_ID)
@@ -28,6 +38,9 @@ export async function getRalentisPorMoviles(movilIds, fechaDesde, fechaHasta) {
       throw error;
     }
 
+    const fechaDesdeNormalized = normalizeDateForLocalTimestamp(fechaDesde);
+    const fechaHastaNormalized = normalizeDateForLocalTimestamp(fechaHasta);
+
     // Crear placeholders dinámicamente para el IN con movilIds
     const placeholders = movilIds.map((_, idx) => `$${idx + 1}`).join(',');
     
@@ -35,8 +48,8 @@ export async function getRalentisPorMoviles(movilIds, fechaDesde, fechaHasta) {
       SELECT 
         "idRalenti",
         "IdMovil",
-        "fechaHoraInicio",
-        "fechahoraFin",
+        to_char(("fechaHoraInicio" - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' as "fechaHoraInicio",
+        to_char(("fechahoraFin" - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' as "fechahoraFin",
         "tiempoRalenti",
         latitud,
         longitud,
@@ -44,17 +57,22 @@ export async function getRalentisPorMoviles(movilIds, fechaDesde, fechaHasta) {
         "idEquipo"
       FROM public."informesRalentis"
       WHERE "IdMovil" IN (${placeholders})
-        AND "fechaHoraInicio" >= $${movilIds.length + 1}
-        AND "fechaHoraInicio" <= $${movilIds.length + 2}
+        AND ("fechaHoraInicio" - interval '3 hour') >= $${movilIds.length + 1}::timestamp
+        AND ("fechaHoraInicio" - interval '3 hour') <= $${movilIds.length + 2}::timestamp
       ORDER BY "fechaHoraInicio" DESC
     `;
 
-    const params = [...movilIds, fechaDesde, fechaHasta];
+    const params = [...movilIds, fechaDesdeNormalized, fechaHastaNormalized];
     const result = await query(sql, params);
 
     logger.info(
       `getRalentisPorMoviles: Retornando ${result.rows.length} registros`,
-      { movilIds: movilIds.length, fechaDesde, fechaHasta }
+      {
+        movilIds: movilIds.length,
+        fechaDesde: fechaDesdeNormalized,
+        fechaHasta: fechaHastaNormalized,
+        timezoneMode: 'legacy-minus-3-hours',
+      }
     );
 
     return result.rows;
@@ -75,8 +93,8 @@ export async function getAllRalentis(limit = 100) {
       SELECT 
         "idRalenti",
         "IdMovil",
-        "fechaHoraInicio",
-        "fechahoraFin",
+        to_char(("fechaHoraInicio" - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' as "fechaHoraInicio",
+        to_char(("fechahoraFin" - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' as "fechahoraFin",
         "tiempoRalenti",
         latitud,
         longitud,
@@ -104,7 +122,20 @@ export async function getAllRalentis(limit = 100) {
 export async function getRalentiById(idRalenti) {
   try {
     const result = await query(
-      `SELECT * FROM public."informesRalentis" WHERE "idRalenti" = $1`,
+      `
+      SELECT
+        "idRalenti",
+        "IdMovil",
+        to_char(("fechaHoraInicio" - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' as "fechaHoraInicio",
+        to_char(("fechahoraFin" - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' as "fechahoraFin",
+        "tiempoRalenti",
+        latitud,
+        longitud,
+        "idPersona",
+        "idEquipo"
+      FROM public."informesRalentis"
+      WHERE "idRalenti" = $1
+      `,
       [idRalenti]
     );
 

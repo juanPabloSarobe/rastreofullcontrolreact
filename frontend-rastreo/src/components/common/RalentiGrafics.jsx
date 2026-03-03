@@ -46,6 +46,8 @@ const formatDateTime = (value) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   }).format(date);
 };
 
@@ -66,7 +68,7 @@ const formatDuration = (item, startDate, endDate) => {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
-const RalentiGrafics = ({ data = [], range, unitCatalog = [] }) => {
+const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) => {
   const {
     sortedRows,
     ticks,
@@ -130,11 +132,16 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [] }) => {
         : "Sin conductor";
       const durationText = formatDuration(item, rawStart, rawEnd);
 
-      if (!rowsMap.has(patente)) {
-        rowsMap.set(patente, []);
+      if (!rowsMap.has(movilId)) {
+        rowsMap.set(movilId, {
+          movilId,
+          patente,
+          vehicleInfo: vehicleInfoByPatente.get(patente) || "Sin información de vehículo",
+          segments: [],
+        });
       }
 
-      rowsMap.get(patente).push({
+      rowsMap.get(movilId).segments.push({
         id: item?.idRalenti || `${movilId}-${startMinute}`,
         leftPct: (startMinute / totalMinutesRaw) * 100,
         widthPct: Math.max((durationMinutes / totalMinutesRaw) * 100, 0.15),
@@ -148,12 +155,11 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [] }) => {
       });
     });
 
-    const sorted = Array.from(rowsMap.entries())
-      .map(([patente, segments]) => ({
-        patente,
-        vehicleInfo: vehicleInfoByPatente.get(patente) || "Sin información de vehículo",
-        segments: segments.sort((a, b) => a.leftPct - b.leftPct),
-        totalMinutes: segments.reduce(
+    const sorted = Array.from(rowsMap.values())
+      .map((row) => ({
+        ...row,
+        segments: row.segments.sort((a, b) => a.leftPct - b.leftPct),
+        totalMinutes: row.segments.reduce(
           (acc, segment) => acc + (segment.durationMinutes || 0),
           0
         ),
@@ -349,6 +355,7 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [] }) => {
                 textOverflow: "ellipsis",
               }}
               title={row.vehicleInfo}
+              onClick={() => onSelectMovil?.(row.movilId)}
             >
               {row.patente}
             </Box>
@@ -359,7 +366,9 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [] }) => {
                 position: "relative",
                 height: `${ROW_HEIGHT}px`,
                 backgroundImage: `repeating-linear-gradient(to right, #f6f6f6 0, #f6f6f6 1px, transparent 1px, transparent ${hourlyStepPct}%)`,
+                cursor: "pointer",
               }}
+              onClick={() => onSelectMovil?.(row.movilId)}
             >
               {row.segments.map((segment) => (
                 <Tooltip
@@ -395,6 +404,7 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [] }) => {
                       opacity: 0.8,
                       cursor: "pointer",
                     }}
+                    onClick={() => onSelectMovil?.(row.movilId)}
                   />
                 </Tooltip>
               ))}

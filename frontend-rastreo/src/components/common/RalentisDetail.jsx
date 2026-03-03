@@ -72,7 +72,7 @@ const getRangeDays = (from, to) => {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 };
 
-const RalentisDetail = ({ open, onClose, markersData = [] }) => {
+const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
   const { state } = useContextValue();
   const selectedUnits = useMemo(() => state.selectedUnits || [], [state.selectedUnits]);
   const { data: ralentisData, loading, error, fetchRalentisPorMoviles } = useRalentis();
@@ -346,6 +346,7 @@ const RalentisDetail = ({ open, onClose, markersData = [] }) => {
                 data={Array.isArray(ralentisData) ? ralentisData : []}
                 range={selectedRange}
                 unitCatalog={markersData}
+                onSelectMovil={onSelectMovil}
               />
             )}
           </Box>
