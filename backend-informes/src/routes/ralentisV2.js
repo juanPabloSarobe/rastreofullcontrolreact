@@ -90,6 +90,74 @@ async function getFreshCoverageMovilIds({ movilIds, fechaDesde, fechaHasta, fres
 }
 
 /**
+ * GET /api/ralentis-v2
+ * Lectura de intervalos persistidos v2 por móviles y rango.
+ */
+router.get('/', async (req, res, next) => {
+  try {
+    const { movilIds, fechaDesde, fechaHasta } = req.query;
+
+    if (!movilIds || !fechaDesde || !fechaHasta) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Se requiere especificar movilIds (JSON array), fechaDesde y fechaHasta',
+      });
+    }
+
+    let movilIdsList = [];
+    try {
+      movilIdsList = typeof movilIds === 'string' ? JSON.parse(movilIds) : movilIds;
+    } catch {
+      return res.status(400).json({
+        ok: false,
+        error: 'movilIds debe ser un JSON array válido, ej: [7246, 6661]',
+      });
+    }
+
+    const data = await ralentiV2Service.getPersistedRalentisPorMoviles(
+      movilIdsList,
+      fechaDesde,
+      fechaHasta
+    );
+
+    res.json({
+      ok: true,
+      data,
+      count: data.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/ralentis-v2/id/:id
+ * Obtiene un intervalo persistido v2 por ID.
+ */
+router.get('/id/:id', async (req, res, next) => {
+  try {
+    const data = await ralentiV2Service.getPersistedRalentiById(req.params.id);
+    res.json({ ok: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/ralentis-v2/all
+ * Obtiene intervalos persistidos v2 con límite.
+ */
+router.get('/all', async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit || 100);
+    const data = await ralentiV2Service.getAllPersistedRalentis(limit);
+    res.json({ ok: true, data, count: data.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/ralentis-v2/reconstruir
  * Reconstruye intervalos de ralentí desde eventos históricos
  * Query params:

@@ -1,5 +1,9 @@
 # 🎯 IMPLEMENTACIÓN COMPLETADA - Resumen Visual
 
+> ⚠️ **Documento legado (v1)**
+> Este diagrama corresponde a una etapa anterior. Para operación vigente de ralentí usar la documentación v2:
+> `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 **Fecha**: 2 de marzo de 2026  
 **Versión**: 1.0.0  
 **Status**: ✅ 100% COMPLETADO Y TESTEADO

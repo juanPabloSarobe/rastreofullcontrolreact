@@ -46,7 +46,7 @@ async function fetchRalentisSnapshot(movilIds, fechaDesde, fechaHasta) {
 
   const response = await apiFetch(
     'ralentis',
-    `/api/ralentis?${params.toString()}`
+    `/api/ralentis-v2?${params.toString()}`
   );
 
   if (!response || response.ok === false) {
@@ -86,7 +86,7 @@ export async function getAllRalentis(limit = 100) {
   try {
     const response = await apiFetch(
       'ralentis',
-      `/api/ralentis/all?limit=${limit}`
+      `/api/ralentis-v2/all?limit=${limit}`
     );
 
     if (!response || response.ok === false) {
@@ -109,7 +109,7 @@ export async function getRalentiById(idRalenti) {
   try {
     const response = await apiFetch(
       'ralentis',
-      `/api/ralentis/id/${idRalenti}`
+      `/api/ralentis-v2/id/${idRalenti}`
     );
 
     if (!response || response.ok === false) {

@@ -1,5 +1,9 @@
 # 📊 Resumen Ejecutivo - Sistema de Migración Gradual v1.0.0
 
+> ⚠️ **Documento legado (v1)**
+> Este resumen quedó desactualizado tras la migración completa a `/api/ralentis-v2`.
+> Ver documentación vigente en `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 **Fecha**: 2 de marzo de 2026  
 **Versión**: 1.0.0  
 **Status**: ✅ **IMPLEMENTADO Y LISTO PARA TESTING**

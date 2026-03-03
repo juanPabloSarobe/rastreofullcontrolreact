@@ -1,5 +1,9 @@
 # 🎉 IMPLEMENTACIÓN COMPLETADA - RESUMEN FINAL
 
+> ⚠️ **Documento legado (v1)**
+> Se conserva por trazabilidad histórica. La implementación vigente de ralentí está en v2 (`/api/ralentis-v2`).
+> Ver `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 **Fecha**: 2 de marzo de 2026  
 **Versión**: 1.0.0  
 **Estado**: ✅ **100% COMPLETADO Y LISTO PARA TESTING**

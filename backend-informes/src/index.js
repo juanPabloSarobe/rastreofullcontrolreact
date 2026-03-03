@@ -14,7 +14,6 @@ import { requestLogger } from './middleware/requestLogger.js';
 
 import healthRoutes from './routes/health.js';
 import informesRoutes from './routes/informes.js';
-import ralentisRoutes from './routes/ralentis.js';
 import ralentisV2Routes from './routes/ralentisV2.js';
 import conductoresRoutes from './routes/conductores.js';
 
@@ -176,7 +175,6 @@ async function bootstrap() {
     // 5. Rutas
     app.use('/servicio/v2/health', healthRoutes);
     app.use('/api/informes', informesRoutes);
-    app.use('/api/ralentis', ralentisRoutes);
     app.use('/api/ralentis-v2', ralentisV2Routes);
     app.use('/api/conductores', conductoresRoutes);
 

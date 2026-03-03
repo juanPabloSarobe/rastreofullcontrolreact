@@ -1,5 +1,9 @@
 # ✅ Checklist de Implementación - Migración Gradual v1
 
+> ⚠️ **Documento legado (v1)**
+> Referencia histórica. Los endpoints y archivos aquí listados (`/api/ralentis`, `ralentiService.js`, `routes/ralentis.js`) fueron retirados.
+> Consultar la guía vigente en `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 ## 🎯 Objetivo
 Crear un sistema de migración gradual de endpoints del backend, permitiendo probar e implementar un nuevo endpoint de ralentís.
 

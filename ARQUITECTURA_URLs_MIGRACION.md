@@ -1,5 +1,9 @@
 # 🌐 Arquitectura de URLs - Migración Gradual
 
+> ⚠️ **Documento legado (v1)**
+> Este documento describe una fase anterior de URLs/paths. La ruta vigente de ralentí es `/api/ralentis-v2`.
+> Referencia actual: `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 **Fecha**: 2 de marzo de 2026  
 **Versión**: 1.0.0  
 **Status**: Configurada para Opción 1 (Subdominio Separado)

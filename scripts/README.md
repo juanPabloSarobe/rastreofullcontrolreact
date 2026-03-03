@@ -310,7 +310,7 @@ pm2 logs backend-informes --lines 100  # Últimas 100 líneas
 
 ```bash
 # Desde tu local
-curl http://tu-ec2-ip/api/ralentis?patentes=["TEST"]
+curl "http://tu-ec2-ip/api/ralentis-v2?movilIds=[5021]&fechaDesde=2026-03-03T00:00:00&fechaHasta=2026-03-03T23:59:59"
 curl http://tu-ec2-ip:3001/servicio/v2/health
 ```
 

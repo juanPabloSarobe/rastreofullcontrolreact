@@ -1,5 +1,9 @@
 # 📁 Estructura de Archivos - Migración Gradual v1.0.0
 
+> ⚠️ **Documento legado (v1)**
+> Contiene estructura de una fase anterior. Los artefactos `src/routes/ralentis.js` y `src/services/ralentiService.js` ya no existen en backend-informes.
+> Revisar estado actual en `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 ## Archivos Creados/Modificados
 
 ### Backend (backend-informes/)

@@ -493,3 +493,101 @@ export async function reconstructIdleIntervalsForRange({ movilId, fechaDesde, fe
     ...computeResult,
   };
 }
+
+/**
+ * Lectura persistida v2 (reemplazo de informesRalentis legacy)
+ */
+export async function getPersistedRalentisPorMoviles(movilIds, fechaDesde, fechaHasta) {
+  if (!Array.isArray(movilIds) || movilIds.length === 0) {
+    const error = new Error('movilIds es requerida y debe ser un array no vacío');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!fechaDesde || !fechaHasta) {
+    const error = new Error('fechaDesde y fechaHasta son requeridas');
+    error.status = 400;
+    throw error;
+  }
+
+  const fechaDesdeNormalized = normalizeDateForLocalTimestamp(fechaDesde);
+  const fechaHastaNormalized = normalizeDateForLocalTimestamp(fechaHasta);
+  const placeholders = movilIds.map((_, idx) => `$${idx + 1}`).join(',');
+
+  const sql = `
+    SELECT
+      id AS "idRalenti",
+      movil_id AS "IdMovil",
+      to_char((start_ts_utc - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' AS "fechaHoraInicio",
+      to_char((end_ts_utc - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' AS "fechahoraFin",
+      duration_sec AS "tiempoRalenti",
+      start_lat AS latitud,
+      start_lng AS longitud,
+      persona_id AS "idPersona",
+      equipo_id AS "idEquipo"
+    FROM idle_intervals_v2
+    WHERE movil_id IN (${placeholders})
+      AND (start_ts_utc - interval '3 hour') >= $${movilIds.length + 1}::timestamp
+      AND (start_ts_utc - interval '3 hour') <= $${movilIds.length + 2}::timestamp
+    ORDER BY start_ts_utc DESC
+  `;
+
+  const params = [...movilIds, fechaDesdeNormalized, fechaHastaNormalized];
+  const result = await query(sql, params);
+
+  logger.info('getPersistedRalentisPorMoviles: lectura v2', {
+    movilIds: movilIds.length,
+    rows: result.rows.length,
+    fechaDesde: fechaDesdeNormalized,
+    fechaHasta: fechaHastaNormalized,
+  });
+
+  return result.rows;
+}
+
+export async function getAllPersistedRalentis(limit = 100) {
+  const sql = `
+    SELECT
+      id AS "idRalenti",
+      movil_id AS "IdMovil",
+      to_char((start_ts_utc - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' AS "fechaHoraInicio",
+      to_char((end_ts_utc - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' AS "fechahoraFin",
+      duration_sec AS "tiempoRalenti",
+      start_lat AS latitud,
+      start_lng AS longitud,
+      persona_id AS "idPersona",
+      equipo_id AS "idEquipo"
+    FROM idle_intervals_v2
+    ORDER BY start_ts_utc DESC
+    LIMIT $1
+  `;
+
+  const result = await query(sql, [limit]);
+  return result.rows;
+}
+
+export async function getPersistedRalentiById(idRalenti) {
+  const sql = `
+    SELECT
+      id AS "idRalenti",
+      movil_id AS "IdMovil",
+      to_char((start_ts_utc - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' AS "fechaHoraInicio",
+      to_char((end_ts_utc - interval '3 hour'), 'YYYY-MM-DD"T"HH24:MI:SS.MS') || '-03:00' AS "fechahoraFin",
+      duration_sec AS "tiempoRalenti",
+      start_lat AS latitud,
+      start_lng AS longitud,
+      persona_id AS "idPersona",
+      equipo_id AS "idEquipo"
+    FROM idle_intervals_v2
+    WHERE id = $1
+  `;
+
+  const result = await query(sql, [idRalenti]);
+  if (!result.rows.length) {
+    const error = new Error('Ralentí no encontrado');
+    error.status = 404;
+    throw error;
+  }
+
+  return result.rows[0];
+}

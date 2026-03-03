@@ -1,5 +1,11 @@
 # 🚀 Guía de Migración Gradual de Backend
 
+> ⚠️ **Documento legado (v1)**
+> Esta guía describe una etapa anterior basada en `/api/ralentis` y artefactos legacy.
+> La versión vigente usa exclusivamente `v2` (`/api/ralentis-v2`) y está documentada en:
+> - `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`
+> - `backend-informes/PLAN_RALENTI_V2_EVENTOS.md`
+
 ## Visión General
 
 Este proyecto implementa un sistema de migración gradual de APIs. El frontend puede usar dinámicamente diferentes backends según la configuración, permitiendo:

@@ -1,5 +1,9 @@
 # 🚀 SISTEMA DE MIGRACION GRADUAL - Guía de Inicio Rápido
 
+> ⚠️ **Documento legado (v1)**
+> La ruta operativa de ralentí ya no es `/api/ralentis`; la integración vigente usa `/api/ralentis-v2`.
+> Referencia actual: `backend-informes/CONFIGURACION_FINAL_RALENTI_V2.md`.
+
 **Status**: ✅ **100% Completado y Listo para Testing**  
 **Versión**: 1.0.0  
 **Fecha**: 2 de marzo de 2026
