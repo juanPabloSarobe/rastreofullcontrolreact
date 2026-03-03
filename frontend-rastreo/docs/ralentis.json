@@ -1,0 +1,563 @@
+{
+    "ok": true,
+    "data": [
+        {
+            "idRalenti": "1379100",
+            "IdMovil": "1065",
+            "fechaHoraInicio": "2026-03-02T23:24:47.000Z",
+            "fechahoraFin": "2026-03-02T23:25:07.000Z",
+            "tiempoRalenti": {
+                "seconds": 20
+            },
+            "latitud": -38.9298,
+            "longitud": -68.16783,
+            "idPersona": "11581",
+            "idEquipo": "4100"
+        },
+        {
+            "idRalenti": "1378991",
+            "IdMovil": "5382",
+            "fechaHoraInicio": "2026-03-02T22:51:10.000Z",
+            "fechahoraFin": "2026-03-02T22:51:46.000Z",
+            "tiempoRalenti": {
+                "seconds": 36
+            },
+            "latitud": -38.70519,
+            "longitud": -68.17739,
+            "idPersona": "15768",
+            "idEquipo": "4425"
+        },
+        {
+            "idRalenti": "1378972",
+            "IdMovil": "5382",
+            "fechaHoraInicio": "2026-03-02T22:43:02.000Z",
+            "fechahoraFin": "2026-03-02T22:45:13.000Z",
+            "tiempoRalenti": {
+                "minutes": 2,
+                "seconds": 11
+            },
+            "latitud": -38.70466,
+            "longitud": -68.1774,
+            "idPersona": "15768",
+            "idEquipo": "4425"
+        },
+        {
+            "idRalenti": "1378928",
+            "IdMovil": "1065",
+            "fechaHoraInicio": "2026-03-02T22:26:16.000Z",
+            "fechahoraFin": "2026-03-02T22:45:35.000Z",
+            "tiempoRalenti": {
+                "minutes": 19,
+                "seconds": 19
+            },
+            "latitud": -38.95184,
+            "longitud": -68.05514,
+            "idPersona": "11581",
+            "idEquipo": "4100"
+        },
+        {
+            "idRalenti": "1378903",
+            "IdMovil": "1065",
+            "fechaHoraInicio": "2026-03-02T22:21:44.000Z",
+            "fechahoraFin": "2026-03-02T22:23:11.000Z",
+            "tiempoRalenti": {
+                "minutes": 1,
+                "seconds": 27
+            },
+            "latitud": -38.95182,
+            "longitud": -68.05517,
+            "idPersona": "11581",
+            "idEquipo": "4100"
+        },
+        {
+            "idRalenti": "1378902",
+            "IdMovil": "5522",
+            "fechaHoraInicio": "2026-03-02T22:21:24.000Z",
+            "fechahoraFin": "2026-03-02T22:28:55.000Z",
+            "tiempoRalenti": {
+                "minutes": 7,
+                "seconds": 31
+            },
+            "latitud": -38.7028,
+            "longitud": -68.17833,
+            "idPersona": "12792",
+            "idEquipo": "4509"
+        },
+        {
+            "idRalenti": "1378901",
+            "IdMovil": "1071",
+            "fechaHoraInicio": "2026-03-02T22:21:06.000Z",
+            "fechahoraFin": "2026-03-02T22:23:23.000Z",
+            "tiempoRalenti": {
+                "minutes": 2,
+                "seconds": 17
+            },
+            "latitud": -38.70394,
+            "longitud": -68.1814,
+            "idPersona": "8181",
+            "idEquipo": "M023"
+        },
+        {
+            "idRalenti": "1378860",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T22:08:38.000Z",
+            "fechahoraFin": "2026-03-02T22:10:08.000Z",
+            "tiempoRalenti": {
+                "minutes": 1,
+                "seconds": 30
+            },
+            "latitud": -38.7039,
+            "longitud": -68.18369,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1378830",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T21:56:39.000Z",
+            "fechahoraFin": "2026-03-02T22:25:42.000Z",
+            "tiempoRalenti": {
+                "minutes": 29,
+                "seconds": 3
+            },
+            "latitud": -38.70505,
+            "longitud": -68.18028,
+            "idPersona": "8181",
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1378881",
+            "IdMovil": "1065",
+            "fechaHoraInicio": "2026-03-02T21:46:34.000Z",
+            "fechahoraFin": "2026-03-02T21:46:52.000Z",
+            "tiempoRalenti": {
+                "seconds": 18
+            },
+            "latitud": -38.80503,
+            "longitud": -68.13946,
+            "idPersona": "11581",
+            "idEquipo": "4100"
+        },
+        {
+            "idRalenti": "1378880",
+            "IdMovil": "1065",
+            "fechaHoraInicio": "2026-03-02T21:40:17.000Z",
+            "fechahoraFin": "2026-03-02T21:41:30.000Z",
+            "tiempoRalenti": {
+                "minutes": 1,
+                "seconds": 13
+            },
+            "latitud": -38.805,
+            "longitud": -68.13957,
+            "idPersona": "11581",
+            "idEquipo": "4100"
+        },
+        {
+            "idRalenti": "1378671",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T20:51:17.000Z",
+            "fechahoraFin": "2026-03-02T21:36:31.000Z",
+            "tiempoRalenti": {
+                "minutes": 45,
+                "seconds": 14
+            },
+            "latitud": -38.70488,
+            "longitud": -68.18026,
+            "idPersona": null,
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1378567",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T20:16:30.000Z",
+            "fechahoraFin": "2026-03-02T20:16:43.000Z",
+            "tiempoRalenti": {
+                "seconds": 13
+            },
+            "latitud": -38.08077,
+            "longitud": -68.42228,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1378440",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T19:30:07.000Z",
+            "fechahoraFin": "2026-03-02T19:32:13.000Z",
+            "tiempoRalenti": {
+                "minutes": 2,
+                "seconds": 6
+            },
+            "latitud": -38.01643,
+            "longitud": -68.597,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1378436",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T19:25:58.000Z",
+            "fechahoraFin": "2026-03-02T19:26:06.000Z",
+            "tiempoRalenti": {
+                "seconds": 8
+            },
+            "latitud": -38.01698,
+            "longitud": -68.59647,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1378326",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T18:39:38.000Z",
+            "fechahoraFin": "2026-03-02T19:24:00.000Z",
+            "tiempoRalenti": {
+                "minutes": 44,
+                "seconds": 22
+            },
+            "latitud": -38.70497,
+            "longitud": -68.18027,
+            "idPersona": null,
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1378207",
+            "IdMovil": "1071",
+            "fechaHoraInicio": "2026-03-02T18:03:05.000Z",
+            "fechahoraFin": "2026-03-02T18:05:21.000Z",
+            "tiempoRalenti": {
+                "minutes": 2,
+                "seconds": 16
+            },
+            "latitud": -38.70353,
+            "longitud": -68.18361,
+            "idPersona": "8181",
+            "idEquipo": "M023"
+        },
+        {
+            "idRalenti": "1378048",
+            "IdMovil": "2118",
+            "fechaHoraInicio": "2026-03-02T16:31:25.000Z",
+            "fechahoraFin": "2026-03-02T16:37:50.000Z",
+            "tiempoRalenti": {
+                "minutes": 6,
+                "seconds": 25
+            },
+            "latitud": -38.92286,
+            "longitud": -67.95791,
+            "idPersona": "14775",
+            "idEquipo": "1709"
+        },
+        {
+            "idRalenti": "1377925",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T16:10:13.000Z",
+            "fechahoraFin": "2026-03-02T16:50:18.000Z",
+            "tiempoRalenti": {
+                "minutes": 40,
+                "seconds": 5
+            },
+            "latitud": -38.01699,
+            "longitud": -68.59645,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377878",
+            "IdMovil": "2118",
+            "fechaHoraInicio": "2026-03-02T15:54:55.000Z",
+            "fechahoraFin": "2026-03-02T16:22:33.000Z",
+            "tiempoRalenti": {
+                "minutes": 27,
+                "seconds": 38
+            },
+            "latitud": -38.92229,
+            "longitud": -67.95831,
+            "idPersona": "14775",
+            "idEquipo": "1709"
+        },
+        {
+            "idRalenti": "1377873",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T15:54:13.000Z",
+            "fechahoraFin": "2026-03-02T16:05:15.000Z",
+            "tiempoRalenti": {
+                "minutes": 11,
+                "seconds": 2
+            },
+            "latitud": -38.0169,
+            "longitud": -68.59694,
+            "idPersona": null,
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377754",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T15:20:49.000Z",
+            "fechahoraFin": "2026-03-02T16:48:28.000Z",
+            "tiempoRalenti": {
+                "hours": 1,
+                "minutes": 27,
+                "seconds": 39
+            },
+            "latitud": -38.70487,
+            "longitud": -68.18026,
+            "idPersona": "8181",
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1377667",
+            "IdMovil": "2118",
+            "fechaHoraInicio": "2026-03-02T14:51:05.000Z",
+            "fechahoraFin": "2026-03-02T15:02:40.000Z",
+            "tiempoRalenti": {
+                "minutes": 11,
+                "seconds": 35
+            },
+            "latitud": -38.91175,
+            "longitud": -68.07637,
+            "idPersona": "8181",
+            "idEquipo": "1709"
+        },
+        {
+            "idRalenti": "1377621",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T14:36:44.000Z",
+            "fechahoraFin": "2026-03-02T15:51:13.000Z",
+            "tiempoRalenti": {
+                "hours": 1,
+                "minutes": 14,
+                "seconds": 29
+            },
+            "latitud": -38.01699,
+            "longitud": -68.59694,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377599",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T14:31:44.000Z",
+            "fechahoraFin": "2026-03-02T15:15:28.000Z",
+            "tiempoRalenti": {
+                "minutes": 43,
+                "seconds": 44
+            },
+            "latitud": -38.70508,
+            "longitud": -68.18063,
+            "idPersona": "8181",
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1377567",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T14:21:30.000Z",
+            "fechahoraFin": "2026-03-02T14:26:01.000Z",
+            "tiempoRalenti": {
+                "minutes": 4,
+                "seconds": 31
+            },
+            "latitud": -38.70489,
+            "longitud": -68.18021,
+            "idPersona": "8181",
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1377548",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-02T14:13:55.000Z",
+            "fechahoraFin": "2026-03-02T14:33:44.000Z",
+            "tiempoRalenti": {
+                "minutes": 19,
+                "seconds": 49
+            },
+            "latitud": -38.01699,
+            "longitud": -68.59694,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377514",
+            "IdMovil": "4482",
+            "fechaHoraInicio": "2026-03-02T14:03:12.000Z",
+            "fechahoraFin": "2026-03-02T14:13:48.000Z",
+            "tiempoRalenti": {
+                "minutes": 10,
+                "seconds": 36
+            },
+            "latitud": -38.70489,
+            "longitud": -68.18032,
+            "idPersona": "8181",
+            "idEquipo": "1792"
+        },
+        {
+            "idRalenti": "1377492",
+            "IdMovil": "5522",
+            "fechaHoraInicio": "2026-03-02T13:56:38.000Z",
+            "fechahoraFin": "2026-03-02T14:11:27.000Z",
+            "tiempoRalenti": {
+                "minutes": 14,
+                "seconds": 49
+            },
+            "latitud": -38.31956,
+            "longitud": -68.77827,
+            "idPersona": "12792",
+            "idEquipo": "4509"
+        },
+        {
+            "idRalenti": "1377434",
+            "IdMovil": "2118",
+            "fechaHoraInicio": "2026-03-02T13:27:23.000Z",
+            "fechahoraFin": "2026-03-02T13:28:44.000Z",
+            "tiempoRalenti": {
+                "minutes": 1,
+                "seconds": 21
+            },
+            "latitud": -38.91215,
+            "longitud": -68.10776,
+            "idPersona": "8181",
+            "idEquipo": "1709"
+        },
+        {
+            "idRalenti": "1377093",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T22:42:34.000Z",
+            "fechahoraFin": "2026-03-01T22:55:07.000Z",
+            "tiempoRalenti": {
+                "minutes": 12,
+                "seconds": 33
+            },
+            "latitud": -38.01719,
+            "longitud": -68.59672,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377082",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T22:02:57.000Z",
+            "fechahoraFin": "2026-03-01T22:30:06.000Z",
+            "tiempoRalenti": {
+                "minutes": 27,
+                "seconds": 9
+            },
+            "latitud": -38.01521,
+            "longitud": -68.5928,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377077",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T21:39:39.000Z",
+            "fechahoraFin": "2026-03-01T21:58:43.000Z",
+            "tiempoRalenti": {
+                "minutes": 19,
+                "seconds": 4
+            },
+            "latitud": -38.01583,
+            "longitud": -68.59402,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1377064",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T21:15:47.000Z",
+            "fechahoraFin": "2026-03-01T21:20:35.000Z",
+            "tiempoRalenti": {
+                "minutes": 4,
+                "seconds": 48
+            },
+            "latitud": -38.01661,
+            "longitud": -68.59691,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1376968",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T18:26:37.000Z",
+            "fechahoraFin": "2026-03-01T21:11:27.000Z",
+            "tiempoRalenti": {
+                "hours": 2,
+                "minutes": 44,
+                "seconds": 50
+            },
+            "latitud": -38.01641,
+            "longitud": -68.59701,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1376949",
+            "IdMovil": "1065",
+            "fechaHoraInicio": "2026-03-01T18:08:37.000Z",
+            "fechahoraFin": "2026-03-01T18:21:09.000Z",
+            "tiempoRalenti": {
+                "minutes": 12,
+                "seconds": 32
+            },
+            "latitud": -38.70379,
+            "longitud": -68.1837,
+            "idPersona": "11581",
+            "idEquipo": "4100"
+        },
+        {
+            "idRalenti": "1376946",
+            "IdMovil": "5382",
+            "fechaHoraInicio": "2026-03-01T18:02:39.000Z",
+            "fechahoraFin": "2026-03-01T18:05:05.000Z",
+            "tiempoRalenti": {
+                "minutes": 2,
+                "seconds": 26
+            },
+            "latitud": -38.20484,
+            "longitud": -68.07582,
+            "idPersona": null,
+            "idEquipo": "4425"
+        },
+        {
+            "idRalenti": "1376897",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T17:03:01.000Z",
+            "fechahoraFin": "2026-03-01T17:03:59.000Z",
+            "tiempoRalenti": {
+                "seconds": 58
+            },
+            "latitud": -38.23183,
+            "longitud": -68.37072,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1376819",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T15:06:59.000Z",
+            "fechahoraFin": "2026-03-01T15:39:24.000Z",
+            "tiempoRalenti": {
+                "minutes": 32,
+                "seconds": 25
+            },
+            "latitud": -38.70277,
+            "longitud": -68.18167,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        },
+        {
+            "idRalenti": "1376765",
+            "IdMovil": "5560",
+            "fechaHoraInicio": "2026-03-01T13:55:11.000Z",
+            "fechahoraFin": "2026-03-01T14:14:05.000Z",
+            "tiempoRalenti": {
+                "minutes": 18,
+                "seconds": 54
+            },
+            "latitud": -38.70374,
+            "longitud": -68.1818,
+            "idPersona": "15861",
+            "idEquipo": "4527"
+        }
+    ],
+    "count": 40
+}

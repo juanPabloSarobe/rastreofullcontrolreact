@@ -18,6 +18,7 @@ export const ContextProvider = ({ children }) => {
     previousActiveInfractions: [], // Estado previo para detectar transiciones
 
     // Estados para conductores
+    empresasUsuario: [], // Empresas accesibles deduplicadas desde pref
     conductores: [], // Lista global de conductores disponibles
     selectedConductor: null, // Conductor seleccionado actualmente
     conductorVehicles: [], // Vehículos del conductor seleccionado
@@ -95,6 +96,27 @@ export const ContextProvider = ({ children }) => {
       }
 
       // Acciones para sistema de conductores
+      case "MERGE_EMPRESAS_USUARIO": {
+        const incoming = Array.isArray(action.payload) ? action.payload : [];
+
+        if (incoming.length === 0) {
+          return state;
+        }
+
+        const existingIds = new Set(state.empresasUsuario.map((empresa) => empresa.empresaId));
+        const nuevasEmpresas = incoming.filter(
+          (empresa) => empresa?.empresaId && !existingIds.has(empresa.empresaId)
+        );
+
+        if (nuevasEmpresas.length === 0) {
+          return state;
+        }
+
+        return {
+          ...state,
+          empresasUsuario: [...state.empresasUsuario, ...nuevasEmpresas],
+        };
+      }
       case "SET_CONDUCTORES":
         return { ...state, conductores: action.payload };
       case "SET_SELECTED_CONDUCTOR":

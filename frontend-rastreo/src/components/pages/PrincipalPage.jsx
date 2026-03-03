@@ -40,11 +40,13 @@ import NotificationModal from "../common/NotificationModal";
 import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
 import DevSesion from "../dev/DevSesion";
+import RalentisDetail from "../common/RalentisDetail";
 import RalentisTester from "../tools/RalentisTester";
 // Solo para desarrollo
 import UpdateTester from "../dev/UpdateTester";
 import { useNotifications } from "../../hooks/useNotifications";
 import { paymentService } from "../../services/paymentService";
+import conductoresService from "../../services/conductoresService";
 
 // Memoizar CustomMarker para evitar re-renders innecesarios
 const MemoizedCustomMarker = React.memo(CustomMarker);
@@ -106,6 +108,7 @@ const PrincipalPage = () => {
   const [conductorHistoricalData, setConductorHistoricalData] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showRalentisDetail, setShowRalentisDetail] = useState(false);
   const mapRef = useRef(null);
 
   const { activeNotification, markAsRead, dismissNotification } =
@@ -139,6 +142,81 @@ const PrincipalPage = () => {
       }
     }
   }, [prefData, selectedUnit]);
+
+  useEffect(() => {
+    const syncEmpresasYConductores = async () => {
+      const unidades = prefData?.GPS || [];
+
+      if (unidades.length === 0) {
+        return;
+      }
+
+      const empresasMap = new Map();
+
+      unidades.forEach((unidad) => {
+        const empresaId = Number(unidad?.empresa_identificacion_OID);
+
+        if (!Number.isInteger(empresaId) || empresaId <= 0) {
+          return;
+        }
+
+        if (!empresasMap.has(empresaId)) {
+          empresasMap.set(empresaId, {
+            empresaId,
+            empresaNombre: unidad?.empresa || null,
+          });
+        }
+      });
+
+      const empresasDesdePref = Array.from(empresasMap.values());
+
+      if (empresasDesdePref.length === 0) {
+        return;
+      }
+
+      dispatch({ type: "MERGE_EMPRESAS_USUARIO", payload: empresasDesdePref });
+
+      const empresaIdsActuales = new Set(
+        (state.empresasUsuario || []).map((empresa) => empresa.empresaId)
+      );
+      const hayEmpresasNuevas = empresasDesdePref.some(
+        (empresa) => !empresaIdsActuales.has(empresa.empresaId)
+      );
+
+      if (!hayEmpresasNuevas && state.conductoresLoaded) {
+        return;
+      }
+
+      const empresaIdsCompletos = Array.from(
+        new Set([
+          ...(state.empresasUsuario || []).map((empresa) => empresa.empresaId),
+          ...empresasDesdePref.map((empresa) => empresa.empresaId),
+        ])
+      );
+
+      if (empresaIdsCompletos.length === 0) {
+        return;
+      }
+
+      try {
+        dispatch({ type: "SET_LOADING_CONDUCTORES", payload: true });
+
+        const conductores = await conductoresService.getConductoresPorEmpresas(
+          empresaIdsCompletos
+        );
+
+        dispatch({ type: "SET_CONDUCTORES", payload: conductores });
+      } catch (error) {
+        console.error("Error al cargar conductores por empresas:", error);
+        dispatch({ type: "SET_CONDUCTORES", payload: [] });
+      } finally {
+        dispatch({ type: "SET_CONDUCTORES_LOADED", payload: true });
+        dispatch({ type: "SET_LOADING_CONDUCTORES", payload: false });
+      }
+    };
+
+    syncEmpresasYConductores();
+  }, [prefData, dispatch, state.empresasUsuario, state.conductoresLoaded]);
 
   useEffect(() => {
     if (liteResponse) {
@@ -322,108 +400,120 @@ const PrincipalPage = () => {
               sx={{ borderRadius: "12px" }}
               position="relative"
             >
+              <MenuButton
+                selectedUnit={selectedUnit}
+                onOpenRalentisDetail={() => setShowRalentisDetail(true)}
+                onOpenRalentisTester={() => {
+                  setShowRalentisDetail(false);
+                  dispatch({ type: "SET_VIEW_MODE", payload: "ralentiTester" });
+                }}
+              />
+              <RalentisDetail
+                open={showRalentisDetail}
+                onClose={() => setShowRalentisDetail(false)}
+                markersData={markersData}
+              />
               {state.viewMode === "ralentiTester" ? (
                 <RalentisTester />
               ) : (
                 <>
-                  <MenuButton selectedUnit={selectedUnit} />
-              {state.viewMode === "rastreo" && <UserChip />}
-              {state.viewMode === "rastreo" &&
-                liteData?.GPS &&
-                Object.keys(liteData.GPS).length > 0 && (
-                  <>
-                    <UnitSelector
-                      liteData={liteData}
-                      onUnitSelect={handleUnitSelect}
-                    />
-                    <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
-                    <ConductorHistoryButton />
-                    {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
-                    <Box sx={{ display: { xs: "none", md: "block" } }}>
-                      <InfractionAlert
-                        markersData={markersData}
-                        onUnitSelect={handleUnitSelect}
-                      />
-                      <AggressiveDrivingAlert
-                        markersData={markersData}
-                        onUnitSelect={handleUnitSelect}
-                      />
-                      <IdleUnitsAlert
-                        markersData={markersData}
-                        onUnitSelect={handleUnitSelect}
-                        isVisible={true}
-                      />
-                    </Box>
-                    <UnitDetails unitData={selectedUnit} />
-                  </>
-                )}
-              
-              <MapContainer
-                center={center}
-                zoom={13}
-                style={{
-                  height: "100%",
-                  width: "100%",
-                  borderRadius: "12px",
-                }}
-                zoomControl={false}
-                ref={mapRef}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
+                  {state.viewMode === "rastreo" && <UserChip />}
+                  {state.viewMode === "rastreo" &&
+                    liteData?.GPS &&
+                    Object.keys(liteData.GPS).length > 0 && (
+                      <>
+                        <UnitSelector
+                          liteData={liteData}
+                          onUnitSelect={handleUnitSelect}
+                        />
+                        <FleetSelectorButton setSelectedUnit={setSelectedUnit} />
+                        <ConductorHistoryButton />
+                        {/* Ocultar en mobile hasta implementar versión móvil optimizada */}
+                        <Box sx={{ display: { xs: "none", md: "block" } }}>
+                          <InfractionAlert
+                            markersData={markersData}
+                            onUnitSelect={handleUnitSelect}
+                          />
+                          <AggressiveDrivingAlert
+                            markersData={markersData}
+                            onUnitSelect={handleUnitSelect}
+                          />
+                          <IdleUnitsAlert
+                            markersData={markersData}
+                            onUnitSelect={handleUnitSelect}
+                            isVisible={true}
+                          />
+                        </Box>
+                        <UnitDetails unitData={selectedUnit} />
+                      </>
+                    )}
 
-                {/* Componente de selección por área - renderizado condicional */}
-                {state.viewMode === "rastreo" &&
-                  liteData?.GPS &&
-                  Object.keys(liteData.GPS).length > 0 &&
-                  markersData.length > 0 && (
+                  <MapContainer
+                    center={center}
+                    zoom={13}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      borderRadius: "12px",
+                    }}
+                    zoomControl={false}
+                    ref={mapRef}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+
+                    {/* Componente de selección por área - renderizado condicional */}
+                    {state.viewMode === "rastreo" &&
+                      liteData?.GPS &&
+                      Object.keys(liteData.GPS).length > 0 &&
+                      markersData.length > 0 && (
+                        <AreaSelectorMapHandler
+                          markersData={markersData}
+                          onUnitSelect={handleUnitSelect}
+                          isVisible={true}
+                        />
+                      )}
+
+                    {state.viewMode === "rastreo" && (
+                      <MarkersList
+                        markersData={filteredMarkersData}
+                        onMarkerClick={setSelectedUnit}
+                      />
+                    )}
+
+                    {state.viewMode === "historico" && selectedUnit && (
+                      <HistoricalView
+                        selectedUnit={selectedUnit}
+                        onHistoricalDataFetched={setHistoricalData}
+                      />
+                    )}
+
+                    {state.viewMode === "historico" && historicalData && (
+                      <HistoricalMarkers historicalData={historicalData} />
+                    )}
+
+                    {state.viewMode === "conductor" && conductorHistoricalData && (
+                      <HistoricalMarkers historicalData={conductorHistoricalData} />
+                    )}
+
+                    <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
+
                     <AreaSelectorMapHandler
                       markersData={markersData}
                       onUnitSelect={handleUnitSelect}
-                      isVisible={true}
+                    />
+
+                    {isMobile || <AddZoomControl />}
+                  </MapContainer>
+
+                  {/* Vista de Histórico por Conductor */}
+                  {state.viewMode === "conductor" && (
+                    <ConductorHistoryView
+                      onConductorHistoricalDataFetched={setConductorHistoricalData}
                     />
                   )}
-
-                {state.viewMode === "rastreo" && (
-                  <MarkersList
-                    markersData={filteredMarkersData}
-                    onMarkerClick={setSelectedUnit}
-                  />
-                )}
-                
-                {state.viewMode === "historico" && selectedUnit && (
-                  <HistoricalView
-                    selectedUnit={selectedUnit}
-                    onHistoricalDataFetched={setHistoricalData}
-                  />
-                )}
-
-                {state.viewMode === "historico" && historicalData && (
-                  <HistoricalMarkers historicalData={historicalData} />
-                )}
-
-                {state.viewMode === "conductor" && conductorHistoricalData && (
-                  <HistoricalMarkers historicalData={conductorHistoricalData} />
-                )}
-
-                <MapsLayers isMobile={isMobile} unitData={selectedUnit} />
-
-                <AreaSelectorMapHandler 
-                  markersData={markersData}
-                  onUnitSelect={handleUnitSelect}
-                />
-
-                {isMobile || <AddZoomControl />}
-              </MapContainer>
-
-              {/* Vista de Histórico por Conductor */}
-              {state.viewMode === "conductor" && (
-                <ConductorHistoryView 
-                  onConductorHistoricalDataFetched={setConductorHistoricalData}
-                />
-              )}
                 </>
               )}
             </Box>
@@ -435,7 +525,7 @@ const PrincipalPage = () => {
         {/* Aviso de entorno de desarrollo */}
         <DevSesion />
         {/* Tester de actualizaciones solo visible en desarrollo */}
-        {process.env.NODE_ENV === "development" && <UpdateTester />}
+        {import.meta.env.DEV && <UpdateTester />}
       </AreaSelectorProvider>
     </FleetSelectorProvider>
   );

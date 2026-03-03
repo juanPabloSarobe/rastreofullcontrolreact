@@ -9,16 +9,36 @@ const API_URLS = {
   OLD_BACKEND: import.meta.env.VITE_API_OLD_BACKEND || 'http://localhost:3000',
 };
 
+function resolveLocalhostForLan(url) {
+  if (typeof window === 'undefined' || !url) return url;
+
+  try {
+    const parsed = new URL(url);
+    const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+    const currentHost = window.location.hostname;
+    const isCurrentHostLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+
+    if (isLocalHost && !isCurrentHostLocal) {
+      parsed.hostname = currentHost;
+      return parsed.toString().replace(/\/$/, '');
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 // Mapeo de endpoints a su backend correspondiente
 // 'new' = nuevo backend (backend-informes/src)
 // 'old' = backend viejo (actualmente en uso)
 const ENDPOINT_MAP = {
   // Ralentís - nuevo backend
   ralentis: 'new',
+  conductores: 'new',
   
   // Otros endpoints seguirán aquí conforme migremos
   // informes: 'new',
-  // conductores: 'old',
 };
 
 /**
@@ -28,7 +48,14 @@ const ENDPOINT_MAP = {
  */
 export function getBackendUrl(endpoint) {
   const backendType = ENDPOINT_MAP[endpoint] || 'old';
-  return API_URLS[backendType === 'new' ? 'NEW_BACKEND' : 'OLD_BACKEND'];
+  const key = backendType === 'new' ? 'NEW_BACKEND' : 'OLD_BACKEND';
+  const baseUrl = API_URLS[key];
+
+  if (key === 'NEW_BACKEND') {
+    return resolveLocalhostForLan(baseUrl);
+  }
+
+  return baseUrl;
 }
 
 /**

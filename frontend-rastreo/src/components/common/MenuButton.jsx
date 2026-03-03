@@ -19,6 +19,8 @@ import HelpIcon from "@mui/icons-material/Help"; // Nuevo icono para Manual
 import BusinessIcon from "@mui/icons-material/Business"; // Nuevo icono para Empresas Morosas
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { useContextValue } from "../../context/Context";
 import AdvancedHistoryModal from "./AdvancedHistoryModal";
 import ContractReportsModal from "./ContractReportsModal";
@@ -37,8 +39,10 @@ const openExternalUrl = (url) => {
   window.open(url, "_blank");
 };
 
-const MenuButton = ({ selectedUnit }) => {
+const MenuButton = ({ selectedUnit, onOpenRalentisDetail, onOpenRalentisTester }) => {
   const { state, dispatch } = useContextValue();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [anchorEl, setAnchorEl] = useState(null);
   const [ocultaUnidadesDeBaja, setOcultaUnidadesDeBaja] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState(null);
@@ -254,10 +258,24 @@ const MenuButton = ({ selectedUnit }) => {
     },
     {
       icon: <HistoryIcon fontSize="small" />,
-      label: "Ralentí Tester",
-      show: true, // Mostrar a todos los usuarios
+      label: "Detalle de Ralentí",
+      show: !isMobile, // Ocultar en mobile
       onClick: () => {
-        dispatch({ type: "SET_VIEW_MODE", payload: "ralentiTester" });
+        onOpenRalentisDetail?.();
+        handleClose();
+      },
+      disabled: isMenuRestricted,
+    },
+    {
+      icon: <HistoryIcon fontSize="small" />,
+      label: "Ralentí Tester",
+      show: true,
+      onClick: () => {
+        if (onOpenRalentisTester) {
+          onOpenRalentisTester();
+        } else {
+          dispatch({ type: "SET_VIEW_MODE", payload: "ralentiTester" });
+        }
         handleClose();
       },
       disabled: isMenuRestricted,

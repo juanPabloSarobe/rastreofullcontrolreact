@@ -15,6 +15,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import healthRoutes from './routes/health.js';
 import informesRoutes from './routes/informes.js';
 import ralentisRoutes from './routes/ralentis.js';
+import conductoresRoutes from './routes/conductores.js';
 
 const app = express();
 
@@ -54,6 +55,7 @@ async function bootstrap() {
     app.use('/servicio/v2/health', healthRoutes);
     app.use('/api/informes', informesRoutes);
     app.use('/api/ralentis', ralentisRoutes);
+    app.use('/api/conductores', conductoresRoutes);
 
     // 6. Manejadores de errores
     app.use(notFoundHandler);
