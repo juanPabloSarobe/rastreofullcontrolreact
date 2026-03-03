@@ -5,6 +5,57 @@
 
 import { apiFetch } from '../config/apiConfig.js';
 
+const HYBRID_ON_DEMAND_ENABLED =
+  String(import.meta.env.VITE_RALENTI_HYBRID_ON_DEMAND_ENABLED || 'true').toLowerCase() === 'true';
+const ON_DEMAND_CONCURRENCY = Number(import.meta.env.VITE_RALENTI_ON_DEMAND_CONCURRENCY || 12);
+const ON_DEMAND_FRESHNESS_MIN = Number(import.meta.env.VITE_RALENTI_ON_DEMAND_FRESHNESS_MIN || 5);
+
+async function refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta) {
+  if (!HYBRID_ON_DEMAND_ENABLED) {
+    return null;
+  }
+
+  try {
+    return await apiFetch('ralentis', '/api/ralentis-v2/refrescar-demanda', {
+      method: 'POST',
+      body: JSON.stringify({
+        movilIds,
+        fechaDesde,
+        fechaHasta,
+        persist: true,
+        concurrency: ON_DEMAND_CONCURRENCY,
+        freshnessMinutes: ON_DEMAND_FRESHNESS_MIN,
+      }),
+    });
+  } catch (error) {
+    console.warn('refreshRalentisOnDemand falló, se continúa con lectura normal:', error?.message);
+    return null;
+  }
+}
+
+export async function triggerRalentisOnDemandRefresh(movilIds, fechaDesde, fechaHasta) {
+  return refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta);
+}
+
+async function fetchRalentisSnapshot(movilIds, fechaDesde, fechaHasta) {
+  const params = new URLSearchParams({
+    movilIds: JSON.stringify(movilIds),
+    fechaDesde,
+    fechaHasta,
+  });
+
+  const response = await apiFetch(
+    'ralentis',
+    `/api/ralentis?${params.toString()}`
+  );
+
+  if (!response || response.ok === false) {
+    throw new Error(response?.error || 'Error al obtener ralentís');
+  }
+
+  return response.data || [];
+}
+
 /**
  * Obtiene ralentís por IDs de móviles y rango de fechas
  * @param {Array<number>} movilIds - Lista de IDs de móviles (Movil_ID)
@@ -14,27 +65,16 @@ import { apiFetch } from '../config/apiConfig.js';
  */
 export async function getRalentisPorMoviles(movilIds, fechaDesde, fechaHasta) {
   try {
-    // Construir query params
-    const params = new URLSearchParams({
-      movilIds: JSON.stringify(movilIds),
-      fechaDesde,
-      fechaHasta,
-    });
-
-    const response = await apiFetch(
-      'ralentis',
-      `/api/ralentis?${params.toString()}`
-    );
-
-    if (!response || response.ok === false) {
-      throw new Error(response?.error || 'Error al obtener ralentís');
-    }
-
-    return response.data || [];
+    return await fetchRalentisSnapshot(movilIds, fechaDesde, fechaHasta);
   } catch (error) {
     console.error('Error en getRalentisPorMoviles:', error);
     throw error;
   }
+}
+
+export async function getRalentisPorMovilesConRefresh(movilIds, fechaDesde, fechaHasta) {
+  const snapshot = await fetchRalentisSnapshot(movilIds, fechaDesde, fechaHasta);
+  return snapshot;
 }
 
 /**
@@ -85,6 +125,8 @@ export async function getRalentiById(idRalenti) {
 
 export default {
   getRalentisPorMoviles,
+  getRalentisPorMovilesConRefresh,
+  triggerRalentisOnDemandRefresh,
   getAllRalentis,
   getRalentiById,
 };

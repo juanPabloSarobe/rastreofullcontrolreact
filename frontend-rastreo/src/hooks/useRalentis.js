@@ -3,7 +3,7 @@
  * Facilita el uso del servicio de ralentís en componentes React
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import * as ralentiService from '../services/ralentiService.js';
 
 /**
@@ -12,20 +12,56 @@ import * as ralentiService from '../services/ralentiService.js';
  */
 export function useRalentis() {
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const latestRequestRef = useRef(0);
 
   const fetchRalentisPorMoviles = useCallback(
     async (movilIds, fechaDesde, fechaHasta) => {
+      const requestId = Date.now();
+      latestRequestRef.current = requestId;
+
       setLoading(true);
       setError(null);
       try {
-        const result = await ralentiService.getRalentisPorMoviles(
+        const result = await ralentiService.getRalentisPorMovilesConRefresh(
           movilIds,
           fechaDesde,
           fechaHasta
         );
-        setData(result);
+
+        if (latestRequestRef.current === requestId) {
+          setData(result);
+        }
+
+        setRefreshing(true);
+        ralentiService
+          .triggerRalentisOnDemandRefresh(movilIds, fechaDesde, fechaHasta)
+          .then(async () => {
+            if (latestRequestRef.current !== requestId) {
+              return;
+            }
+
+            const refreshedResult = await ralentiService.getRalentisPorMoviles(
+              movilIds,
+              fechaDesde,
+              fechaHasta
+            );
+
+            if (latestRequestRef.current === requestId) {
+              setData(refreshedResult);
+            }
+          })
+          .catch((refreshError) => {
+            console.warn('Refresh on-demand en segundo plano falló:', refreshError?.message);
+          })
+          .finally(() => {
+            if (latestRequestRef.current === requestId) {
+              setRefreshing(false);
+            }
+          });
+
         return result;
       } catch (err) {
         setError(err.message || 'Error al obtener ralentís');
@@ -70,6 +106,7 @@ export function useRalentis() {
   return {
     data,
     loading,
+    refreshing,
     error,
     fetchRalentisPorMoviles,
     fetchAllRalentis,

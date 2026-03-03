@@ -173,3 +173,10 @@ Estado inicial: `IDLE_OFF`
 - Durante transición, no eliminar lógica existente.
 - Habilitar por feature flag (`RALENTI_V2_ENABLED`).
 - Registrar `algorithm_version` desde día 1 para evolución controlada.
+
+## Requisito de catalogación (obligatorio)
+
+- El extractor v2 usa **exclusivamente** `EstadosGpsVirlock.tipoRegla` para clasificar eventos.
+- Valores soportados canónicos: `IDLE_START`, `IDLE_REPORT`, `IDLE_END`.
+- Si un código de estado no tiene `tipoRegla` o tiene otro valor, **no** participa en reconstrucción v2.
+- El texto `estado` queda solo como descriptor funcional en catálogo, no como criterio de cómputo.

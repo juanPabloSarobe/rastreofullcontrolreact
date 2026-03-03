@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -72,10 +72,20 @@ const getRangeDays = (from, to) => {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 };
 
+const areSameUnitSelection = (a = [], b = []) => {
+  if (a.length !== b.length) return false;
+  const sa = [...a].map(Number).sort((x, y) => x - y);
+  const sb = [...b].map(Number).sort((x, y) => x - y);
+  return sa.every((value, idx) => value === sb[idx]);
+};
+
 const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
   const { state } = useContextValue();
   const selectedUnits = useMemo(() => state.selectedUnits || [], [state.selectedUnits]);
-  const { data: ralentisData, loading, error, fetchRalentisPorMoviles } = useRalentis();
+  const [queryUnits, setQueryUnits] = useState([]);
+  const prevOpenRef = useRef(false);
+  const suppressSelectionSyncRef = useRef(false);
+  const { data: ralentisData, loading, refreshing, error, fetchRalentisPorMoviles } = useRalentis();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [customModalOpen, setCustomModalOpen] = useState(false);
@@ -162,20 +172,59 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
   };
 
   React.useEffect(() => {
+    const openedNow = open && !prevOpenRef.current;
+    const closedNow = !open && prevOpenRef.current;
+
+    if (closedNow) {
+      setQueryUnits([]);
+      prevOpenRef.current = false;
+      return;
+    }
+
+    if (!open) {
+      return;
+    }
+
+    if (openedNow) {
+      setQueryUnits(selectedUnits);
+      prevOpenRef.current = true;
+      return;
+    }
+
+    prevOpenRef.current = true;
+
+    if (suppressSelectionSyncRef.current) {
+      suppressSelectionSyncRef.current = false;
+      return;
+    }
+
+    if (!areSameUnitSelection(queryUnits, selectedUnits)) {
+      setQueryUnits(selectedUnits);
+    }
+  }, [open, selectedUnits, queryUnits]);
+
+  const handleSelectMovilFromRalentis = React.useCallback((movilId) => {
+    suppressSelectionSyncRef.current = true;
+    if (typeof onSelectMovil === "function") {
+      onSelectMovil(movilId);
+    }
+  }, [onSelectMovil]);
+
+  React.useEffect(() => {
     if (!open) return;
-    if (!selectedUnits.length) return;
+    if (!queryUnits.length) return;
 
     const fechaDesde = `${selectedRange.from}T00:00:00`;
     const fechaHasta = `${selectedRange.to}T23:59:59`;
 
-    fetchRalentisPorMoviles(selectedUnits, fechaDesde, fechaHasta).catch(() => {
+    fetchRalentisPorMoviles(queryUnits, fechaDesde, fechaHasta).catch(() => {
       // El error se expone por el hook en `error`
     });
   }, [
     open,
     selectedRange.from,
     selectedRange.to,
-    selectedUnits,
+    queryUnits,
     fetchRalentisPorMoviles,
   ]);
 
@@ -287,9 +336,24 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
             <Typography sx={{ fontSize: "12px", color: "#2e5f2e", fontWeight: 600 }}>
               Rango activo: {selectedRange.from} a {selectedRange.to}
             </Typography>
+            {refreshing && (
+              <Box
+                sx={{
+                  mt: 0.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                }}
+              >
+                <CircularProgress size={14} thickness={6} />
+                <Typography sx={{ fontSize: "11px", color: "#2e5f2e" }}>
+                  Buscando actualizaciones...
+                </Typography>
+              </Box>
+            )}
           </Box>
           <Box sx={{ height: { xs: "calc(60vh - 140px)", sm: "410px" } }}>
-            {!selectedUnits.length ? (
+            {!queryUnits.length ? (
               <Box
                 sx={{
                   height: "100%",
@@ -346,7 +410,7 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
                 data={Array.isArray(ralentisData) ? ralentisData : []}
                 range={selectedRange}
                 unitCatalog={markersData}
-                onSelectMovil={onSelectMovil}
+                onSelectMovil={handleSelectMovilFromRalentis}
               />
             )}
           </Box>
