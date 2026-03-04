@@ -5,7 +5,7 @@ import Tooltip from "@mui/material/Tooltip";
 
 const LABEL_WIDTH = 88;
 const ROW_HEIGHT = 28;
-const TOTAL_WIDTH = 52;
+const TOTAL_WIDTH = 74;
 
 const parseDate = (value) => {
   const date = new Date(value);
@@ -30,11 +30,12 @@ const formatTick = (date) => {
   return String(date.getHours()).padStart(2, "0");
 };
 
-const formatMinutesToHHMM = (totalMinutes) => {
-  const safeMinutes = Math.max(0, Number(totalMinutes) || 0);
-  const hours = Math.floor(safeMinutes / 60);
-  const minutes = safeMinutes % 60;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+const formatSecondsToHHMMSS = (totalSeconds) => {
+  const safeSeconds = Math.max(0, Number(totalSeconds) || 0);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
 const formatDateTime = (value) => {
@@ -51,16 +52,7 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 
-const formatDuration = (item, startDate, endDate) => {
-  const raw = item?.tiempoRalenti;
-
-  if (raw && typeof raw === "object") {
-    const hours = Number(raw.hours || 0);
-    const minutes = Number(raw.minutes || 0);
-    const seconds = Number(raw.seconds || 0);
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-
+const formatDuration = (startDate, endDate) => {
   const diffSeconds = Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 1000));
   const hours = Math.floor(diffSeconds / 3600);
   const minutes = Math.floor((diffSeconds % 3600) / 60);
@@ -122,6 +114,10 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
         1,
         Math.ceil((clippedEnd.getTime() - clippedStart.getTime()) / 60000)
       );
+      const durationSeconds = Math.max(
+        0,
+        Math.round((clippedEnd.getTime() - clippedStart.getTime()) / 1000)
+      );
 
       const patente = patenteByMovil.get(movilId) || `Móvil ${movilId}`;
       const personaId = item?.idPersona !== null && item?.idPersona !== undefined
@@ -130,7 +126,7 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
       const conductorNombre = personaId
         ? conductorNameByPersona.get(personaId) || `Persona ${personaId}`
         : "Sin conductor";
-      const durationText = formatDuration(item, rawStart, rawEnd);
+      const durationText = formatDuration(clippedStart, clippedEnd);
 
       if (!rowsMap.has(movilId)) {
         rowsMap.set(movilId, {
@@ -146,6 +142,7 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
         leftPct: (startMinute / totalMinutesRaw) * 100,
         widthPct: Math.max((durationMinutes / totalMinutesRaw) * 100, 0.15),
         durationMinutes,
+        durationSeconds,
         details: {
           inicio: formatDateTime(item?.fechaHoraInicio),
           fin: formatDateTime(item?.fechahoraFin || item?.fechaHoraFin),
@@ -159,8 +156,8 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
       .map((row) => ({
         ...row,
         segments: row.segments.sort((a, b) => a.leftPct - b.leftPct),
-        totalMinutes: row.segments.reduce(
-          (acc, segment) => acc + (segment.durationMinutes || 0),
+        totalSeconds: row.segments.reduce(
+          (acc, segment) => acc + (segment.durationSeconds || 0),
           0
         ),
       }))
@@ -321,7 +318,7 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
               bgcolor: "#f4f7f4",
             }}
           >
-            hh:mm
+              hh:mm:ss
           </Box>
         </Box>
 
@@ -427,9 +424,9 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
                 zIndex: 2,
                 bgcolor: "white",
               }}
-              title={`${row.totalMinutes} minutos acumulados`}
+              title={`${formatSecondsToHHMMSS(row.totalSeconds)} acumulados`}
             >
-              {formatMinutesToHHMM(row.totalMinutes)}
+              {formatSecondsToHHMMSS(row.totalSeconds)}
             </Box>
           </Box>
         ))}

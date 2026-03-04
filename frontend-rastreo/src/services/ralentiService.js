@@ -10,10 +10,17 @@ const HYBRID_ON_DEMAND_ENABLED =
 const ON_DEMAND_CONCURRENCY = Number(import.meta.env.VITE_RALENTI_ON_DEMAND_CONCURRENCY || 12);
 const ON_DEMAND_FRESHNESS_MIN = Number(import.meta.env.VITE_RALENTI_ON_DEMAND_FRESHNESS_MIN || 5);
 
-async function refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta) {
+async function refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta, options = {}) {
   if (!HYBRID_ON_DEMAND_ENABLED) {
     return null;
   }
+
+  const {
+    refreshPolicy = 'auto',
+    freshnessMinutes = ON_DEMAND_FRESHNESS_MIN,
+    persist = true,
+    concurrency = ON_DEMAND_CONCURRENCY,
+  } = options || {};
 
   try {
     return await apiFetch('ralentis', '/api/ralentis-v2/refrescar-demanda', {
@@ -22,9 +29,10 @@ async function refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta) {
         movilIds,
         fechaDesde,
         fechaHasta,
-        persist: true,
-        concurrency: ON_DEMAND_CONCURRENCY,
-        freshnessMinutes: ON_DEMAND_FRESHNESS_MIN,
+        persist,
+        concurrency,
+        freshnessMinutes,
+        refreshPolicy,
       }),
     });
   } catch (error) {
@@ -33,8 +41,8 @@ async function refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta) {
   }
 }
 
-export async function triggerRalentisOnDemandRefresh(movilIds, fechaDesde, fechaHasta) {
-  return refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta);
+export async function triggerRalentisOnDemandRefresh(movilIds, fechaDesde, fechaHasta, options = {}) {
+  return refreshRalentisOnDemand(movilIds, fechaDesde, fechaHasta, options);
 }
 
 async function fetchRalentisSnapshot(movilIds, fechaDesde, fechaHasta) {
@@ -75,6 +83,24 @@ export async function getRalentisPorMoviles(movilIds, fechaDesde, fechaHasta) {
 export async function getRalentisPorMovilesConRefresh(movilIds, fechaDesde, fechaHasta) {
   const snapshot = await fetchRalentisSnapshot(movilIds, fechaDesde, fechaHasta);
   return snapshot;
+}
+
+export async function getRalentisResumenDiario(movilIds, fechaDesde, fechaHasta) {
+  try {
+    const response = await apiFetch('ralentis', '/api/ralentis-v2/resumen-diario', {
+      method: 'POST',
+      body: JSON.stringify({ movilIds, fechaDesde, fechaHasta }),
+    });
+
+    if (!response || response.ok === false) {
+      throw new Error(response?.error || 'Error al obtener resumen diario de ralentís');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Error en getRalentisResumenDiario:', error);
+    throw error;
+  }
 }
 
 /**
@@ -126,6 +152,7 @@ export async function getRalentiById(idRalenti) {
 export default {
   getRalentisPorMoviles,
   getRalentisPorMovilesConRefresh,
+  getRalentisResumenDiario,
   triggerRalentisOnDemandRefresh,
   getAllRalentis,
   getRalentiById,

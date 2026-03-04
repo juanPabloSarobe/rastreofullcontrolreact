@@ -89,6 +89,34 @@ async function getFreshCoverageMovilIds({ movilIds, fechaDesde, fechaHasta, fres
   return new Set(result.rows.map((row) => Number(row.movil_id)));
 }
 
+async function getCoveredMovilIds({ movilIds, fechaDesde, fechaHasta }) {
+  if (!movilIds.length) {
+    return new Set();
+  }
+
+  const sql = `
+    SELECT movil_id
+    FROM idle_intervals_v2_coverage
+    WHERE movil_id = ANY($1::int[])
+      AND from_ts_utc = $2::timestamptz
+      AND to_ts_utc = $3::timestamptz
+      AND status = 'ok'
+  `;
+
+  const result = await query(sql, [movilIds, fechaDesde, fechaHasta]);
+  return new Set(result.rows.map((row) => Number(row.movil_id)));
+}
+
+function isHistoricalClosedRange(fechaHasta, realtimeMinutes = 5) {
+  const end = new Date(fechaHasta);
+  if (Number.isNaN(end.getTime())) {
+    return false;
+  }
+
+  const threshold = new Date(Date.now() - Math.max(1, Number(realtimeMinutes) || 5) * 60 * 1000);
+  return end.getTime() < threshold.getTime();
+}
+
 /**
  * GET /api/ralentis-v2
  * Lectura de intervalos persistidos v2 por móviles y rango.
@@ -124,6 +152,35 @@ router.get('/', async (req, res, next) => {
       ok: true,
       data,
       count: data.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/resumen-diario', async (req, res, next) => {
+  try {
+    const { movilIds = [], fechaDesde, fechaHasta } = req.body || {};
+
+    if (!Array.isArray(movilIds) || movilIds.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: 'movilIds es requerido y debe ser un array no vacío',
+      });
+    }
+
+    if (!fechaDesde || !fechaHasta) {
+      return res.status(400).json({
+        ok: false,
+        error: 'fechaDesde y fechaHasta son requeridas',
+      });
+    }
+
+    const data = await ralentiV2Service.getDailyIdleSummaryByMoviles(movilIds, fechaDesde, fechaHasta);
+
+    res.json({
+      ok: true,
+      data,
     });
   } catch (error) {
     next(error);
@@ -505,6 +562,8 @@ router.post('/reconstruir-lote-escalable', async (req, res, next) => {
  *   - persist: boolean (default true)
  *   - concurrency: number (default 12, max 32)
  *   - freshnessMinutes: number (default 5)
+ *   - refreshPolicy: 'auto' | 'force' | 'skip' (default 'auto')
+ *   - activeRealtimeMinutes: number (default 5)
  */
 router.post('/refrescar-demanda', async (req, res, next) => {
   try {
@@ -523,6 +582,8 @@ router.post('/refrescar-demanda', async (req, res, next) => {
       persist = true,
       concurrency = RALENTI_V2_DEFAULTS.onDemandConcurrency,
       freshnessMinutes = RALENTI_V2_DEFAULTS.onDemandFreshnessMinutes,
+      refreshPolicy = 'auto',
+      activeRealtimeMinutes = RALENTI_V2_DEFAULTS.activosRealtimeMinutes,
     } = req.body || {};
 
     if (!Array.isArray(movilIds) || movilIds.length === 0) {
@@ -543,16 +604,96 @@ router.post('/refrescar-demanda', async (req, res, next) => {
     const parsedConcurrency = Math.min(32, Math.max(1, Number(concurrency) || 12));
     const persistFlag = parseBoolean(persist, true);
     const parsedFreshnessMinutes = Math.max(0, Number(freshnessMinutes) || 5);
+    const parsedActiveRealtimeMinutes = Math.max(
+      1,
+      Number(activeRealtimeMinutes) || RALENTI_V2_DEFAULTS.activosRealtimeMinutes
+    );
+    const rawRefreshPolicy = String(refreshPolicy || 'auto').toLowerCase();
+    const parsedRefreshPolicy = ['auto', 'force', 'skip'].includes(rawRefreshPolicy)
+      ? rawRefreshPolicy
+      : 'auto';
 
-    const freshMovilIds = await getFreshCoverageMovilIds({
-      movilIds: uniqueMovilIds,
-      fechaDesde,
-      fechaHasta,
-      freshnessMinutes: parsedFreshnessMinutes,
-    });
+    let refreshPolicyResolved = parsedRefreshPolicy;
+    if (parsedRefreshPolicy === 'auto') {
+      refreshPolicyResolved = isHistoricalClosedRange(
+        fechaHasta,
+        RALENTI_V2_DEFAULTS.activosRealtimeMinutes
+      )
+        ? 'skip'
+        : 'force';
+    }
 
-    const toProcess = uniqueMovilIds.filter((movilId) => !freshMovilIds.has(movilId));
-    const skippedFresh = uniqueMovilIds.length - toProcess.length;
+    let coveredMovilIds = new Set();
+    let toProcess = uniqueMovilIds;
+    let activeNowMovilIds = new Set();
+    let withIdleEvidenceMovilIds = new Set();
+    let coveredByNoIdleEvidence = 0;
+    let skippedByInactiveNow = 0;
+
+    if (refreshPolicyResolved === 'skip') {
+      coveredMovilIds = await getCoveredMovilIds({
+        movilIds: uniqueMovilIds,
+        fechaDesde,
+        fechaHasta,
+      });
+      const uncoveredMovilIds = uniqueMovilIds.filter((movilId) => !coveredMovilIds.has(movilId));
+
+      if (parsedRefreshPolicy === 'auto' && uncoveredMovilIds.length) {
+        const now = new Date();
+        const realtimeStart = new Date(
+          now.getTime() - parsedActiveRealtimeMinutes * 60 * 1000
+        ).toISOString();
+        const realtimeEnd = now.toISOString();
+
+        const activeNowList = await ralentiV2Service.getMovilIdsWithAnyEventsInRange({
+          fechaDesde: realtimeStart,
+          fechaHasta: realtimeEnd,
+          maxMoviles: 0,
+        });
+
+        const idleEvidenceList = await ralentiV2Service.getMovilIdsWithIdleEventsInRange({
+          fechaDesde,
+          fechaHasta,
+          maxMoviles: 0,
+        });
+
+        activeNowMovilIds = new Set(activeNowList);
+        withIdleEvidenceMovilIds = new Set(idleEvidenceList);
+
+        const processSet = new Set();
+        for (const movilId of uncoveredMovilIds) {
+          if (activeNowMovilIds.has(movilId) || withIdleEvidenceMovilIds.has(movilId)) {
+            processSet.add(movilId);
+          }
+        }
+
+        const uncoveredWithoutEvidence = uncoveredMovilIds.filter(
+          (movilId) => !processSet.has(movilId)
+        );
+
+        for (const movilId of uncoveredWithoutEvidence) {
+          await ralentiV2Service.markCoverageForRange({ movilId, fechaDesde, fechaHasta });
+        }
+
+        coveredByNoIdleEvidence = uncoveredWithoutEvidence.length;
+        skippedByInactiveNow = uncoveredMovilIds.filter(
+          (movilId) => !activeNowMovilIds.has(movilId) && processSet.has(movilId)
+        ).length;
+        toProcess = [...processSet];
+      } else {
+        toProcess = uncoveredMovilIds;
+      }
+    } else if (refreshPolicyResolved === 'force' && parsedRefreshPolicy === 'auto') {
+      coveredMovilIds = await getFreshCoverageMovilIds({
+        movilIds: uniqueMovilIds,
+        fechaDesde,
+        fechaHasta,
+        freshnessMinutes: parsedFreshnessMinutes,
+      });
+      toProcess = uniqueMovilIds.filter((movilId) => !coveredMovilIds.has(movilId));
+    }
+
+    const skippedByCoverage = uniqueMovilIds.length - toProcess.length;
 
     const startedAt = Date.now();
     const perUnit = await runWithConcurrency(
@@ -600,10 +741,23 @@ router.post('/refrescar-demanda', async (req, res, next) => {
         fechaDesde,
         fechaHasta,
         persist: persistFlag,
+        refreshPolicy: parsedRefreshPolicy,
+        refreshPolicyResolved,
         concurrency: parsedConcurrency,
         freshnessMinutes: parsedFreshnessMinutes,
+        activeRealtimeMinutes: parsedActiveRealtimeMinutes,
         unitsRequested: uniqueMovilIds.length,
-        unitsSkippedFresh: skippedFresh,
+        unitsSkippedByCoverage: skippedByCoverage,
+        unitsSkippedByInactiveNow: skippedByInactiveNow,
+        unitsCoveredByNoIdleEvidence: coveredByNoIdleEvidence,
+        unitsWithIdleEvidenceInRange:
+          refreshPolicyResolved === 'skip' && parsedRefreshPolicy === 'auto'
+            ? withIdleEvidenceMovilIds.size
+            : null,
+        activeUnitsNowDetected:
+          refreshPolicyResolved === 'skip' && parsedRefreshPolicy === 'auto'
+            ? activeNowMovilIds.size
+            : null,
         unitsProcessed: perUnit.length,
         successCount,
         errorCount,

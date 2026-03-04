@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "backfill:ralenti:month": "node scripts/backfill-ralenti-month.mjs"
   },
   "dependencies": {
     "express": "^4.18.2",

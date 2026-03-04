@@ -6,25 +6,50 @@ import Tooltip from "@mui/material/Tooltip";
 import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
+import LinearProgress from "@mui/material/LinearProgress";
+import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import DateRangeIcon from "@mui/icons-material/DateRange";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import * as XLSX from "xlsx";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import RalentiGrafics from "./RalentiGrafics";
 import useRalentis from "../../hooks/useRalentis";
+import ralentiService from "../../services/ralentiService";
 import { useContextValue } from "../../context/Context";
 
 const MAX_RANGE_DAYS = 7;
+const MAX_EXPORT_RANGE_DAYS = 31;
+const EXPORT_REFRESH_BATCH_SIZE = 120;
+
+const generateLast6Months = () => {
+  const months = [];
+  for (let i = 0; i < 6; i += 1) {
+    const date = dayjs().subtract(i, "month");
+    months.push({
+      value: date.format("YYYY-MM"),
+      label: date.format("MMMM YYYY"),
+    });
+  }
+  return months;
+};
+
+const LAST_6_MONTHS = generateLast6Months();
 
 const toYmd = (date) => {
   const year = date.getFullYear();
@@ -79,12 +104,52 @@ const areSameUnitSelection = (a = [], b = []) => {
   return sa.every((value, idx) => value === sb[idx]);
 };
 
+const formatSecondsToHHMMSS = (seconds) => {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remSeconds = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remSeconds).padStart(2, "0")}`;
+};
+
+const formatDayLabel = (ymd) => {
+  const date = dayjs(ymd);
+  if (!date.isValid()) {
+    return ymd;
+  }
+  return date.format("DD/MM");
+};
+
+const buildFileTimestamp = () => {
+  return dayjs().format("YYYYMMDD_HHmmss");
+};
+
+const formatEstimatedTime = (seconds) => {
+  const safe = Math.max(0, Math.round(seconds || 0));
+  if (safe < 60) {
+    return `~${safe}s`;
+  }
+
+  const minutes = Math.floor(safe / 60);
+  const remSeconds = safe % 60;
+  if (minutes < 60) {
+    return `~${minutes}m ${String(remSeconds).padStart(2, "0")}s`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remMinutes = minutes % 60;
+  return `~${hours}h ${String(remMinutes).padStart(2, "0")}m`;
+};
+
 const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
   const { state } = useContextValue();
   const selectedUnits = useMemo(() => state.selectedUnits || [], [state.selectedUnits]);
   const [queryUnits, setQueryUnits] = useState([]);
   const prevOpenRef = useRef(false);
   const suppressSelectionSyncRef = useRef(false);
+  const perfRef = useRef({
+    secondsPerMovilDay: 0.35,
+  });
   const { data: ralentisData, loading, refreshing, error, fetchRalentisPorMoviles } = useRalentis();
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -93,8 +158,25 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
   const [customTo, setCustomTo] = useState(null);
   const [customError, setCustomError] = useState("");
   const [selectedRange, setSelectedRange] = useState(getTodayRange());
+  const [excelAnchorEl, setExcelAnchorEl] = useState(null);
+  const [exportError, setExportError] = useState("");
+  const [backgroundExport, setBackgroundExport] = useState({
+    running: false,
+    progress: 0,
+    label: "",
+    detail: "",
+    completed: false,
+  });
+  const [fullExportModalOpen, setFullExportModalOpen] = useState(false);
+  const [fullExportMonth, setFullExportMonth] = useState(dayjs().format("YYYY-MM"));
+  const [fullExportAdvanced, setFullExportAdvanced] = useState(false);
+  const [fullExportFrom, setFullExportFrom] = useState(null);
+  const [fullExportTo, setFullExportTo] = useState(null);
+  const [fullExportRangeError, setFullExportRangeError] = useState("");
+  const [fullExportScope, setFullExportScope] = useState("selected");
 
   const isMenuOpen = Boolean(anchorEl);
+  const isExcelMenuOpen = Boolean(excelAnchorEl);
   const todayDayjs = useMemo(() => dayjs(), []);
 
   const openRangeMenu = (event) => {
@@ -169,6 +251,360 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
       label: "Personalizado",
     });
     closeCustomModal();
+  };
+
+  const allVisibleMovilIds = useMemo(
+    () =>
+      [...new Set(
+        (markersData || [])
+          .map((unit) => Number(unit?.Movil_ID))
+          .filter((value) => Number.isFinite(value) && value > 0)
+      )],
+    [markersData]
+  );
+
+  const patenteByMovil = useMemo(() => {
+    const map = new Map();
+    (markersData || []).forEach((unit) => {
+      const movilId = Number(unit?.Movil_ID);
+      if (!Number.isFinite(movilId) || movilId <= 0) {
+        return;
+      }
+      map.set(movilId, unit?.patente || `Móvil ${movilId}`);
+    });
+    return map;
+  }, [markersData]);
+
+  const openExcelMenu = (event) => {
+    setExcelAnchorEl(event.currentTarget);
+  };
+
+  const closeExcelMenu = () => {
+    setExcelAnchorEl(null);
+  };
+
+  const getMovilIdsForScope = (scope) => {
+    if (scope === "all") {
+      return allVisibleMovilIds;
+    }
+
+    return [...new Set((queryUnits || []).map((value) => Number(value)).filter(Boolean))];
+  };
+
+  const updateBackgroundExport = (payload) => {
+    setBackgroundExport((current) => ({
+      ...current,
+      ...payload,
+    }));
+  };
+
+  const buildExcelFromSummary = ({ summary, fechaDesde, fechaHasta, modeLabel, scopeLabel }) => {
+    const dayKeys = Array.isArray(summary?.dayKeys) ? summary.dayKeys : [];
+    const rows = Array.isArray(summary?.rows) ? summary.rows : [];
+
+    const sortedRows = [...rows].sort((a, b) => {
+      const patenteA = patenteByMovil.get(Number(a?.movilId)) || `Móvil ${a?.movilId}`;
+      const patenteB = patenteByMovil.get(Number(b?.movilId)) || `Móvil ${b?.movilId}`;
+      return patenteA.localeCompare(patenteB, "es", { sensitivity: "base" });
+    });
+
+    const header = ["Patente", "Total período", ...dayKeys.map((dayKey) => formatDayLabel(dayKey))];
+    const dataRows = sortedRows.map((row) => {
+      const movilId = Number(row?.movilId);
+      const patente = patenteByMovil.get(movilId) || `Móvil ${movilId}`;
+      const total = Number(row?.totalSeconds || 0);
+      const dailyValues = dayKeys.map((dayKey) => {
+        const daySeconds = Number(row?.dailySeconds?.[dayKey] || 0);
+        return daySeconds > 0 ? formatSecondsToHHMMSS(daySeconds) : "";
+      });
+
+      return [patente, formatSecondsToHHMMSS(total), ...dailyValues];
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([]);
+    const nowLabel = dayjs().format("DD/MM/YYYY HH:mm:ss");
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ["INFORME DE RALENTÍ"],
+        [`Generado: ${nowLabel}`],
+        [`Período: ${fechaDesde} a ${fechaHasta}`],
+        [`Modo: ${modeLabel}`],
+        [`Alcance: ${scopeLabel}`],
+        [`Unidades: ${dataRows.length}`],
+        [],
+        header,
+        ...dataRows,
+      ],
+      { origin: "A1" }
+    );
+
+    worksheet["!cols"] = [
+      { wch: 18 },
+      { wch: 14 },
+      ...dayKeys.map(() => ({ wch: 12 })),
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ralentí");
+    return workbook;
+  };
+
+  const runExcelExport = async ({ scope, from, to, modeLabel }) => {
+    const movilIds = getMovilIdsForScope(scope);
+    if (!movilIds.length) {
+      throw new Error(
+        scope === "selected"
+          ? "No hay unidades seleccionadas para exportar"
+          : "No hay unidades disponibles para exportar"
+      );
+    }
+
+    const fechaDesde = `${from}T00:00:00`;
+    const fechaHasta = `${to}T23:59:59`;
+    const startedAt = Date.now();
+
+    updateBackgroundExport({
+      running: true,
+      completed: false,
+      progress: 5,
+      label: "Preparando actualización de datos",
+      detail: `${movilIds.length} unidades`,
+    });
+
+    let processed = 0;
+    for (let index = 0; index < movilIds.length; index += EXPORT_REFRESH_BATCH_SIZE) {
+      const chunk = movilIds.slice(index, index + EXPORT_REFRESH_BATCH_SIZE);
+      await ralentiService.triggerRalentisOnDemandRefresh(chunk, fechaDesde, fechaHasta, {
+        refreshPolicy: "auto",
+      });
+      processed += chunk.length;
+
+      const refreshProgress = 5 + Math.round((processed / movilIds.length) * 75);
+      updateBackgroundExport({
+        progress: Math.min(80, refreshProgress),
+        label: "Actualizando ralentís en segundo plano",
+        detail: `${processed}/${movilIds.length} unidades procesadas`,
+      });
+    }
+
+    updateBackgroundExport({
+      progress: 85,
+      label: "Consolidando resumen diario",
+      detail: `${from} a ${to}`,
+    });
+
+    const summary = await ralentiService.getRalentisResumenDiario(movilIds, fechaDesde, fechaHasta);
+
+    updateBackgroundExport({
+      progress: 95,
+      label: "Generando archivo Excel",
+      detail: "Preparando descarga",
+    });
+
+    const workbook = buildExcelFromSummary({
+      summary,
+      fechaDesde: from,
+      fechaHasta: to,
+      modeLabel,
+      scopeLabel: scope === "selected" ? "Unidades seleccionadas" : "Toda la flota visible",
+    });
+
+    const modeToken = modeLabel.toLowerCase().includes("actual") ? "actual" : "completo";
+    const fileName = `Informe_Ralenti_${modeToken}_${from}_${to}_${buildFileTimestamp()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    const elapsedSeconds = Math.max(1, (Date.now() - startedAt) / 1000);
+    const days = Math.max(
+      1,
+      dayjs(to).startOf("day").diff(dayjs(from).startOf("day"), "day") + 1
+    );
+    const denominator = Math.max(1, movilIds.length * days);
+    const observedSecondsPerMovilDay = elapsedSeconds / denominator;
+    perfRef.current.secondsPerMovilDay = Number(
+      ((perfRef.current.secondsPerMovilDay * 0.6) + (observedSecondsPerMovilDay * 0.4)).toFixed(4)
+    );
+
+    updateBackgroundExport({
+      running: false,
+      completed: true,
+      progress: 100,
+      label: "Informe generado",
+      detail: fileName,
+    });
+
+    setTimeout(() => {
+      setBackgroundExport((current) => {
+        if (current.running) {
+          return current;
+        }
+        return {
+          running: false,
+          completed: false,
+          progress: 0,
+          label: "",
+          detail: "",
+        };
+      });
+    }, 9000);
+  };
+
+  const startBackgroundExport = ({ scope, from, to, modeLabel }) => {
+    if (backgroundExport.running) {
+      setExportError("Ya hay una exportación en curso. Espere a que finalice.");
+      return;
+    }
+
+    setExportError("");
+
+    (async () => {
+      try {
+        await runExcelExport({ scope, from, to, modeLabel });
+      } catch (err) {
+        const message = err?.message || "Error al exportar informe";
+        setExportError(message);
+        updateBackgroundExport({
+          running: false,
+          completed: false,
+          progress: 0,
+          label: "Error en exportación",
+          detail: message,
+        });
+      }
+    })();
+  };
+
+  const handleExportActual = () => {
+    closeExcelMenu();
+    setExportError("");
+
+    const scope = queryUnits.length ? "selected" : "all";
+    startBackgroundExport({
+      scope,
+      from: selectedRange.from,
+      to: selectedRange.to,
+      modeLabel: "Ralentí actual",
+    });
+  };
+
+  const openFullExportModal = () => {
+    setFullExportRangeError("");
+    setExportError("");
+    setFullExportModalOpen(true);
+    closeExcelMenu();
+  };
+
+  const closeFullExportModal = () => {
+    setFullExportModalOpen(false);
+    setFullExportRangeError("");
+  };
+
+  const resolveFullExportRange = () => {
+    if (!fullExportAdvanced) {
+      const monthStart = dayjs(fullExportMonth).startOf("month");
+      const monthEnd = dayjs(fullExportMonth).endOf("month");
+      return {
+        from: monthStart.format("YYYY-MM-DD"),
+        to: monthEnd.format("YYYY-MM-DD"),
+      };
+    }
+
+    if (!fullExportFrom || !fullExportTo) {
+      throw new Error("Debe seleccionar fecha desde y fecha hasta");
+    }
+
+    if (fullExportTo.isBefore(fullExportFrom, "day")) {
+      throw new Error("La fecha hasta no puede ser menor que la fecha desde");
+    }
+
+    const diffDays = fullExportTo.startOf("day").diff(fullExportFrom.startOf("day"), "day") + 1;
+    if (diffDays > MAX_EXPORT_RANGE_DAYS) {
+      throw new Error("El rango avanzado no puede superar 1 mes (31 días)");
+    }
+
+    return {
+      from: fullExportFrom.format("YYYY-MM-DD"),
+      to: fullExportTo.format("YYYY-MM-DD"),
+    };
+  };
+
+  const isAdvancedRangeValid = useMemo(() => {
+    if (!fullExportAdvanced) {
+      return true;
+    }
+
+    if (!fullExportFrom || !fullExportTo) {
+      return false;
+    }
+
+    if (fullExportTo.isBefore(fullExportFrom, "day")) {
+      return false;
+    }
+
+    const diffDays = fullExportTo.startOf("day").diff(fullExportFrom.startOf("day"), "day") + 1;
+    return diffDays > 0 && diffDays <= MAX_EXPORT_RANGE_DAYS;
+  }, [fullExportAdvanced, fullExportFrom, fullExportTo]);
+
+  const fullExportPreview = useMemo(() => {
+    let range;
+    try {
+      range = resolveFullExportRange();
+    } catch {
+      return {
+        days: 0,
+        movilesCount: getMovilIdsForScope(fullExportScope).length,
+        estimatedSeconds: 0,
+      };
+    }
+
+    const from = dayjs(range.from);
+    const to = dayjs(range.to);
+    const days = Math.max(0, to.startOf("day").diff(from.startOf("day"), "day") + 1);
+    const movilesCount = getMovilIdsForScope(fullExportScope).length;
+    const estimatedSeconds = movilesCount * days * perfRef.current.secondsPerMovilDay;
+
+    return {
+      days,
+      movilesCount,
+      estimatedSeconds,
+    };
+  }, [fullExportScope, fullExportMonth, fullExportAdvanced, fullExportFrom, fullExportTo, queryUnits, allVisibleMovilIds]);
+
+  const isFullExportSubmitDisabled = useMemo(() => {
+    if (backgroundExport.running) {
+      return true;
+    }
+
+    if (!getMovilIdsForScope(fullExportScope).length) {
+      return true;
+    }
+
+    if (fullExportAdvanced) {
+      return !isAdvancedRangeValid;
+    }
+
+    return !fullExportMonth;
+  }, [backgroundExport.running, fullExportScope, fullExportAdvanced, isAdvancedRangeValid, fullExportMonth, queryUnits, allVisibleMovilIds]);
+
+  const handleExportCompleto = () => {
+    setFullExportRangeError("");
+    setExportError("");
+
+    try {
+      const range = resolveFullExportRange();
+      startBackgroundExport({
+        scope: fullExportScope,
+        from: range.from,
+        to: range.to,
+        modeLabel: "Informe ralentí completo",
+      });
+      setFullExportModalOpen(false);
+    } catch (err) {
+      const message = err?.message || "Error al exportar informe completo";
+      setFullExportRangeError(message);
+      setExportError(message);
+    }
   };
 
   React.useEffect(() => {
@@ -292,16 +728,19 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
                 {selectedRange.label}
               </Button>
             </Tooltip>
-            <Tooltip title="Exportar a Excel (próximamente)">
-              <span>
-                <IconButton
-                  sx={{ color: "white", padding: "4px" }}
-                  size="small"
-                  disabled
-                >
+            <Tooltip title="Exportar a Excel">
+              <IconButton
+                onClick={openExcelMenu}
+                sx={{ color: "white", padding: "4px" }}
+                size="small"
+                disabled={backgroundExport.running}
+              >
+                {backgroundExport.running ? (
+                  <CircularProgress size={18} sx={{ color: "white" }} />
+                ) : (
                   <TableChartIcon sx={{ fontSize: "20px" }} />
-                </IconButton>
-              </span>
+                )}
+              </IconButton>
             </Tooltip>
             <Tooltip title="Cerrar">
               <IconButton
@@ -348,6 +787,39 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
                 <CircularProgress size={14} thickness={6} />
                 <Typography sx={{ fontSize: "11px", color: "#2e5f2e" }}>
                   Buscando actualizaciones...
+                </Typography>
+              </Box>
+            )}
+            {exportError && (
+              <Alert severity="error" sx={{ mt: 1, py: 0 }}>
+                {exportError}
+              </Alert>
+            )}
+            {(backgroundExport.running || backgroundExport.completed) && (
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 1,
+                  borderRadius: "8px",
+                  bgcolor: backgroundExport.running ? "#eef5ff" : "#eef8ee",
+                  border: `1px solid ${backgroundExport.running ? "#c8dcff" : "#cfe8cf"}`,
+                }}
+              >
+                <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "#2f3a2f" }}>
+                  {backgroundExport.label || "Procesando exportación"}
+                </Typography>
+                {backgroundExport.detail && (
+                  <Typography sx={{ fontSize: "11px", color: "#5a6a5a", mt: 0.25 }}>
+                    {backgroundExport.detail}
+                  </Typography>
+                )}
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.max(0, Math.min(100, backgroundExport.progress || 0))}
+                  sx={{ mt: 0.75, height: 6, borderRadius: 4 }}
+                />
+                <Typography sx={{ fontSize: "11px", color: "#4a5a4a", mt: 0.5, textAlign: "right" }}>
+                  {Math.round(backgroundExport.progress || 0)}%
                 </Typography>
               </Box>
             )}
@@ -429,6 +901,21 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
         <MenuItem onClick={openCustomModal}>Personalizado</MenuItem>
       </Menu>
 
+      <Menu
+        anchorEl={excelAnchorEl}
+        open={isExcelMenuOpen}
+        onClose={closeExcelMenu}
+      >
+        <MenuItem onClick={handleExportActual} disabled={backgroundExport.running}>
+          <DownloadIcon sx={{ fontSize: 18, mr: 1 }} />
+          Exportar ralentí actual
+        </MenuItem>
+        <MenuItem onClick={openFullExportModal} disabled={backgroundExport.running}>
+          <TableChartIcon sx={{ fontSize: 18, mr: 1 }} />
+          Informe ralentí completo
+        </MenuItem>
+      </Menu>
+
       <Dialog open={customModalOpen} onClose={closeCustomModal} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>Rango personalizado</DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
@@ -481,6 +968,160 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
           <Button onClick={closeCustomModal}>Cancelar</Button>
           <Button variant="contained" onClick={applyCustomRange}>
             Aplicar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={fullExportModalOpen} onClose={closeFullExportModal} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>Informe ralentí completo</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 0.5 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="ralenti-scope-label">Alcance</InputLabel>
+                <Select
+                  labelId="ralenti-scope-label"
+                  value={fullExportScope}
+                  label="Alcance"
+                  onChange={(event) => setFullExportScope(event.target.value)}
+                >
+                  <MenuItem value="selected">
+                    Unidades seleccionadas ({queryUnits.length})
+                  </MenuItem>
+                  <MenuItem value="all">
+                    Toda la flota visible ({allVisibleMovilIds.length})
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              {!fullExportAdvanced ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexDirection: { xs: "column", sm: "row" },
+                  }}
+                >
+                  <FormControl size="small" sx={{ flex: 1, width: "100%", maxWidth: { sm: 300 } }}>
+                    <InputLabel id="ralenti-month-label">Seleccionar mes</InputLabel>
+                    <Select
+                      labelId="ralenti-month-label"
+                      value={fullExportMonth}
+                      label="Seleccionar mes"
+                      onChange={(event) => {
+                        setFullExportMonth(event.target.value);
+                        setFullExportRangeError("");
+                      }}
+                    >
+                      {LAST_6_MONTHS.map((month) => (
+                        <MenuItem key={month.value} value={month.value}>
+                          {month.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControlLabel
+                    sx={{ mr: 0, ml: { xs: 0, sm: "auto" }, whiteSpace: "nowrap" }}
+                    control={
+                      <Switch
+                        checked={fullExportAdvanced}
+                        onChange={(event) => {
+                          setFullExportAdvanced(event.target.checked);
+                          setFullExportRangeError("");
+                        }}
+                        size="small"
+                        color="success"
+                      />
+                    }
+                    label="Avanzado"
+                  />
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "nowrap",
+                    flexDirection: { xs: "column", sm: "row" },
+                  }}
+                >
+                  <DatePicker
+                    label="Fecha desde"
+                    value={fullExportFrom}
+                    onChange={(newValue) => {
+                      setFullExportFrom(newValue);
+                      setFullExportRangeError("");
+                    }}
+                    maxDate={todayDayjs}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                      },
+                    }}
+                    sx={{ flex: 1, minWidth: 0, maxWidth: { sm: 200 } }}
+                  />
+                  <DatePicker
+                    label="Fecha hasta"
+                    value={fullExportTo}
+                    onChange={(newValue) => {
+                      setFullExportTo(newValue);
+                      setFullExportRangeError("");
+                    }}
+                    disabled={!fullExportFrom}
+                    minDate={fullExportFrom || undefined}
+                    maxDate={todayDayjs}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                      },
+                    }}
+                    sx={{ flex: 1, minWidth: 0, maxWidth: { sm: 200 } }}
+                  />
+                  <FormControlLabel
+                    sx={{ mr: 0, ml: { xs: 0, sm: "auto" }, whiteSpace: "nowrap", flexShrink: 0 }}
+                    control={
+                      <Switch
+                        checked={fullExportAdvanced}
+                        onChange={(event) => {
+                          setFullExportAdvanced(event.target.checked);
+                          setFullExportRangeError("");
+                        }}
+                        size="small"
+                        color="success"
+                      />
+                    }
+                    label="Avanzado"
+                  />
+                </Box>
+              )}
+
+              {fullExportRangeError && <Alert severity="error">{fullExportRangeError}</Alert>}
+
+              <Typography sx={{ fontSize: "12px", color: "#666" }}>
+                En modo avanzado, el rango máximo permitido es de 1 mes (31 días).
+              </Typography>
+
+              <Typography sx={{ fontSize: "12px", color: "#2f3a2f", fontWeight: 600 }}>
+                Estimado de proceso: {formatEstimatedTime(fullExportPreview.estimatedSeconds)}
+                {` · ${fullExportPreview.movilesCount} móviles · ${fullExportPreview.days} día(s)`}
+              </Typography>
+            </Box>
+          </LocalizationProvider>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeFullExportModal}>Cancelar</Button>
+          <Button
+            variant="contained"
+            onClick={handleExportCompleto}
+            disabled={isFullExportSubmitDisabled}
+            startIcon={backgroundExport.running ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+          >
+            Ejecutar en segundo plano
           </Button>
         </DialogActions>
       </Dialog>

@@ -80,6 +80,29 @@ function getMonthKey(dateStr) {
   return normalizeDateForLocalTimestamp(dateStr).slice(0, 7);
 }
 
+function toYmdLocal(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildDayKeysBetween(fechaDesde, fechaHasta) {
+  const start = new Date(normalizeDateForLocalTimestamp(fechaDesde));
+  const end = new Date(normalizeDateForLocalTimestamp(fechaHasta));
+  const keys = [];
+
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
+
+  while (cursor.getTime() <= endDay.getTime()) {
+    keys.push(toYmdLocal(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return keys;
+}
+
 function buildMonthKeysBetween(fechaDesde, fechaHasta) {
   const start = new Date(`${getMonthKey(fechaDesde)}-01T00:00:00Z`);
   const end = new Date(`${getMonthKey(fechaHasta)}-01T00:00:00Z`);
@@ -132,6 +155,53 @@ export async function getMovilIdsWithIdleEventsInRange({
       WHERE ("act"."diaHora" - interval '3 hour') >= $1::timestamp
         AND ("act"."diaHora" - interval '3 hour') <= $2::timestamp
         AND UPPER(COALESCE("est"."tipoRegla", '')) IN ('IDLE_START', 'IDLE_REPORT', 'IDLE_END')
+    `;
+
+    const result = await query(sql, [fechaDesdeNormalized, fechaHastaNormalized]);
+    for (const row of result.rows) {
+      movilIdSet.add(Number(row.movil_id));
+      if (maxMoviles > 0 && movilIdSet.size >= maxMoviles) {
+        return [...movilIdSet];
+      }
+    }
+  }
+
+  return [...movilIdSet];
+}
+
+/**
+ * Obtiene IDs de móviles con cualquier actividad en el rango solicitado.
+ * Útil para detectar unidades actualmente reportando (no necesariamente en ralentí).
+ */
+export async function getMovilIdsWithAnyEventsInRange({
+  fechaDesde,
+  fechaHasta,
+  maxMoviles = 0,
+}) {
+  if (!fechaDesde || !fechaHasta) {
+    const error = new Error('fechaDesde y fechaHasta son requeridas');
+    error.status = 400;
+    throw error;
+  }
+
+  const fechaDesdeNormalized = normalizeDateForLocalTimestamp(fechaDesde);
+  const fechaHastaNormalized = normalizeDateForLocalTimestamp(fechaHasta);
+
+  const monthKeys = buildMonthKeysBetween(fechaDesdeNormalized, fechaHastaNormalized);
+  const movilIdSet = new Set();
+
+  for (const monthKey of monthKeys) {
+    const tableName = `ActividadDiaria${monthKey}`;
+
+    if (!(await tableExists(tableName))) {
+      continue;
+    }
+
+    const sql = `
+      SELECT DISTINCT "act"."movil_Movil_ID_OID"::int AS movil_id
+      FROM public."${tableName}" AS "act"
+      WHERE ("act"."diaHora" - interval '3 hour') >= $1::timestamp
+        AND ("act"."diaHora" - interval '3 hour') <= $2::timestamp
     `;
 
     const result = await query(sql, [fechaDesdeNormalized, fechaHastaNormalized]);
@@ -494,6 +564,22 @@ async function persistCoverage({ movilId, fechaDesde, fechaHasta }) {
   );
 }
 
+export async function markCoverageForRange({ movilId, fechaDesde, fechaHasta }) {
+  if (!movilId) {
+    const error = new Error('movilId es requerido');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!fechaDesde || !fechaHasta) {
+    const error = new Error('fechaDesde y fechaHasta son requeridas');
+    error.status = 400;
+    throw error;
+  }
+
+  await persistCoverage({ movilId, fechaDesde, fechaHasta });
+}
+
 async function purgeIntervalsInWindow({ movilId, fechaDesde, fechaHasta }) {
   const fechaDesdeNormalized = normalizeDateForLocalTimestamp(fechaDesde);
   const fechaHastaNormalized = normalizeDateForLocalTimestamp(fechaHasta);
@@ -654,4 +740,132 @@ export async function getPersistedRalentiById(idRalenti) {
   }
 
   return result.rows[0];
+}
+
+export async function getDailyIdleSummaryByMoviles(movilIds, fechaDesde, fechaHasta) {
+  if (!Array.isArray(movilIds) || movilIds.length === 0) {
+    const error = new Error('movilIds es requerida y debe ser un array no vacío');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!fechaDesde || !fechaHasta) {
+    const error = new Error('fechaDesde y fechaHasta son requeridas');
+    error.status = 400;
+    throw error;
+  }
+
+  const uniqueMovilIds = [...new Set(movilIds.map((value) => Number(value)).filter(Boolean))];
+  if (!uniqueMovilIds.length) {
+    return {
+      fechaDesde,
+      fechaHasta,
+      dayKeys: buildDayKeysBetween(fechaDesde, fechaHasta),
+      rows: [],
+    };
+  }
+
+  const fechaDesdeNormalized = normalizeDateForLocalTimestamp(fechaDesde);
+  const fechaHastaNormalized = normalizeDateForLocalTimestamp(fechaHasta);
+
+  const rangeStart = new Date(fechaDesdeNormalized);
+  const rangeEnd = new Date(fechaHastaNormalized);
+
+  if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime()) || rangeEnd < rangeStart) {
+    const error = new Error('Rango de fechas inválido');
+    error.status = 400;
+    throw error;
+  }
+
+  const dayKeys = buildDayKeysBetween(fechaDesdeNormalized, fechaHastaNormalized);
+
+  const initDailySeconds = () =>
+    Object.fromEntries(dayKeys.map((dayKey) => [dayKey, 0]));
+
+  const summaryByMovil = new Map(
+    uniqueMovilIds.map((movilId) => [
+      String(movilId),
+      {
+        movilId,
+        dailySeconds: initDailySeconds(),
+        totalSeconds: 0,
+      },
+    ])
+  );
+
+  const placeholders = uniqueMovilIds.map((_, idx) => `$${idx + 1}`).join(',');
+
+  const sql = `
+    SELECT
+      movil_id,
+      start_ts_utc,
+      end_ts_utc
+    FROM idle_intervals_v2
+    WHERE movil_id IN (${placeholders})
+      AND (start_ts_utc - interval '3 hour') <= $${uniqueMovilIds.length + 1}::timestamp
+      AND (end_ts_utc - interval '3 hour') >= $${uniqueMovilIds.length + 2}::timestamp
+    ORDER BY movil_id, start_ts_utc ASC
+  `;
+
+  const params = [...uniqueMovilIds, fechaHastaNormalized, fechaDesdeNormalized];
+  const result = await query(sql, params);
+
+  const rangeStartMs = rangeStart.getTime();
+  const rangeEndMs = rangeEnd.getTime();
+
+  for (const row of result.rows) {
+    const key = String(row.movil_id);
+    const summary = summaryByMovil.get(key);
+    if (!summary) {
+      continue;
+    }
+
+    const startLocalMs = new Date(row.start_ts_utc).getTime() - THREE_HOURS_MS;
+    const endLocalMs = new Date(row.end_ts_utc).getTime() - THREE_HOURS_MS;
+
+    if (!Number.isFinite(startLocalMs) || !Number.isFinite(endLocalMs)) {
+      continue;
+    }
+
+    const clippedStartMs = Math.max(startLocalMs, rangeStartMs);
+    const clippedEndMs = Math.min(endLocalMs, rangeEndMs);
+
+    if (clippedEndMs <= clippedStartMs) {
+      continue;
+    }
+
+    let cursorMs = clippedStartMs;
+    while (cursorMs < clippedEndMs) {
+      const cursorDate = new Date(cursorMs);
+      const dayStartMs = new Date(
+        cursorDate.getFullYear(),
+        cursorDate.getMonth(),
+        cursorDate.getDate(),
+        0,
+        0,
+        0,
+        0
+      ).getTime();
+      const dayEndMs = dayStartMs + (24 * 60 * 60 * 1000);
+      const segmentEndMs = Math.min(dayEndMs, clippedEndMs);
+      const segmentSeconds = Math.max(0, Math.floor((segmentEndMs - cursorMs) / 1000));
+
+      if (segmentSeconds > 0) {
+        const dayKey = toYmdLocal(cursorDate);
+        if (summary.dailySeconds[dayKey] !== undefined) {
+          summary.dailySeconds[dayKey] += segmentSeconds;
+          summary.totalSeconds += segmentSeconds;
+        }
+      }
+
+      cursorMs = segmentEndMs;
+    }
+  }
+
+  return {
+    fechaDesde: fechaDesdeNormalized,
+    fechaHasta: fechaHastaNormalized,
+    dayKeys,
+    rows: uniqueMovilIds.map((movilId) => summaryByMovil.get(String(movilId))),
+  };
 }
