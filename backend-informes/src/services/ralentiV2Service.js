@@ -285,6 +285,30 @@ function getEffectiveWindowCloseUtc(fechaHasta, openStartEventTsUtc) {
   return effectiveClose.toISOString();
 }
 
+function areSameSecond(tsA, tsB) {
+  const a = new Date(tsA).getTime();
+  const b = new Date(tsB).getTime();
+
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return false;
+  }
+
+  return Math.floor(a / 1000) === Math.floor(b / 1000);
+}
+
+function pushIntervalIfValid({ intervals, anomalies, interval, startEvent, endEvent }) {
+  if (areSameSecond(startEvent?.event_ts_utc, endEvent?.event_ts_utc)) {
+    anomalies.push({
+      type: 'same_second_interval_discarded',
+      startEvent,
+      endEvent,
+    });
+    return;
+  }
+
+  intervals.push(interval);
+}
+
 export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) {
   const sortedEvents = [...events].sort(
     (a, b) => new Date(a.event_ts_utc).getTime() - new Date(b.event_ts_utc).getTime()
@@ -302,8 +326,7 @@ export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) 
         openStartEvent = event;
         idleState = 'IDLE_ON';
       } else if (event.event_type === 'IDLE_REPORT') {
-        openStartEvent = event;
-        idleState = 'IDLE_ON';
+        anomalies.push({ type: 'orphan_report', event });
       } else if (event.event_type === 'IDLE_END') {
         anomalies.push({ type: 'orphan_end', event });
       }
@@ -318,15 +341,19 @@ export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) 
       const buildMode = openStartEvent.event_type === 'IDLE_REPORT' ? 'synthetic_report' : 'explicit';
       const anomalyFlags = openStartEvent.event_type === 'IDLE_REPORT' ? ['report_without_start'] : [];
 
-      intervals.push(
-        buildInterval({
+      pushIntervalIfValid({
+        intervals,
+        anomalies,
+        interval: buildInterval({
           movilId,
           startEvent: openStartEvent,
           endEvent: event,
           buildMode,
           anomalies: anomalyFlags,
-        })
-      );
+        }),
+        startEvent: openStartEvent,
+        endEvent: event,
+      });
 
       openStartEvent = null;
       idleState = 'IDLE_OFF';
@@ -334,15 +361,19 @@ export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) 
     }
 
     if (event.event_type === 'IDLE_START') {
-      intervals.push(
-        buildInterval({
+      pushIntervalIfValid({
+        intervals,
+        anomalies,
+        interval: buildInterval({
           movilId,
           startEvent: openStartEvent,
           endEvent: event,
           buildMode: 'implicit_close_next_start',
           anomalies: ['missing_end'],
-        })
-      );
+        }),
+        startEvent: openStartEvent,
+        endEvent: event,
+      });
 
       openStartEvent = event;
       idleState = 'IDLE_ON';
@@ -355,15 +386,19 @@ export function computeIdleIntervalsFromEvents(events, { movilId, fechaHasta }) 
       event_ts_utc: getEffectiveWindowCloseUtc(fechaHasta, openStartEvent.event_ts_utc),
     };
 
-    intervals.push(
-      buildInterval({
+    pushIntervalIfValid({
+      intervals,
+      anomalies,
+      interval: buildInterval({
         movilId,
         startEvent: openStartEvent,
         endEvent: endWindowEvent,
         buildMode: 'window_close',
         anomalies: ['missing_end'],
-      })
-    );
+      }),
+      startEvent: openStartEvent,
+      endEvent: endWindowEvent,
+    });
   }
 
   return {
