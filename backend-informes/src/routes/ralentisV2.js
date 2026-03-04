@@ -98,8 +98,8 @@ async function getCoveredMovilIds({ movilIds, fechaDesde, fechaHasta }) {
     SELECT movil_id
     FROM idle_intervals_v2_coverage
     WHERE movil_id = ANY($1::int[])
-      AND from_ts_utc = $2::timestamptz
-      AND to_ts_utc = $3::timestamptz
+      AND from_ts_utc <= $3::timestamptz
+      AND to_ts_utc >= $2::timestamptz
       AND status = 'ok'
   `;
 

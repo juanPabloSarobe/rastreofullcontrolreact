@@ -211,7 +211,7 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
   const openCustomModal = () => {
     setCustomError("");
     setCustomFrom(selectedRange.from ? dayjs(selectedRange.from) : null);
-    setCustomTo(selectedRange.to ? dayjs(selectedRange.to) : null);
+    setCustomTo(null);
     setCustomModalOpen(true);
     closeRangeMenu();
   };
@@ -223,31 +223,15 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
 
   const applyCustomRange = () => {
     if (!customFrom) {
-      setCustomError("Debe seleccionar primero la fecha desde.");
+      setCustomError("Debe seleccionar un día.");
       return;
     }
 
-    if (!customTo) {
-      setCustomError("Debe seleccionar la fecha hasta.");
-      return;
-    }
-
-    if (customTo.isBefore(customFrom, "day")) {
-      setCustomError("La fecha hasta no puede ser menor que la fecha desde.");
-      return;
-    }
-
-    const fromYmd = customFrom.format("YYYY-MM-DD");
-    const toYmd = customTo.format("YYYY-MM-DD");
-    const rangeDays = getRangeDays(fromYmd, toYmd);
-    if (rangeDays > MAX_RANGE_DAYS) {
-      setCustomError("El rango no puede superar 7 días.");
-      return;
-    }
+    const selectedYmd = customFrom.format("YYYY-MM-DD");
 
     setSelectedRange({
-      from: fromYmd,
-      to: toYmd,
+      from: selectedYmd,
+      to: selectedYmd,
       label: "Personalizado",
     });
     closeCustomModal();
@@ -361,8 +345,8 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
       );
     }
 
-    const fechaDesde = `${from}T00:00:00`;
-    const fechaHasta = `${to}T23:59:59`;
+    const fechaDesde = `${from}T00:00:00Z`;
+    const fechaHasta = `${to}T23:59:59Z`;
     const startedAt = Date.now();
 
     updateBackgroundExport({
@@ -650,8 +634,8 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
     if (!open) return;
     if (!queryUnits.length) return;
 
-    const fechaDesde = `${selectedRange.from}T00:00:00`;
-    const fechaHasta = `${selectedRange.to}T23:59:59`;
+    const fechaDesde = `${selectedRange.from}T00:00:00Z`;
+    const fechaHasta = `${selectedRange.to}T23:59:59Z`;
 
     fetchRalentisPorMoviles(queryUnits, fechaDesde, fechaHasta).catch(() => {
       // El error se expone por el hook en `error`
@@ -897,7 +881,6 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
         <MenuItem onClick={selectToday}>Hoy</MenuItem>
         <MenuItem onClick={selectYesterday}>Ayer</MenuItem>
         <MenuItem onClick={selectDayBeforeYesterday}>Anteayer</MenuItem>
-        <MenuItem onClick={selectLast3Days}>3 días</MenuItem>
         <MenuItem onClick={openCustomModal}>Personalizado</MenuItem>
       </Menu>
 
@@ -917,36 +900,17 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
       </Menu>
 
       <Dialog open={customModalOpen} onClose={closeCustomModal} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ pb: 1 }}>Rango personalizado</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>Seleccionar día</DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
           <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 0.5 }}>
               <DatePicker
-                label="Fecha desde"
+                label="Día"
                 value={customFrom}
                 onChange={(newValue) => {
                   setCustomFrom(newValue);
-                  setCustomTo(null);
                   setCustomError("");
                 }}
-                maxDate={todayDayjs}
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    fullWidth: true,
-                  },
-                }}
-              />
-
-              <DatePicker
-                label="Fecha hasta"
-                value={customTo}
-                onChange={(newValue) => {
-                  setCustomTo(newValue);
-                  setCustomError("");
-                }}
-                disabled={!customFrom}
-                minDate={customFrom || undefined}
                 maxDate={todayDayjs}
                 slotProps={{
                   textField: {
@@ -957,10 +921,6 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
               />
 
               {customError && <Alert severity="error">{customError}</Alert>}
-
-              <Typography sx={{ fontSize: "12px", color: "#666" }}>
-                Máximo permitido: 7 días entre fecha desde y fecha hasta.
-              </Typography>
             </Box>
           </LocalizationProvider>
         </DialogContent>

@@ -35,9 +35,9 @@ function isValidMonth(month) {
 
 function getMonthRange(month) {
   const [year, monthNum] = month.split('-').map(Number);
-  const start = `${year}-${String(monthNum).padStart(2, '0')}-01T00:00:00`;
+  const start = `${year}-${String(monthNum).padStart(2, '0')}-01T00:00:00Z`;
   const endDate = new Date(year, monthNum, 0);
-  const end = `${year}-${String(monthNum).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}T23:59:59`;
+  const end = `${year}-${String(monthNum).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}T23:59:59Z`;
   return { start, end };
 }
 
