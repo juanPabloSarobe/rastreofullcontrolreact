@@ -2,9 +2,15 @@
   "name": "fullcontrol-backend-informes",
   "description": "Backend para procesamiento de informes - FullControl GPS",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=18.18.0",
+    "npm": ">=9.0.0"
+  },
+  "packageManager": "npm@10",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
+    "check:runtime": "node scripts/check-runtime.mjs",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "lint": "eslint .",

@@ -32,6 +32,18 @@ API RESTful para generación y gestión de informes en FullControl GPS. Diseñad
 - **Secrets**: AWS Secrets Manager
 - **ORM**: pg (driver nativo)
 
+## Política de versiones (obligatoria)
+
+- **Node mínimo**: `18.18.0`
+- **npm mínimo**: `9.0.0`
+- Verificación local/servidor:
+
+```bash
+npm run check:runtime
+```
+
+Si este comando falla, **no desplegar** hasta alinear runtime. Esto evita errores por features modernas (ejemplo: APIs no disponibles en Node antiguos).
+
 ## Estructura del Proyecto
 
 ```
@@ -207,10 +219,62 @@ USE_AWS_SECRETS=true
 ## Scripts
 
 ```bash
+npm run check:runtime  # Valida versiones mínimas de node/npm
 npm start         # Inicia en production
 npm run dev       # Inicia con hot reload
 npm run lint      # Ejecuta eslint
 ```
+
+## Flujo recomendado para subir cambios de backend (sin romper producción)
+
+### 1) Preparar release
+
+```bash
+git checkout master
+git pull
+npm ci
+npm run check:runtime
+npm run lint
+```
+
+### 2) Deploy en servidor en modo seguro (shadow)
+
+```bash
+# en la EC2 de producción
+cd /opt/deploy/rastreofullcontrolreact/backend-informes
+git pull
+npm ci
+npm run check:runtime
+```
+
+Actualizar `.env` según release y levantar backend nuevo en puerto de shadow (ejemplo `3003`) sin tocar backend estable (`3001`).
+
+### 3) Smoke tests antes de enrutar tráfico
+
+```bash
+curl -sS http://127.0.0.1:3003/servicio/v2/health
+IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+curl -sS "http://$IP:3003/servicio/v2/health"
+```
+
+### 4) Cutover controlado por ALB
+
+- Crear/usar target group dedicado al puerto nuevo (`3003`).
+- Esperar estado `Healthy`.
+- Agregar regla de host en `HTTPS:443`:
+  - `Host=api-v2.fullcontrolgps.com.ar` -> target group nuevo.
+- No borrar regla/target group legacy durante la ventana inicial.
+
+### 5) Validación post-corte
+
+```bash
+curl -sk https://api-v2.fullcontrolgps.com.ar/servicio/v2/health
+curl -sk "https://api-v2.fullcontrolgps.com.ar/api/ralentis-v2/all?limit=1"
+```
+
+### 6) Rollback express
+
+Si hay incidente, remover/deshabilitar la regla host nueva de ALB para volver al backend anterior.
 
 ## Environment Variables
 
@@ -278,6 +342,7 @@ El backend incluye monitoring integrado:
 git clone ...
 cd backend-informes
 npm install
+npm run check:runtime
 
 # Configura .env
 nano .env
