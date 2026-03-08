@@ -47,7 +47,7 @@ const UserManualModal = ({ open, onClose }) => {
   const [selectedSection, setSelectedSection] = useState("inicio");
   const [expandedSections, setExpandedSections] = useState({
     funciones: true,
-    reportes: false,
+    reportes: true,
     soporte: false,
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -124,6 +124,7 @@ const UserManualModal = ({ open, onClose }) => {
       children: [
         { id: "tipos-reportes", title: "Tipos de Reportes" },
         { id: "reporte-posicion", title: "⭐ Reporte de Posición Actual" },
+        { id: "ralenti-por-movil", title: "📊 Ralentí por Movil" },
         { id: "historico-avanzado", title: "Histórico Avanzado" },
         { id: "informes-parciales", title: "Informes Parciales" },
         { id: "certificados", title: "Certificados" },
@@ -2897,6 +2898,166 @@ const UserManualModal = ({ open, onClose }) => {
           </Box>
         );
 
+      case "ralenti-por-movil":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ fontWeight: "bold", color: "green" }}
+            >
+              📊 Ralentí por Movil
+            </Typography>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  🎯 ¿Qué es el Ralentí?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El ralentí es el tiempo que el motor del vehículo funciona mientras el auto está detenido. Esta información es valiosa para detectar malas prácticas operacionales, posibles problemas mecánicos y analizar eficiencia de combustible.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  ✅ ¿Para qué sirve este reporte?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Le permite monitorear y analizar el tiempo de ralentí de sus vehículos, identificando oportunidades para mejorar el rendimiento operacional y reducir consumo de combustible y desgaste del motor.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📋 Cómo Usar Ralentí por Movil
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Acceder:</strong> Haga clic en el menú ☰ y seleccione "Ralentí por movil"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Seleccionar unidades:</strong> Elija los vehículos de los cuales desea analizar el ralentí (se pueden seleccionar múltiples vehículos)
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Elegir período:</strong> Seleccione la fecha a consultar para ver un gráfico por día del ralentí de cada vehículo.
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Visualizar datos:</strong> Vea gráficos y tablas con el tiempo de ralentí por vehículo y por día
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Exportar:</strong> Descargue el informe en Excel para análisis más detallados
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📊 Información que Obtiene
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Datos Generales:
+                    </Typography>
+                    <Typography variant="body2">• Tiempo total de ralentí</Typography>
+                    <Typography variant="body2">
+                      • Tiempo de ralentí por día y por vehículo
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Desglose Temporal:
+                    </Typography>
+                    <Typography variant="body2">• Ralentí por día</Typography>
+                    <Typography variant="body2">
+                      • Comparativa entre vehículos
+                    </Typography>
+                    <Typography variant="body2">
+                      • Evolución en el período
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  💾 Opciones de Exportación
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Exportar ralentí actual:</strong> Descarga los datos más recientes de ralentí en Excel
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Informe ralentí completo:</strong> Genera un reporte detallado con hasta 31 días de historial en un solo archivo
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Formato Excel:</strong> Compatible con Microsoft Excel, Google Sheets y LibreOffice para análisis personalizados
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "rgba(0, 128, 0, 0.1)",
+                border: "1px solid green",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  💡 Consejos Prácticos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Identifique patrones:</strong> Compare diferentes vehículos para distinguir conductores eficientes
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Mejore operaciones:</strong> Reduza ralentís innecesarios para ahorrar combustible
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Intervención temprana:</strong> Ralentís anormales pueden indicar problemas mecánicos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Análisis histórico:</strong> Use la exportación completa para tendencias a largo plazo
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Seguimiento:</strong> Revise regularmente para mantener flota optimizada
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
       case "historico-avanzado":
         return (
           <Box>
@@ -3034,6 +3195,344 @@ const UserManualModal = ({ open, onClose }) => {
                 <Typography variant="body2" paragraph>
                   • <strong>Tiempo de descarga:</strong> Depende del período
                   seleccionado, sea paciente con períodos largos
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "informes-parciales":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ fontWeight: "bold", color: "green" }}
+            >
+              📊 Informes Parciales
+            </Typography>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  🎯 ¿Qué son los Informes Parciales?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Son reportes específicos por contrato que le permiten descargar datos de períodos seleccionados (últimos 6 meses o rango personalizado) en formato Excel para análisis detallado.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📋 Cómo Generar un Informe Parcial
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Acceder al menú:</strong> Haga clic en el menú ☰ y seleccione "Informes Parciales"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Seleccionar contrato:</strong> Elija el contrato del cual desea el informe
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Elegir período:</strong> Seleccione uno de los últimos 6 meses o use el modo avanzado para fechas personalizadas
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Descargar:</strong> Haga clic en "Descargar" para obtener el archivo Excel
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📈 Contenido del Informe
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Datos Operacionales:
+                    </Typography>
+                    <Typography variant="body2">• Movimientos por día</Typography>
+                    <Typography variant="body2">
+                      • Kilómetros recorridos
+                    </Typography>
+                    <Typography variant="body2">
+                      • Horas de operación
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Información de Flotas:
+                    </Typography>
+                    <Typography variant="body2">• Vehículos por contrato</Typography>
+                    <Typography variant="body2">
+                      • Resumen de actividades
+                    </Typography>
+                    <Typography variant="body2">
+                      • Datos consolidados
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "rgba(0, 128, 0, 0.1)",
+                border: "1px solid green",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  💡 Consejos Útiles
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Modo Avanzado:</strong> Use fechas personalizadas para análisis más específicos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Múltiples Descargas:</strong> Puede descargar varios períodos y consolidar en un solo folder
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>Formato Compatible:</strong> Los archivos Excel son editables para sus propios análisis
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "certificados":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ fontWeight: "bold", color: "green" }}
+            >
+              📜 Certificados de Funcionamiento
+            </Typography>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  ✅ ¿Para qué sirve un Certificado?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  El Certificado de Funcionamiento es un documento oficial que comprueba que su vehículo está equipado con GPS y funcionando correctamente. Ideal para presentar ante aseguradoras, clientes, rentas o durante inspecciones.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📝 Cómo Generar un Certificado
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Seleccionar vehículo:</strong> En el menú ☰, haga clic en "Certificado de Funcionamiento"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Seleccionar unidad:</strong> Seleccione el vehículo para el cual desea el certificado
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Descargar PDF:</strong> El certificado se genera automáticamente en formato PDF listo para imprimir
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📋 ¿Qué incluye el Certificado?
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Datos del Vehículo:
+                    </Typography>
+                    <Typography variant="body2">• Patente</Typography>
+                    <Typography variant="body2">• Marca y modelo</Typography>
+                    <Typography variant="body2">• Empresa propietaria</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Información del Equipo:
+                    </Typography>
+                    <Typography variant="body2">• ID del GPS</Typography>
+                    <Typography variant="body2">• Fecha de emisión</Typography>
+                    <Typography variant="body2">• Firma oficial</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "rgba(0, 128, 0, 0.1)",
+                border: "1px solid green",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  💡 Información Importante
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • El certificado es válido únicamente si el vehículo se encuentra reportando posición en tiempo real
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Puede descargar múltiples certificados para todos sus vehículos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • El documento es firmado digitalmente y tiene validez legal
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        );
+
+      case "flotas":
+        return (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ fontWeight: "bold", color: "green" }}
+            >
+              🚗 Gestión de Flotas
+            </Typography>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  📦 ¿Qué son las Flotas?
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Las flotas son agrupaciones personalizadas de vehículos que le permiten organizar mejor su parque vehicular por tipo, ruta, departamento o el criterio que usted prefiera.
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  ⚙️ Cómo Gestionar sus Flotas
+                </Typography>
+                <Box component="ol" sx={{ pl: 2 }}>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Acceder:</strong> Haga clic en el menú ☰ y seleccione "Gestión de Flotas"
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Crear flota:</strong> Use el botón "+" para crear una nueva flota con nombre personalizado
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Agregar vehículos:</strong> Seleccione una flota y agregue vehículos disponibles
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2" paragraph>
+                      <strong>Organizar:</strong> Mueva vehículos entre flotas usando los botones de flecha
+                    </Typography>
+                  </li>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  💼 Ejemplos de Flotas
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ p: 1.5, bgcolor: "rgba(0, 128, 0, 0.05)", borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Por Tipo:
+                    </Typography>
+                    <Typography variant="body2">• Camiones</Typography>
+                    <Typography variant="body2">• Autos</Typography>
+                    <Typography variant="body2">• Motos</Typography>
+                  </Box>
+                  <Box sx={{ p: 1.5, bgcolor: "rgba(0, 128, 0, 0.05)", borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Por Zona:
+                    </Typography>
+                    <Typography variant="body2">• Neuquén (Capital)</Typography>
+                    <Typography variant="body2">• Interior</Typography>
+                    <Typography variant="body2">• Litoral</Typography>
+                  </Box>
+                  <Box sx={{ p: 1.5, bgcolor: "rgba(0, 128, 0, 0.05)", borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: "green" }}>
+                      Por Departamento:
+                    </Typography>
+                    <Typography variant="body2">• Ventas</Typography>
+                    <Typography variant="body2">• Distribución</Typography>
+                    <Typography variant="body2">• Servicio Técnico</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card
+              sx={{
+                bgcolor: "rgba(0, 128, 0, 0.1)",
+                border: "1px solid green",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "green" }}>
+                  💡 Ventajas de Usar Flotas
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Mayor claridad: Vea de un vistazo qué vehículos pertenecen a cada grupo
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Facilita análisis: Compare rendimiento entre grupos de vehículos
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Mejor organización: Asigne responsabilidades por flota
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • Flexible: Reorganice sus flotas según necesidades
                 </Typography>
               </CardContent>
             </Card>

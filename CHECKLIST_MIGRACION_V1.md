@@ -63,7 +63,7 @@ Crear un sistema de migración gradual de endpoints del backend, permitiendo pro
   - Métodos: `fetchRalentisPorPatentes()`, `fetchAllRalentis()`, `fetchRalentiById()`
 
 - ✅ **Componente de Testing**
-  - Archivo: `src/components/RalentisTester.jsx`
+
   - Características:
     - Formulario para ingresar patentes y fechas
     - Tabla de resultados

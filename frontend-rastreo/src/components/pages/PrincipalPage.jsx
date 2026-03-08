@@ -41,7 +41,6 @@ import PaymentAlertModal from "../common/PaymentAlertModal";
 import VersionIndicator from "../common/VersionIndicator";
 import DevSesion from "../dev/DevSesion";
 import RalentisDetail from "../common/RalentisDetail";
-import RalentisTester from "../tools/RalentisTester";
 // Solo para desarrollo
 import UpdateTester from "../dev/UpdateTester";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -439,10 +438,6 @@ const PrincipalPage = () => {
               <MenuButton
                 selectedUnit={selectedUnit}
                 onOpenRalentisDetail={() => setShowRalentisDetail(true)}
-                onOpenRalentisTester={() => {
-                  setShowRalentisDetail(false);
-                  dispatch({ type: "SET_VIEW_MODE", payload: "ralentiTester" });
-                }}
               />
               <RalentisDetail
                 open={showRalentisDetail}
@@ -450,10 +445,7 @@ const PrincipalPage = () => {
                 markersData={markersData}
                 onSelectMovil={handleSelectUnitFromRalenti}
               />
-              {state.viewMode === "ralentiTester" ? (
-                <RalentisTester />
-              ) : (
-                <>
+              <>
                   {state.viewMode === "rastreo" && <UserChip />}
                   {state.viewMode === "rastreo" &&
                     liteData?.GPS &&
@@ -552,7 +544,6 @@ const PrincipalPage = () => {
                     />
                   )}
                 </>
-              )}
             </Box>
           </Box>
         </Box>

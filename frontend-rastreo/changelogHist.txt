@@ -1,5 +1,11 @@
 📅 HISTORIAL DE ACTUALIZACIONES - FullControl GPS
 
+📅 Septiembre 2025 - Versión 2025.09
+
+✅ NUEVO: SISTEMA DE NOTIFICACIONES WHATSAPP - Sistema completo de notificaciones por WhatsApp para alertas de monitoreo. Envío de mensajes automáticos para alertas de ralentí, infracciones y conducción agresiva.
+✅ NUEVO: HISTORICO POR CONDUCTOR - Historial de recorridos filtrado por conductor. Esta funcionalidad permite rastrear qué vehiculos manejó un conductor en un período determinado.
+✅ NUEVO: SELECCION POR AREA - Nueva funcionalidad para seleccionar múltiples unidades dibujando un rectángulo en el mapa.
+
 📅 Agosto 2025 - Versión 2025.08
 ✅ NUEVO: ALERTA DE CONDUCCION AGRESIVA - Informe en tiempo real de conductores con comportamiento de manejo agresivo. Si bien no cometen infracciones, conducen sobrepasando el preaviso de velocidad reiteradas veces.
 ✅ NUEVO: SELECCION POR AREA - Nueva funcionalidad para seleccionar múltiples unidades dibujando un rectángulo en el mapa.

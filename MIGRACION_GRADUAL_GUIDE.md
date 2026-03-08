@@ -51,8 +51,6 @@ src/
 │   └── ralentiService.js     # ✨ Servicio de ralentís
 ├── hooks/
 │   └── useRalentis.js        # ✨ Hook para tomar datos de ralentís
-├── components/
-│   └── RalentisTester.jsx    # ✨ Componente de testing
 └── ...
 ```
 
@@ -153,8 +151,8 @@ npm run dev    # http://localhost:5173
 Una vez que todo está corriendo:
 
 1. Abrir `http://localhost:5173`
-2. Importar componente `RalentisTester` en una página
-3. Usar la interfaz para buscar ralentís
+2. Testear los nuevos endpoints con las herramientas del navegador
+3. Usar la consola para validar que todo funciona
 
 ## 📦 Despliegue a Producción
 
@@ -203,8 +201,7 @@ VITE_API_OLD_BACKEND=https://api.tudominio.com
    - POST src/routes/ralentis.js
 2. Crear servicio en frontend ✅
    - POST src/services/ralentiService.js
-3. Crear components/hooks para testing ✅
-   - POST src/components/RalentisTester.jsx
+3. Testear con herramientas del navegador ✅
 ```
 
 **Paso 2: Testing Local**

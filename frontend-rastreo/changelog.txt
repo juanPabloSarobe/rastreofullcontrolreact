@@ -1,5 +1,22 @@
-📅 Septiembre 2025 - Versión 2025.09
+📅 Marzo 2026 - Versión 2026.03
 
-✅ NUEVO: SISTEMA DE NOTIFICACIONES WHATSAPP - Sistema completo de notificaciones por WhatsApp para alertas de monitoreo. Envío de mensajes automáticos para alertas de ralentí, infracciones y conducción agresiva.
-✅ NUEVO: HISTORICO POR CONDUCTOR - Historial de recorridos filtrado por conductor. Esta funcionalidad permite rastrear qué vehiculos manejó un conductor en un período determinado.
-✅ NUEVO: SELECCION POR AREA - Nueva funcionalidad para seleccionar múltiples unidades dibujando un rectángulo en el mapa.
+✅ NUEVO: RALENTI POR MOVIL - Panel dedicado para analizar y exportar tiempo de ralentí por vehículo. Incluye visualización de gráficos, tablas por período, y descarga en Excel.
+
+🔧 MEJORA: Actualización completa del Manual de Usuario con nuevas secciones:
+   • Ralentí por Movil: análisis de tiempo de ralentí
+   • Informes Parciales: reportes por contrato
+   • Certificados: documentos de funcionamiento
+   • Gestión de Flotas: organización de vehículos
+
+⚡ OPTIMIZACION: Interfaz del menú mejorada.
+
+� BACKEND - Migración a Node.js moderno y estabilización de ralentís V2:
+   • Actualización tecnológica: Migración de Node v16 → v20 (soporte actualizado hasta 2026)
+   • Independencia de versiones antiguas: librería Express actualizada con seguridad mejorada
+   • Arquitectura escalable: Base preparada para incorporar nuevas herramientas sin limitaciones
+   • Performance optimizado: Queries a base de datos con caché inteligente
+   • Estabilización ralentís: Autorun cada 4 minutos, validación robusta de cobertura
+   • Recuperación histórica: Backfill completado para toda la flota (Julio 2025 - Presente)
+   • Despliegues ágiles: Estructura de código preparada para updates frecuentes y seg fácil
+
+

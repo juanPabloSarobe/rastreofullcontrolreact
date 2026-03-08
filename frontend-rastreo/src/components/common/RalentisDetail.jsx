@@ -689,7 +689,7 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
               textAlign: "left",
             }}
           >
-            Detalle de Ralenti
+            Ralentí por movil
           </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -1064,11 +1064,6 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
 
               <Typography sx={{ fontSize: "12px", color: "#666" }}>
                 En modo avanzado, el rango máximo permitido es de 1 mes (31 días).
-              </Typography>
-
-              <Typography sx={{ fontSize: "12px", color: "#2f3a2f", fontWeight: 600 }}>
-                Estimado de proceso: {formatEstimatedTime(fullExportPreview.estimatedSeconds)}
-                {` · ${fullExportPreview.movilesCount} móviles · ${fullExportPreview.days} día(s)`}
               </Typography>
             </Box>
           </LocalizationProvider>

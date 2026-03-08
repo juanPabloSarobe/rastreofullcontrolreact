@@ -60,7 +60,7 @@ GET  /api/ralentis/id/:idRalenti      # Por ID específico
 - **Facilita**: Uso en componentes con state management
 
 **Componente de Testing**
-- **Archivo**: `src/components/RalentisTester.jsx`
+
 - **Características**:
   - Formulario para ingresar búsqueda
   - Tabla de resultados con datadisplay
@@ -210,7 +210,7 @@ ENRUTAMIENTO DINÁMICO (apiConfig.js):
 | **Frontend Service** | ✅ Listo | ralentiService.js funcional |
 | **Frontend Hook** | ✅ Listo | useRalentis.js con state |
 | **A/B Testing** | ✅ Listo | Estructura preparada |
-| **Componente Testing** | ✅ Listo | RalentisTester.jsx completo |
+
 | **Scripts Deploy** | ✅ Listo | Automatizados y documentados |
 | **Documentación** | ✅ Listo | 5 documentos + comentarios |
 | **Testing Local** | 🔄 Próximo | Cuando usuario ejecute `npm run dev` |

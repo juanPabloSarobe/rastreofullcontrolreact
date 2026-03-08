@@ -8,6 +8,7 @@ import EventIcon from "@mui/icons-material/Event";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HistoryIcon from "@mui/icons-material/History";
 import SettingsIcon from "@mui/icons-material/Settings";
+import DepartureBoardIcon from "@mui/icons-material/DepartureBoard";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SsidChartIcon from "@mui/icons-material/SsidChart";
 import ListAltIcon from "@mui/icons-material/ListAlt"; // Nuevo icono para Flotas
@@ -39,7 +40,7 @@ const openExternalUrl = (url) => {
   window.open(url, "_blank");
 };
 
-const MenuButton = ({ selectedUnit, onOpenRalentisDetail, onOpenRalentisTester }) => {
+const MenuButton = ({ selectedUnit, onOpenRalentisDetail }) => {
   const { state, dispatch } = useContextValue();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -250,15 +251,8 @@ const MenuButton = ({ selectedUnit, onOpenRalentisDetail, onOpenRalentisTester }
       disabled: isMenuRestricted,
     },
     {
-      icon: <HelpIcon fontSize="small" />,
-      label: "Manual de Usuario",
-      show: true, // Mostrar a todos los usuarios
-      onClick: openUserManual, // Nuevo manejador
-      disabled: isMenuRestricted,
-    },
-    {
-      icon: <HistoryIcon fontSize="small" />,
-      label: "Detalle de Ralentí",
+      icon: <DepartureBoardIcon fontSize="small" />,
+      label: "Ralentí por movil",
       show: !isMobile, // Ocultar en mobile
       onClick: () => {
         onOpenRalentisDetail?.();
@@ -267,19 +261,13 @@ const MenuButton = ({ selectedUnit, onOpenRalentisDetail, onOpenRalentisTester }
       disabled: isMenuRestricted,
     },
     {
-      icon: <HistoryIcon fontSize="small" />,
-      label: "Ralentí Tester",
-      show: true,
-      onClick: () => {
-        if (onOpenRalentisTester) {
-          onOpenRalentisTester();
-        } else {
-          dispatch({ type: "SET_VIEW_MODE", payload: "ralentiTester" });
-        }
-        handleClose();
-      },
+      icon: <HelpIcon fontSize="small" />,
+      label: "Manual de Usuario",
+      show: true, // Mostrar a todos los usuarios
+      onClick: openUserManual, // Nuevo manejador
       disabled: isMenuRestricted,
     },
+
     {
       icon: <LogoutIcon fontSize="small" />,
       label: "Cerrar Sesión",

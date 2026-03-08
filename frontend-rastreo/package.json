@@ -1,10 +1,11 @@
 {
   "name": "rastreofullcontrolreact",
   "private": true,
-  "version": "0.0.0",
+  "version": "2026.03",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "prod": "vite --mode production --host 0.0.0.0",
     "prebuild": "node ./update-version.js",
     "build": "vite build",
     "lint": "eslint .",

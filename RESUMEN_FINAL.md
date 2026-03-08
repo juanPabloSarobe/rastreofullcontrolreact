@@ -23,7 +23,6 @@
 - ✅ `frontend-rastreo/src/config/apiConfig.js` - **Orchestador de APIs** (clave)
 - ✅ `frontend-rastreo/src/services/ralentiService.js` - Servicio ralentís
 - ✅ `frontend-rastreo/src/hooks/useRalentis.js` - Hook React
-- ✅ `frontend-rastreo/src/components/RalentisTester.jsx` - Componente testing
 - ✅ `frontend-rastreo/.env.development` - Variables desarrollo
 - ✅ `frontend-rastreo/.env.production` - Variables producción
 

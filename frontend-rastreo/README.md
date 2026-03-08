@@ -8,6 +8,7 @@
 ```bash
 npm install
 npm run dev  # → http://localhost:5177/
+npm run prod # → usa .env.production (backend productivo)
 ```
 
 **📚 Documentación completa:** [`DOCUMENTACION.md`](./DOCUMENTACION.md)
