@@ -1,5 +1,9 @@
 # 🚀 Scripts de Despliegue a Producción
 
+> Importante: este README describe scripts historicos. La operacion real actual en produccion usa Apache (`httpd`) y requiere validaciones adicionales para evitar sobrescrituras en `/var/www/html`.
+>
+> Runbook operativo actualizado: `DEPLOY_PRODUCCION_RUNBOOK.md`
+
 Este directorio contiene los scripts automáticos para desplegar la aplicación a EC2.
 
 ## 📋 Archivos
