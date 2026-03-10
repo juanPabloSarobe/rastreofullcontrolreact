@@ -866,6 +866,7 @@ const RalentisDetail = ({ open, onClose, markersData = [], onSelectMovil }) => {
                 data={Array.isArray(ralentisData) ? ralentisData : []}
                 range={selectedRange}
                 unitCatalog={markersData}
+                conductoresCatalog={state.conductores}
                 onSelectMovil={handleSelectMovilFromRalentis}
               />
             )}

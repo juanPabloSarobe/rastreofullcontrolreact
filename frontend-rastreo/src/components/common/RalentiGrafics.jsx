@@ -60,7 +60,13 @@ const formatDuration = (startDate, endDate) => {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
-const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) => {
+const RalentiGrafics = ({
+  data = [],
+  range,
+  unitCatalog = [],
+  conductoresCatalog = [],
+  onSelectMovil,
+}) => {
   const {
     sortedRows,
     ticks,
@@ -74,6 +80,15 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
     const patenteByMovil = new Map();
     const vehicleInfoByPatente = new Map();
     const conductorNameByPersona = new Map();
+
+    conductoresCatalog.forEach((conductor) => {
+      const personaId = conductor?.idCon;
+      const nombre = conductor?.nombre;
+      if (personaId !== undefined && personaId !== null && nombre) {
+        conductorNameByPersona.set(String(personaId), nombre);
+      }
+    });
+
     unitCatalog.forEach((unit) => {
       if (unit?.Movil_ID === undefined || unit?.Movil_ID === null) return;
       const patente = unit.patente || `Móvil ${unit.Movil_ID}`;
@@ -184,7 +199,7 @@ const RalentiGrafics = ({ data = [], range, unitCatalog = [], onSelectMovil }) =
       totalMinutes: totalMinutesRaw,
       hourlyStepPct: hourWidthPct,
     };
-  }, [data, range, unitCatalog]);
+  }, [data, range, unitCatalog, conductoresCatalog]);
 
   if (sortedRows.length === 0) {
     return (
