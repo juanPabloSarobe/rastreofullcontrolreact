@@ -5,6 +5,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import axios from 'axios';
 
 import { initializePool, closePool } from './db/pool.js';
 import { getSecrets } from './config/secrets.js';
@@ -64,16 +65,16 @@ function startRalentisV2AutoJobs(port) {
 
   const runActive = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/ralentis-v2/reconstruir-activos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ persist: true }),
-      });
+      const response = await axios.post(
+        `${baseUrl}/api/ralentis-v2/reconstruir-activos`,
+        { persist: true },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+      );
 
-      const payload = await response.json();
-      if (!response.ok) {
+      const payload = response.data;
+      if (!response || response.status < 200 || response.status >= 300) {
         logger.warn('Job activo-only respondió con error', {
-          status: response.status,
+          status: response?.status,
           payload,
         });
         return;
@@ -93,10 +94,9 @@ function startRalentisV2AutoJobs(port) {
       const now = new Date();
       const from = new Date(now.getTime() - retroHours * 60 * 60 * 1000);
 
-      const response = await fetch(`${baseUrl}/api/ralentis-v2/reconstruir-activos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await axios.post(
+        `${baseUrl}/api/ralentis-v2/reconstruir-activos`,
+        {
           fechaDesde: toIsoWithOffset(from),
           fechaHasta: toIsoWithOffset(now),
           persist: true,
@@ -104,13 +104,14 @@ function startRalentisV2AutoJobs(port) {
           maxMoviles: envNumber('RALENTI_V2_AUTORUN_RETRO_MAX_MOVILES', 5000),
           concurrency: envNumber('RALENTI_V2_AUTORUN_RETRO_CONCURRENCY', 8),
           chunkSize: envNumber('RALENTI_V2_AUTORUN_RETRO_CHUNK_SIZE', 120),
-        }),
-      });
+        },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+      );
 
-      const payload = await response.json();
-      if (!response.ok) {
+      const payload = response.data;
+      if (!response || response.status < 200 || response.status >= 300) {
         logger.warn('Job retroactivo respondió con error', {
-          status: response.status,
+          status: response?.status,
           payload,
         });
         return;

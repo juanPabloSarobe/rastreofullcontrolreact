@@ -35,8 +35,8 @@ function readNpmVersion() {
   }
 }
 
-const minimumNode = '18.18.0';
-const minimumNpm = '9.0.0';
+const minimumNode = '16.18.0';
+const minimumNpm = '8.19.0';
 
 const currentNode = process.versions.node;
 const currentNpm = readNpmVersion();

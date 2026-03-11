@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Copiar como scripts/deploy-safe.conf y completar valores.
+
+# Conexion SSH
+export DEPLOY_HOST="10.100.10.246"
+export DEPLOY_USER="root"
+# Autenticacion: key | password
+export DEPLOY_AUTH_MODE="password"
+# Requerida solo si DEPLOY_AUTH_MODE=key
+export DEPLOY_SSH_KEY="$HOME/.ssh/prod-fullcontrol.pem"
+
+# Frontend (servido por Apache)
+export FRONTEND_LOCAL_DIR="frontend-rastreo"
+export FRONTEND_REMOTE_WEBROOT="/var/www/html"
+export FRONTEND_REMOTE_BACKUP_DIR="/root/backups/frontend"
+export FRONTEND_REMOTE_RELEASES_DIR="/tmp"
+export FRONTEND_WEB_SERVICE="httpd"
+
+# Backend v2
+export BACKEND_LOCAL_DIR="backend-informes"
+export BACKEND_REMOTE_DIR="/opt/deploy/rastreofullcontrolreact/backend-informes"
+export BACKEND_REMOTE_BACKUP_DIR="/root/backups/backend-informes"
+export BACKEND_REMOTE_RELEASES_DIR="/opt/deploy/releases"
+
+# Reinicio de backend: nohup | systemd
+export BACKEND_RESTART_MODE="nohup"
+export BACKEND_SYSTEMD_SERVICE="backend-informes"
+export BACKEND_NOHUP_LOG="/tmp/backend-informes-3003.log"
+
+# Health checks
+export BACKEND_V2_HEALTH_URL="http://localhost:3003/servicio/v2/health"
+export BACKEND_LEGACY_HEALTH_URL="http://localhost:3001/servicio/v2/health"
+
+# Backups y retencion
+# Si BACKUP_S3_BUCKET tiene valor, los backups se suben tambien a S3.
+export BACKUP_S3_BUCKET=""
+export BACKUP_S3_PREFIX="rastreofullcontrolreact/prod"
+# true = deja copia local en instancia; false = solo S3
+export BACKUP_KEEP_LOCAL="true"
+# Aplica cuando BACKUP_KEEP_LOCAL=true
+export BACKUP_LOCAL_RETENTION_DAYS="14"
+# Limpia releases/tarballs viejos en cada deploy
+export DEPLOY_CLEANUP_ENABLED="true"
+export FRONTEND_RELEASE_RETENTION_DAYS="7"
+export BACKEND_RELEASE_RETENTION_DAYS="14"
+
+# Seguridad
+# En webroot compartido NO usar --delete sobre raiz.
+export FRONTEND_RSYNC_DELETE="false"

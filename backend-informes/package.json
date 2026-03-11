@@ -3,8 +3,8 @@
   "description": "Backend para procesamiento de informes - FullControl GPS",
   "version": "1.0.0",
   "engines": {
-    "node": ">=18.18.0",
-    "npm": ">=9.0.0"
+    "node": ">=16.18.0",
+    "npm": ">=8.19.0"
   },
   "packageManager": "npm@10",
   "type": "module",
@@ -22,7 +22,10 @@
     "cors": "^2.8.5",
     "pg": "^8.11.3",
     "axios": "^1.7.7",
-    "@aws-sdk/client-secrets-manager": "^3.500.0"
+    "@aws-sdk/client-secrets-manager": "3.600.0"
+  },
+  "overrides": {
+    "@aws-sdk/util-locate-window": "3.693.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

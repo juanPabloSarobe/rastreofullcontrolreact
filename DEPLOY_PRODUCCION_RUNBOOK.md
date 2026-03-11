@@ -316,3 +316,66 @@ Crear `scripts/deploy-backend-safe.sh` con:
 - `backend-informes/GUIA_PRODUCCION_BACKEND.md`
 - `backend-informes/PLAN_DESPLIEGUE_PARALELO_LEGACY_NODE.md`
 - `frontend-rastreo/update-version.js`
+
+---
+
+## 10. Automatizacion segura (scripts safe)
+
+Se agregaron scripts nuevos en `scripts/` para deploy rapido, con backup y validaciones.
+
+Archivos:
+- `scripts/deploy-safe.conf.example`
+- `scripts/deploy-backend-safe.sh`
+- `scripts/deploy-frontend-safe.sh`
+- `scripts/deploy-safe-all.sh`
+
+### 10.1 Configuracion inicial
+
+1. Copiar config base:
+
+```bash
+cp scripts/deploy-safe.conf.example scripts/deploy-safe.conf
+```
+
+2. Editar valores reales de produccion (host, user, key, rutas).
+
+3. Validar llave SSH:
+
+```bash
+ls -l ~/.ssh/prod-fullcontrol.pem
+chmod 600 ~/.ssh/prod-fullcontrol.pem
+```
+
+### 10.2 Uso
+
+Deploy backend:
+
+```bash
+./scripts/deploy-backend-safe.sh
+```
+
+Deploy frontend:
+
+```bash
+./scripts/deploy-frontend-safe.sh
+```
+
+Deploy completo:
+
+```bash
+./scripts/deploy-safe-all.sh
+```
+
+### 10.3 Guardas incluidas
+
+- Validacion de comandos locales (`ssh`, `scp`, `rsync`, `tar`)
+- Validacion de variables obligatorias
+- Confirmacion interactiva antes de aplicar deploy real
+- Backup automatico previo
+- Dry-run de `rsync` en frontend
+- Health checks de backend v2 y legacy post-deploy
+
+### 10.4 Nota sobre webroot compartido
+
+Por defecto `FRONTEND_RSYNC_DELETE=false` para evitar borrar carpetas legacy en `/var/www/html`.
+Solo activar `true` si el webroot fue aislado y dedicado al frontend nuevo.
