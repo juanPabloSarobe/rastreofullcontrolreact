@@ -212,13 +212,262 @@ rm /var/log/communication-health.log
 
 ---
 
-## 12. DOCUMENTACIÓN FUTURA
+## 12. DASHBOARD FRONTEND (Fase 3)
 
-- [ ] Runbook de alertas ("¿Qué hago si se activa CRITICAL?")
-- [ ] Dashboard/visor de logs
-- [ ] Integración con Datadog/CloudWatch (opcional)
-- [ ] Histórico de caídas (para análisis)
+### Propósito
+Panel de monitoreo en tiempo real para visualizar:
+- Health checks del sistema
+- Estado de base de datos
+- Estado de la instancia EC2
+- Historial de alertas
+- Ejecución manual de queries
+- Log de envíos (WhatsApp + Email)
+
+### Componente
+**Ubicación:** `frontend-rastreo/src/components/SystemMonitor/`
+
+```
+SystemMonitor/
+├─ SystemMonitor.jsx              # Componente principal
+├─ CommunicationStatus.jsx        # Estado comunicación (query manual)
+├─ AlertHistory.jsx               # Historial de alertas
+├─ HealthChecks.jsx               # Resumen salud sistema
+├─ NotificationLog.jsx            # Log WhatsApp/Email
+└─ useSystemMonitoring.js         # Hook para datos
+```
+
+### API Endpoints Necesarios
+
+#### 12.1 Health Check
+```javascript
+GET /api/v2/system/health
+
+Response:
+{
+  database: {
+    status: "healthy" | "degraded" | "error",
+    lastCheck: "2026-03-16T12:45:00Z",
+    responseTime: 45,  // ms
+    message: "Connected"
+  },
+  instance: {
+    status: "healthy" | "degraded" | "error",
+    cpu: 42,           // %
+    memory: 68,        // %
+    diskUsage: 55,     // %
+    lastCheck: "2026-03-16T12:45:00Z"
+  },
+  application: {
+    status: "healthy" | "degraded" | "error",
+    uptime: 3600,      // segundos
+    requestsPerMin: 125,
+    errorRate: 0.5,    // %
+    lastServerRestart: "2026-03-15T10:30:00Z"
+  },
+  timestamp: "2026-03-16T12:45:00Z"
+}
+```
+
+#### 12.2 Communication Manual Check
+```javascript
+GET /api/v2/system/communication-status
+
+Response:
+{
+  status: "ok" | "warning" | "critical" | "error",
+  eventCount: 28,
+  lastEvent: "2026-03-16T12:44:59Z",
+  threshold: 15,
+  message: "Communication healthy",
+  updatedAt: "2026-03-16T12:45:00Z"
+}
+```
+
+#### 12.3 Alert History
+```javascript
+GET /api/v2/system/alerts?limit=50&days=7
+
+Response:
+{
+  alerts: [
+    {
+      id: "alert_123",
+      level: "critical" | "warning" | "info",
+      type: "communication" | "database" | "instance",
+      message: "No data received in 10 seconds",
+      timestamp: "2026-03-16T12:44:00Z",
+      resolved: false | "2026-03-16T12:45:00Z",
+      attempts: 2,  // reintentos
+      metadata: { eventCount: 0 }
+    }
+  ],
+  total: 42,
+  summary: {
+    critical_count: 2,
+    warning_count: 8,
+    resolved_count: 32
+  }
+}
+```
+
+#### 12.4 Notification Log
+```javascript
+GET /api/v2/system/notification-log?type=whatsapp|email&limit=30
+
+Response:
+{
+  notifications: [
+    {
+      id: "notif_456",
+      type: "whatsapp" | "email",
+      recipient: "+549XXXXXXXXX",
+      message: "CRITICAL: Communication DOWN",
+      status: "sent" | "failed" | "pending",
+      sentAt: "2026-03-16T12:44:15Z",
+      deliveredAt: "2026-03-16T12:44:18Z",
+      error: null | "provider_error"
+    }
+  ],
+  stats: {
+    whatsapp_sent: 45,
+    whatsapp_failed: 2,
+    email_sent: 47,
+    email_failed: 0
+  }
+}
+```
+
+### Interfaz del Dashboard
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  SYSTEM MONITOR - Real-time Health Dashboard            │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Quick Status  [●●●●●] System Healthy                   │
+│  Last Update: 12:45:00                                  │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  DATABASE            EC2 INSTANCE         APP STATUS    │
+│  ✅ Healthy          ✅ Healthy           ✅ Running     │
+│     45ms response       CPU: 42%             Uptime: 24h │
+│     6988k events        MEM: 68%             Errors: 0.5% │
+│     Connected           DISK: 55%            Reqs: 125/m  │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  COMMUNICATION MONITOR                                  │
+│  Status: ⚠️ WARNING  |  Events: 12/10s  |  Threshold: 15 │
+│  Last event: 2s ago                                     │
+│  ┌─ Refresh | ⚙ Manual Check ─{BUTTON}                 │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  RECENT ALERTS (Last 24h)                              │
+│  ├─ [CRITICAL] Communication DOWN (RESOLVED 12:35)     │
+│  ├─ [WARNING] High CPU Usage (ACTIVE now)              │
+│  └─ [INFO] Database replication lag detected           │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  NOTIFICATIONS SENT TODAY                              │
+│  WhatsApp: 3 sent, 0 failed  │  Email: 3 sent, 0 failed │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Funcionalidades
+
+| Feature | Descripción | Uso |
+|---------|-------------|-----|
+| **Auto-refresh** | Cada 30 segundos | Dashboard siempre actualizado |
+| **Manual refresh** | Botón "Check Now" | Verificación inmediata |
+| **Alert history** | Últimos 7 días | Auditoría de eventos |
+| **Notification log** | WhatsApp + Email | Rastrear envíos |
+| **Status indicators** | Green/Yellow/Red | Quick visual scan |
+| **Details panel** | Expand para detalles | Troubleshooting |
+
+### Implementación Timeline
+
+| Fase | Componente | Tiempo |
+|------|-----------|--------|
+| 1 | Skeleton + Diseño | 1h |
+| 2 | Endpoints backend | 1.5h |
+| 3 | Integración frontend | 2h |
+| 4 | Testing + UX | 1.5h |
+| **Total** | | **6 horas** |
+
+### Acceso y Permisos
+
+- **Usuarios permitidos:** Admin + Ops
+- **Autenticación:** JWT existente
+- **Rutas:** `/dashboard/system-monitor` o modal en admin panel
+- **Visibilidad:** Datos no sensibles (sin credenciales)
+
+### Ventajas
+
+✅ **Transparencia:** Ver estado sistema en tiempo real  
+✅ **Troubleshooting:** Check manual sin SSH  
+✅ **Auditoría:** Historial de todos los eventos  
+✅ **Confianza:** Saber que monitoreo funciona  
+✅ **Escalable:** Base para agregar más métricas  
 
 ---
 
-**Next Step:** ¿Aprobado? Procedo a implementación.
+## 13. DOCUMENTACIÓN FUTURA
+
+- [ ] Runbook de alertas ("¿Qué hago si se activa CRITICAL?")
+- [ ] Integración con Datadog/CloudWatch (opcional)
+- [ ] Histórico de caídas (para análisis)
+- [ ] Machine learning para detección de anomalías
+
+---
+
+## 14. ROADMAP COMPLETO
+
+### Fase 1: Backend Monitoring (30 min) ⏰ ACTUAL
+- [x] Script cron `monitor-communication.mjs`
+- [x] Query a `horarioServer`
+- [x] Lógica de alertas (WARNING/CRITICAL)
+- [x] Email fallback
+- [ ] Deploy a production
+
+### Fase 2: Notificaciones (OPCIONAL - 30 min)
+- [ ] Twilio WhatsApp integration
+- [ ] SMTP email personalizado
+- [ ] Deduplicación de alertas (no flood)
+- [ ] Test de envío manual
+
+### Fase 3: Frontend Dashboard (6 horas) 🎯 PRÓXIMO PASO
+- [ ] Crear componente `SystemMonitor`
+- [ ] Implementar 4 endpoints backend (health, communication, alerts, logs)
+- [ ] Diseño responsivo + Dark mode
+- [ ] Auto-refresh cada 30s
+- [ ] Manual refresh button
+- [ ] Historial de alertas
+- [ ] Log de notificaciones
+
+### Fase 4: Enhancements (FUTURO)
+- [ ] Métricas histórico (gráficos)
+- [ ] Dashboard exportable (PDF)
+- [ ] Webhook para integración con Slack
+- [ ] Mobile app (React Native)
+- [ ] Alertas por SMS (Twilio)
+
+---
+
+## 15. ESTIMACIÓN TOTAL
+
+| Fase | Tiempo | Esfuerzo | Riesgo |
+|------|--------|----------|--------|
+| 1: Backend | 30 min | ⭐ Bajo | ⭐ Bajo |
+| 2: Notif (opt) | 30 min | ⭐⭐ Medio | ⭐⭐ Bajo |
+| 3: Frontend | 6 h | ⭐⭐⭐ Alto | ⭐⭐ Medio |
+| **Total MVP** | **30 min** | ⭐ Bajo | ⭐ Bajo |
+| **Total Full** | **7 h** | ⭐⭐⭐ Alto | ⭐⭐ Medio |
+
+---
+
+**Status:** Documentación completada  
+**Next:** ¿Aprobado para Fase 1 (Backend)? Procedo con implementación.
