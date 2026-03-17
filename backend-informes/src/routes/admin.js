@@ -26,6 +26,7 @@ import {
 import nodemailer from 'nodemailer';
 import { getPool } from '../db/pool.js';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -35,7 +36,13 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const RESTART_COOLDOWN_MS = 5 * 60 * 1000;
-const RESTART_STATE_FILE = path.resolve(__dirname, '../../tmp/admin-restart-state.json');
+const LEGACY_RESTART_STATE_FILE = path.resolve(__dirname, '../../tmp/admin-restart-state.json');
+const DEFAULT_RESTART_STATE_FILE = path.join(
+  os.tmpdir(),
+  'rastreofullcontrol',
+  'admin-restart-state.json'
+);
+const RESTART_STATE_FILE = process.env.ADMIN_RESTART_STATE_FILE || DEFAULT_RESTART_STATE_FILE;
 let lastRestartAtMs = 0;
 
 // Logger simple
@@ -108,14 +115,24 @@ function formatDurationFromMs(elapsedMs) {
 }
 
 async function readLastRestartAtMs() {
-  try {
-    const content = await fs.readFile(RESTART_STATE_FILE, 'utf-8');
-    const parsed = JSON.parse(content);
-    const ts = Number(parsed?.lastRestartAtMs || 0);
-    return Number.isFinite(ts) ? ts : 0;
-  } catch {
-    return 0;
+  const candidates = [RESTART_STATE_FILE, LEGACY_RESTART_STATE_FILE].filter(
+    (file, index, arr) => arr.indexOf(file) === index
+  );
+
+  for (const filePath of candidates) {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const ts = Number(parsed?.lastRestartAtMs || 0);
+      if (Number.isFinite(ts) && ts > 0) {
+        return ts;
+      }
+    } catch {
+      // Continue with next candidate.
+    }
   }
+
+  return 0;
 }
 
 async function writeLastRestartAtMs(lastRestartMs) {
@@ -1061,13 +1078,23 @@ router.post('/restart-instance', adminOnly, async (req, res) => {
     );
 
     lastRestartAtMs = now;
-    await writeLastRestartAtMs(now);
+    let trackingPersisted = true;
+    try {
+      await writeLastRestartAtMs(now);
+    } catch (persistError) {
+      trackingPersisted = false;
+      logger.warn('No se pudo persistir restartTracking (reinicio enviado igual)', {
+        error: persistError?.message,
+        file: RESTART_STATE_FILE,
+      });
+    }
     logger.info('Comando de reinicio enviado por SDK', { instanceId, region });
 
     res.json({
       status: 'ok',
       message: 'Instancia reiniciándose...',
       instanceId,
+      trackingPersisted,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
