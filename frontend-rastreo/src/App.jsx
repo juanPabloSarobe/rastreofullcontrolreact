@@ -1,6 +1,7 @@
 import React from "react";
 import Login from "./components/pages/Login";
 import PrincipalPage from "./components/pages/PrincipalPage";
+import AdminDashboard from "./components/pages/AdminDashboard";
 import UpdateNotification from "./components/common/UpdateNotification";
 import { useContextValue } from "./context/Context";
 
@@ -12,9 +13,19 @@ const UpdateTester =
 
 function App() {
   const { state } = useContextValue();
+  
+  // Detectar si estamos en ruta del dashboard admin
+  const isAdminDashboard = window.location.pathname === '/admin-dashboard';
+  
   return (
     <>
-      {!state.accessGranted ? <Login /> : <PrincipalPage />}
+      {isAdminDashboard ? (
+        <AdminDashboard />
+      ) : !state.accessGranted ? (
+        <Login />
+      ) : (
+        <PrincipalPage />
+      )}
       <UpdateNotification />
 
       {/* UpdateTester solo se muestra en entorno de desarrollo */}

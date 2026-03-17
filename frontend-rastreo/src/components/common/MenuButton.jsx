@@ -134,6 +134,12 @@ const MenuButton = ({ selectedUnit, onOpenRalentisDetail }) => {
     handleClose();
   };
 
+  // Nuevo manejador para abrir el dashboard administrativo en nueva pestaña
+  const openAdminDashboard = () => {
+    window.open('/admin-dashboard', '_blank');
+    handleClose();
+  };
+
   const handleOpenReport = () => {
     if (selectedUnit) {
       setUnitReportOpen(true);
@@ -197,6 +203,13 @@ const MenuButton = ({ selectedUnit, onOpenRalentisDetail }) => {
       label: "Empresas Morosas", // Nueva opción de menú
       show: state.role === "Administrador", // Mostrar solo a administradores
       onClick: openDelinquentCompanies, // Nuevo manejador
+      disabled: isMenuRestricted,
+    },
+    {
+      icon: <SettingsIcon fontSize="small" />, // Icono de configuración reutilizado
+      label: "Dashboard Administrativo", // Nueva opción de menú
+      show: state.role === "Administrador", // Mostrar solo a administradores
+      onClick: openAdminDashboard, // Nuevo manejador
       disabled: isMenuRestricted,
     },
     {

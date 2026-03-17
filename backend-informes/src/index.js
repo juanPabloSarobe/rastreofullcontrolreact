@@ -17,6 +17,7 @@ import healthRoutes from './routes/health.js';
 import informesRoutes from './routes/informes.js';
 import ralentisV2Routes from './routes/ralentisV2.js';
 import conductoresRoutes from './routes/conductores.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 let backgroundIntervals = [];
@@ -178,6 +179,7 @@ async function bootstrap() {
     app.use('/api/informes', informesRoutes);
     app.use('/api/ralentis-v2', ralentisV2Routes);
     app.use('/api/conductores', conductoresRoutes);
+    app.use('/api/admin', adminRoutes);
 
     // 6. Manejadores de errores
     app.use(notFoundHandler);

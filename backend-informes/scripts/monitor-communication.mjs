@@ -7,8 +7,6 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import nodemailer from 'nodemailer';
 
@@ -16,6 +14,7 @@ dotenv.config();
 
 const ENV = process.env.NODE_ENV || 'development';
 const IS_PRODUCTION = ENV === 'production';
+const MONTH_TABLE_REGEX = /^ActividadDiaria\d{4}-\d{2}$/;
 
 // Logger simple
 class Logger {
@@ -43,6 +42,11 @@ class Logger {
 }
 
 const logger = new Logger();
+const ACTIVE_WINDOW_SECONDS = 10;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Obtiene credenciales DB desde AWS Secrets (desarrollo) o env (producción)
@@ -113,44 +117,160 @@ async function getDatabaseConfig() {
   }
 }
 
-/**
- * Obtiene el nombre de tabla según el mes actual
- * Ejemplo: 2026-03 → "ActividadDiaria2026-03"
- */
-function getTableName() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
+function formatMonthTable(date, useUTC = false) {
+  const year = useUTC ? date.getUTCFullYear() : date.getFullYear();
+  const month = String((useUTC ? date.getUTCMonth() : date.getMonth()) + 1).padStart(2, '0');
   return `ActividadDiaria${year}-${month}`;
+}
+
+function shiftMonth(date, deltaMonths, useUTC = false) {
+  const d = new Date(date);
+  if (useUTC) {
+    d.setUTCMonth(d.getUTCMonth() + deltaMonths);
+  } else {
+    d.setMonth(d.getMonth() + deltaMonths);
+  }
+  return d;
+}
+
+function buildMonthTableCandidates() {
+  const now = new Date();
+  const localCandidates = [
+    formatMonthTable(shiftMonth(now, -1, false), false),
+    formatMonthTable(now, false),
+    formatMonthTable(shiftMonth(now, 1, false), false),
+  ];
+
+  const utcCandidates = [
+    formatMonthTable(shiftMonth(now, -1, true), true),
+    formatMonthTable(now, true),
+    formatMonthTable(shiftMonth(now, 1, true), true),
+  ];
+
+  return [...new Set([...localCandidates, ...utcCandidates])].filter((name) => MONTH_TABLE_REGEX.test(name));
+}
+
+async function fetchExistingCandidateTables(client, candidates) {
+  const result = await client.query(
+    `
+      SELECT relname
+      FROM pg_stat_user_tables
+      WHERE schemaname = 'public'
+        AND relname = ANY($1::text[])
+      ORDER BY relname
+    `,
+    [candidates]
+  );
+
+  return result.rows.map((row) => row.relname).filter((name) => MONTH_TABLE_REGEX.test(name));
+}
+
+async function fetchInsertCounters(client, tableNames) {
+  const result = await client.query(
+    `
+      SELECT relname, COALESCE(n_tup_ins, 0)::bigint AS total_inserts
+      FROM pg_stat_user_tables
+      WHERE schemaname = 'public'
+        AND relname = ANY($1::text[])
+    `,
+    [tableNames]
+  );
+
+  const counters = {};
+  for (const row of result.rows) {
+    counters[row.relname] = Number(row.total_inserts || 0);
+  }
+  return counters;
+}
+
+async function fetchWindowDiagnostics(client, tableName) {
+  if (!MONTH_TABLE_REGEX.test(tableName)) {
+    return {
+      dbNow: null,
+      maxHorarioServer: null,
+      windowEventCount: 0,
+    };
+  }
+
+  const windowResult = await client.query(`
+    SELECT
+      COUNT(*)::int AS event_count,
+      MAX("horarioServer") AS max_horario_server,
+      NOW() AS db_now
+    FROM "${tableName}"
+    WHERE "horarioServer" > NOW() - INTERVAL '10 seconds'
+      AND "horarioServer" <= NOW() + INTERVAL '15 seconds'
+  `);
+
+  return {
+    windowEventCount: Number(windowResult.rows[0]?.event_count || 0),
+    maxHorarioServer: windowResult.rows[0]?.max_horario_server || null,
+    dbNow: windowResult.rows[0]?.db_now || null,
+  };
 }
 
 /**
  * Ejecuta el query de monitoreo de comunicación
  */
-async function checkCommunicationStatus(pool, tableName) {
+async function checkCommunicationStatus(pool) {
   const client = await pool.connect();
   try {
-    const query = `
-      SELECT COUNT(*) as event_count
-      FROM "${tableName}"
-      WHERE "horarioServer" > NOW() - INTERVAL '10 seconds'
-    `;
+    const candidates = buildMonthTableCandidates();
+    const monitoredTables = await fetchExistingCandidateTables(client, candidates);
+
+    if (monitoredTables.length === 0) {
+      throw new Error(`No se encontraron tablas candidatas para monitoreo: ${candidates.join(', ')}`);
+    }
 
     const startTime = Date.now();
-    const result = await client.query(query);
+    const insertsBefore = await fetchInsertCounters(client, monitoredTables);
+
+    await sleep(ACTIVE_WINDOW_SECONDS * 1000);
+    const insertsAfter = await fetchInsertCounters(client, monitoredTables);
+
     const duration = Date.now() - startTime;
 
-    const eventCount = parseInt(result.rows[0].event_count, 10);
+    const deltasByTable = monitoredTables.map((table) => {
+      const before = Number(insertsBefore[table] || 0);
+      const after = Number(insertsAfter[table] || 0);
+      const delta = Math.max(0, after - before);
+      return {
+        table,
+        totalInsertsBefore: before,
+        totalInsertsAfter: after,
+        insertsDelta: delta,
+      };
+    });
+
+    const eventCount = deltasByTable.reduce((acc, row) => acc + row.insertsDelta, 0);
+    const primary = [...deltasByTable].sort((a, b) => b.insertsDelta - a.insertsDelta)[0] || deltasByTable[0];
+    const diagnostics = await fetchWindowDiagnostics(client, primary.table);
+
+    const detectionSource = `pg_stat_user_tables.n_tup_ins_delta_${ACTIVE_WINDOW_SECONDS}s`;
     
     logger.debug('Query ejecutado', {
-      table: tableName,
+      tables: monitoredTables,
+      primaryTable: primary.table,
       eventCount,
+      deltasByTable,
+      detectionSource,
       durationMs: duration,
     });
 
     return {
       success: true,
+      table: primary.table,
+      monitoredTables,
+      deltasByTable,
       eventCount,
+      insertsDelta: eventCount,
+      totalInsertsBefore: deltasByTable.reduce((acc, row) => acc + row.totalInsertsBefore, 0),
+      totalInsertsAfter: deltasByTable.reduce((acc, row) => acc + row.totalInsertsAfter, 0),
+      windowEventCount: diagnostics.windowEventCount,
+      detectionSource,
+      dbNow: diagnostics.dbNow,
+      maxHorarioServer: diagnostics.maxHorarioServer,
+      activeWindowSeconds: ACTIVE_WINDOW_SECONDS,
       durationMs: duration,
       timestamp: new Date().toISOString(),
     };
@@ -166,13 +286,11 @@ async function checkCommunicationStatus(pool, tableName) {
 }
 
 /**
- * Evalúa el estado basado en el conteo de eventos
- * 
- * OK: >= 5 eventos
- * CRITICAL: < 5 eventos
+ * Evalúa el estado basado en inserciones reales en ventana activa de 10s
  */
-function evaluateStatus(eventCount) {
-  if (eventCount < 5) {
+function evaluateStatus(eventCount, detectionSource) {
+  const criticalThreshold = detectionSource.startsWith('pg_stat_user_tables.n_tup_ins_delta_') ? 1 : 5;
+  if (eventCount < criticalThreshold) {
     return { status: 'CRITICAL', message: `Sin comunicación - solo ${eventCount} eventos en últimos 10 segundos` };
   }
   return { status: 'OK', message: `Comunicación activa (${eventCount} eventos)` };
@@ -286,12 +404,22 @@ Este es un mensaje automático generado por el Monitor de Comunicación.
 /**
  * Genera resumen del estado
  */
-function formatStatusReport(eventCount, status, message, durationMs, tableName) {
+function formatStatusReport(checkResult, status, message, durationMs) {
   return {
     timestamp: new Date().toISOString(),
     environment: ENV,
-    table: tableName,
-    eventCount,
+    table: checkResult.table,
+    monitoredTables: checkResult.monitoredTables,
+    deltasByTable: checkResult.deltasByTable,
+    eventCount: checkResult.eventCount,
+    detectionSource: checkResult.detectionSource,
+    insertsDelta: checkResult.insertsDelta,
+    totalInsertsBefore: checkResult.totalInsertsBefore,
+    totalInsertsAfter: checkResult.totalInsertsAfter,
+    windowEventCount: checkResult.windowEventCount,
+    dbNow: checkResult.dbNow,
+    maxHorarioServer: checkResult.maxHorarioServer,
+    activeWindowSeconds: checkResult.activeWindowSeconds,
     status,
     message,
     queryDurationMs: durationMs,
@@ -415,23 +543,18 @@ async function main() {
       logger.error('Error en pool', { message: err.message });
     });
 
-    // Obtener nombre de tabla
-    const tableName = getTableName();
-    logger.debug('Tabla objetivo', { tableName });
-
     // Ejecutar query
-    const result = await checkCommunicationStatus(pool, tableName);
+    const result = await checkCommunicationStatus(pool);
 
     // Evaluar estado
-    const { status, message } = evaluateStatus(result.eventCount);
+    const { status, message } = evaluateStatus(result.eventCount, result.detectionSource);
 
     // Generar reporte
     const report = formatStatusReport(
-      result.eventCount,
+      result,
       status,
       message,
-      result.durationMs,
-      tableName
+      result.durationMs
     );
 
     // Guardar reporte
