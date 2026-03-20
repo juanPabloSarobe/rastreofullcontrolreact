@@ -1,0 +1,178 @@
+Comandos al VirVoice a traves de Virloc 10 Version 1.3
+
+Dispositivo Virnet con ID default 20.
+
+Comando al Virloc
+>VQVL<
+Respueta del Virloc:
+>VRVL00,ID20,0D3E7513,FIRM105,VN_VV20 ,EV01,SNE00,IDE00,PDEL00090,TXI001 pollN000006F3 pollR00000000;ID=0000;#8045;*58<
+
+Comandos disponibles:
+QSN
+SSN
+QVR
+FDIR
+FOPEN
+FREAD
+FCLOSE
+PFL
+FREAD_FAT
+FORMAT00000000
+SPE
+
+Estructura de consultas:
+>consulta,dV20xxx<
+xxx = destino al cual queremos que el VL10 redireccione la respuesta correspondiente, Ej: TRM o GR0
+>respuesta,dxxxV20
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+>RSN081C7F1F_ERROR_CODE:238F_VV20dTRMV20;ID=6000;#804D;*6D<
+
+
+-----------------------------------------------------------------------------
+
+Consulta de Serial NUmber del dispositivo:
+>QSNdV20TRM;ID=0000;#804B;*5F<
+
+Respuesta del SN del dispositivo:
+>RSN0D3E7513_VV20dTRMV20;ID=0000;#804B;*03<
+Estructura de respuesta del SN:
+RSNbbbbbbbb_VV20dxxxV20
+bbbbbbbb = Serial Number del dispositivo
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+Carga de Serial Number del dispositivo:
+>QSNdV20TRM;ID=0000;#804B;*5F<
+
+Respuesta del SN del dispositivo:
+>RSN0D29757B_ERROR_CODE:9C5E_VV20dTRMV20;ID=1235;#801F;*68<
+Se debe utilizar el SN devuelto, en este caso "0D29757B"
+
+Una vez realizado el calculo correspondiente, se devuelve al equipo el seteo del SN:
+>SSN0D29757B56734C2AdV20TRM
+
+Nota:
+El VL10 debe tener posicion 3D y los eventos de actualizacion de la posicion cargados.
+
+-----------------------------------------------------------------------------
+
+Consulta de Version de Firmware del dispositivo
+>QVRdV20TRM<
+>RVR_VIRVOICE20_FIRM104dTRMV20;ID=0000;#807F;*7E<
+
+Estructura de respuesta del VR:
+>RVR_VIRVOICE20_FIRMbbbdxxxV20<
+bbb = Version de Fiemware
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+-----------------------------------------------------------------------------
+
+Listado de archivos grabados:
+>FDIRdV20TRM;ID=0000;#8047;*7F<
+>ACK_FDIRdTRMV20;ID=0000;#8047;*69<
+>FDIR00000,C_PELEGR.MP3,19456,sc0100,dTRMV20;ID=0000;#0001;*7E<
+>FDIR_EOF,dTRMV20;ID=0000;#0003;*48<
+
+Estructura respuesta de archivos grabados:
+>FDIRaaaaa,bbbbbbbb.MP3,ccccc,scDDDD,dTRMV20
+aaaaa = Indice del archivo en el directorio
+bbbbbbbb = Nombre del archivo MP3 cargado
+ccccc = tamaño del archivo en Bytes
+DDDD = Cluster donde arranca el archivo en la memoria (en Hexa)
+
+-----------------------------------------------------------------------------
+
+Lectura de los datos que comprenden a un archivo MP3:
+1° Apertura del archivo:
+>FOPEN,bbbbbbbb.MP3,dV20xxx
+bbbbbbbb = Nombre del archivo MP3 deseado
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+2° Lectura del archivo:
+>FREAD,dV20xxx
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+>FREAD,dV20TRM
+>ACK_FREADdTRMV20;ID=0000;#8087;*28<
+>FREAD0000,0100,FFF3C8C4000000000000000000496E66,dTRMV20;ID=0000;#0002;*11<
+>FREAD0010,0100,6F0000000F0000002000004A40000808,dTRMV20;ID=0000;#0001;*61<
+
+Estructura de respuesta:
+>FREADaaaa,bbbb,cccccccccccccccccccccccccccccccc,dxxxV20;ID=0000;#0002;*11<
+aaaa = Offset de los datos (Hexa)
+bbbb = Cluster donde los datos a continuacion estan contenidos en la memoria.
+ccc... = Datos (paquete Hexa de 16 bytes)
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+3° Esperar que finalice la descarga o terminarla con 
+>FCLOSE,dV20xxx
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+-----------------------------------------------------------------------------
+
+Ejecucion de un archivo grabado:
+>PFL,C_PELEGR.MP3,0,dV20TRM;ID=0000;#804C;*41<
+>ACK_PFLdTRMV20;ID=0000;#804C;*5E
+
+Estructura de ejecucion:
+PFL,bbbbbbbb.MP3,a,b,dV20xxx
+bbbbbbbb = Nombre del archivo MP3 deseado de reproducir
+a = Demora para iniciar ejecucion del audio.
+b = Volumen del amplificador (en version con amplificador), Min: 8 / Max: 11
+Si se omite este valor, se reproduce el audio al volumen minimo.
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+-----------------------------------------------------------------------------
+
+Lectura del estado de la FAT de la memoria:
+Comando utilizado para depurar los posibles errores de la estructura FAT de la memoria.
+Cada Cluster indicado en la respuesta contiene 2048 Bytes y un archivo MP3 puede estar
+contenido en mas de un cluster.
+>FREAD_FAT,dV20xxx
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+>FREAD_FATdV20TRM
+>ACK_FREAD_FATdTRMV20;ID=0000;#808D;*57<
+>FREAD0100, 0101 0102 0103 0104 0105 0106 0107 0108 0109 7FFF FFFF FFFF FFFF FFFF FFFF FFFF,dTRMV20;ID=0000;#0001;*48<
+>FREAD0110, FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF,dTRMV20;ID=0000;#0002;*3B<
+>FREAD0120, FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF,dTRMV20;ID=0000;#0003;*39<
+
+-----------------------------------------------------------------------------
+
+Formateo de la memoria:
+Utilizar con precaucion ya que elimina TODOS los MP3 que haya guardados.
+>FORMAT00000000,dV20TRM<
+
+Estructura de ejecucion:
+>FORMATbbbbbbbb,dV20xxx<
+bbbbbbbb = Password del dispositivo VirVoice
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+>FORMAT00000000dV20TRM
+>ACK_FORMATING...dTRMV20;ID=0000;#8090;*17<
+>FORMAT_EOFdTRMV20;ID=0000;#0001;*7C<
+
+-----------------------------------------------------------------------------
+
+Cambio de Password del Dispositivo:
+Cambia password general de 8 digitos
+Debe ser enviado 3 veces con indicador de secuencia incrementandose de 1 a 3.
+
+>SPEs,aaaaaaaa,bbbbbbbb,dV20xxx<
+Donde:
+s = Numero de secuencia (1, 2, 3).
+aaaaaaaa = Password actual del equipo.
+bbbbbbbb = Nuevo password.
+xxx = destino peticionado en la consulta para la respuesta, Ej: TRM
+
+-----------------------------------------------------------------------------
+Ejemplo de eventos en VL10:
+
+>SED00 IN07++ +- V20 AC {>PFL,SALID_EN.MP3,0,9
+>SED01 IN07++ +- V20 AC {>PFL,CINCO.MP3,10,9
+>SED02 IN07++ +- V20 AC {>PFL,MINUTOS.MP3,10,9
+
+>SED00 IN07++ +- V20 AC {>PFL,SALID_EN.MP3,0,9;ID=3002;#004E;*6D<
+>SED01 IN07++ +- V20 AC {>PFL,CINCO.MP3,10,9;ID=3002;#004F;*11<
+>SED02 IN07++ +- V20 AC {>PFL,MINUTOS.MP3,10,9;ID=3002;#0050;*7A<
+>SED03 IN07-- +- V20 AC {>PFL,ARR_DEST.MP3,0,9;ID=3002;#0051;*06<
+>SED04 IN06-- +- V20 AC {>PFL,SIN_IN06.MP3,0,9;ID=3002;#0052;*15<

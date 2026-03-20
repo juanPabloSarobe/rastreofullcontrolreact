@@ -1,0 +1,9 @@
+>VSWI20,"FLOTA""yii46&$12"<
+
+>VSWI21,"Davitel_58910_2.4""20282897971"<
+
+>VSWI22,"FullControl""kistner2025"<
+
+>VSWF4,215,50,5,0,0,99,84,103<
+
+>SRS4 115200<  //activar escaneo de Wifi

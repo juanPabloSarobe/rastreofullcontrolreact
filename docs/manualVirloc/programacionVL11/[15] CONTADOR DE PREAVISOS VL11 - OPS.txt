@@ -1,0 +1,19 @@
+
+//REinicio de CT a cero a las 00:00:05
+
+>STR02 000005<
+>SED13 TR02++ +- GF0 TT{SCT04 10}<
+
+//Lista de Eventos de preavisos con CT 
+
+//>SED167 GS01-- IN07++&&RR00++&&VX20++&&GM14++&&SG23-- GF0 TT {SCT04 -1}<
+
+
+
+//fin de lista
+
+//Evento que envia el CT
+
+>SUT12,QCT04,7,5,0,0< 
+>SED14 TT00++ UC12++&&IN07++ GF0 TT {SCT04 +1}<			//CUANDO CAMBIA EL VALOR DE ct, CONTROLA QUE SEA MAYOR DE 10 EN EN CASO POSITIVO INFORMA UN TT A PLATAFORMA 
+>SCT04 10<
