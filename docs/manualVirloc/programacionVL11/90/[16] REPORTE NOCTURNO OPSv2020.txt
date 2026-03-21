@@ -1,0 +1,6 @@
+
+>SUT01,QGP,10,02,+0,+7<          			//horario (22-7 am)
+>STD02000100000500999H<                 		//500 mts
+>SED80 IN07++ UC01++ LOG GP {SSH010}{CTD02}< 	   	//
+>SED81 TD02++ UC01++&&IN07++&&SG01-- GF0 TT {SSH011}< 	// 
+>STP02 REPORTE_NOCTURNO_23PM_A_6AM<

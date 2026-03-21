@@ -1,0 +1,85 @@
+
+>QED106<
+
+>SED10 IN07++ +- LOG GP {SSH080}{CTD03}{SSH000}{CTD02}<        
+>SED12 IN07-- +- GF0 TT {CIO}{SSXP00}< 				// borra llave al sacar contacto
+>SED25 IN07-- +- GF0 TT {CTD01}{SSH030}{SSH040}{SSH060}{SSH070}{SSXP00}{CIO}<
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [50KM/H]
+------------------------------------------------------------------
+
+>SGS07000050<                                   			// rango velocidad en region
+>STD040010<								// TIMER 10 SEG
+
+>SED23 RR06++ IN07++ GF0 TT {SSH120}{SSH110}< 			
+
+>SED28 CC01++ IN07++&&VX20++&&GS08++&&GS07--&&RR06++ GF0 TT {SSH031}<	
+>SED33 SG03-- RR06++&&IN07++ GF0 TT<					// ENVIA A LA PAGINA FIN DE EXCESO DE VELOCIDAD EN REGION DE 40KM/H
+>SED103 TT00++ GS07++&&RR06++ SGN NN {SCC01 20}{SSH030}<		
+>SED104 SG03++ GS07--&&RR06++ LOG TT {CTD04}<				// CUANDO BANDERA 10 SE HACE POSITIVO COMIENZA TIMER DE 10 SEGUNDOS
+
+>SED125 RR06++ IN07++ V20 AC {>PFL,ZONA50.MP3,0<			// iNGRESO A REGION
+>SED130 SG03-- IN07++&&RR06++ V20 AC {>PFL,VELRES02.MP3,0<		// 
+>SED132 GS07-- IN07++&&RR06++ V20 AC {>PFL,LIMITE3.MP3,0<		// ACTIVA PREAVISO DE EXCESO DE VELOCIDAD 1 VEZ
+>SED133 SG03++ IN07++&&GS07--&&RR06++ V20 AC {>PFL,EXCE50.MP3,0,9<	// CUANDO BANDER 10 SE HACE POSITIVO EJECUTA 1 VEZ EL MPS DE EXCESO
+>SED134 TD04++ IN07++&&SG03++&&RR06++ V20 AC {>PFL,EXCE50.MP3,0,10<	
+
+------------------------------------------------------------------
+// VELOCIDAD "NO ZONA" [80] 
+------------------------------------------------------------------
+
+>SED02 SG12++ IN07++&&GS00--&&VX20++ GF0 TT<
+>SED03 GS00-- IN07++&&SG12++&&RR04--&&VX20++ GF0 TT<
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [20KM/H]
+------------------------------------------------------------------
+
+>SED04 GS06-- IN07++&&RR08++&&VX20++ GF0 TT<			// PREAVISO
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [40KM/H]
+------------------------------------------------------------------
+
+>SED05 GS01-- IN07++&&RR00++&&VX20++ GF0 TT<			// PREAVISO
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [50KM/H]
+------------------------------------------------------------------
+
+>SED06 GS07-- IN07++&&RR06++&&VX20++ GF0 TT<		// ACTIVA PREAVISO DE EXCESO DE VELOCIDAD 1 VEZ
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [60KM/H]
+------------------------------------------------------------------
+
+>SED07 CC11++ IN07++&&SG11++&&GS02--&&VX20++ GF0 TT<
+>SED15 GS02-- IN07++&&SG11++&&VX20++ GF0 TT<			// PREAVISO 
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [80KM/H]
+------------------------------------------------------------------
+	
+>SED19 GS05-- IN07++&&RR05++&&VX20++ GF0 TT<			// PREAVISO
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [100KM/H] Ahora 80
+------------------------------------------------------------------
+
+>SED26 GS03-- IN07++&&RR02++&&VX20++ GF0 TT<			// ACTIVA PREAVISO DE EXCESO DE VELOCIDAD 1 VEZ
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [130KM/H] ahora 80
+------------------------------------------------------------------
+
+>SED27 GS04-- IN07++&&RR04++&&VX20++ GF0 TT<
+
+------------------------------------------------------------------
+// MODO KO
+------------------------------------------------------------------
+
+>SED159 LP01++ +- GF0 TT {SSXP0100010}<
+//>VSKO036H00000120_GPS0_MDM0_PER0_INS0_VO10_CHG0_SDC0_CAN0_DV0600_EVP65535<
+>STP12 MODO_DORMIDO_36H<
+
+

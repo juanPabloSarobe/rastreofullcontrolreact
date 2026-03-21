@@ -1,0 +1,53 @@
+
+
+------------------------------------------------------------------
+// IDENTIFICACION DE CHOFER CON LLAVE INTERNA
+------------------------------------------------------------------
+
+>STP01 LLAVE_INTERNA_VALIDA_2015<
+
+>SUT04HGIO,4,16,0,0<
+>SUT02HQTP07,7,16,0,0<
+>SUT03,GSC0402,9,1,1,1<
+>STP07 0000000000000000<
+>SED08 IO03++ UC03--&&IN07++ GF0 TT {SSH081}<
+>SED12 IN07-- +- GF0 TT {SCC07 02}{SSH220}{SSXP01}{CIO}<		
+>SED106 IO03++ IN07++&&UC03-- V20 AC {>PFL,GRACIAS.MP3,0<
+>SED11 IO03++ UC03-- GF0 AX {SSXP00}{GIO,1,30 QGP,4,12}< 	// AGREGA FECHA Y HORA AL NUMERO DE LA LLAVE
+
+-------------------------------------------------------------------------------------------
+// [LLAVE INVALIDA / LLAVE VALIDA] 
+-------------------------------------------------------------------------------------------
+
+>SED25 IN07-- +- GF0 TT {CTD01}{SSH030}{SSH040}{SSH060}{SSH070}{SSXP01}{CIO}<
+>STD070020<
+>SED143 SG06++ SG08++&&IN07++ V20 AC {>PFL,SIIDENTI.MP3,0<		// LLAVE CORRECTA
+>SED136 SG07++ SG08++&&IN07++ V20 AC {>PFL,NOIDENTI.MP3,0<		// LLAVE INCORRECTA
+>SED166 TD07++ SG07++&&IN07++ V20 AC {>PFL,NOIDENTI.MP3,0<		// LLAVE INCORRECTA
+>STP09 VALIDADOR_DE_IDENTIDAD<
+
+------------------------------------------------------------------
+// MP3 CON NUMEROS
+------------------------------------------------------------------
+
+>SCT00 0<
+>STP10 >PFL,10000---.MP3,0,08<
+>SUC00 QTP10,7,10 QCT00,8,3 QTP10,20,9< 
+>SUC01 QTP10,7,10 QCT00,11,3 QTP10,20,9<
+>SUC02 QTP10,7,10 QCT00,14,3 QTP10,20,9<
+
+>SED129 TT00++ SG21++&&IN07++ V20 Q0 {PROCESS PLAIN}<
+>SED139 TT00++ SG21++&&IN07++ V20 Q1 {PROCESS PLAIN}<
+>SED144 TT00++ SG21++&&IN07++ V20 Q2 {PROCESS PLAIN}<
+
+>SUT05,GVDVCT01,10,10,0,0<				
+>SUT06,GVDVCT02,10,10,0,0<				
+>SUT07,GVDVCT03,10,10,0,0<				
+>SUT08,GVDVCT04,10,10,0,0<				
+
+>SED145 TT00++ SG21++&&IN07++ SGN NN {SCT00 RUT05}{SCT01 RUT06}{SCT02 RUT07}{SCT03 RUT08}<
+>SED157 CT00++ SG21++ GF0 TT {SSH210}<	
+
+>STP11 REGLAS_DE_PLOCESPLAIN<
+
+

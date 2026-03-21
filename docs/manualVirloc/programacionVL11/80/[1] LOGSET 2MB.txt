@@ -1,0 +1,1 @@
+>VSLG0000,2048,100000<					// 3 dias de buffer

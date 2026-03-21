@@ -1,0 +1,371 @@
+								Programacion de GPS virloc10 FullControl Vehicular
+
+------------------------------------------------------------------
+// CONFIGURACION ESTANDAR
+------------------------------------------------------------------
+>QVR<
+
+>QEN11<
+
+>VSPK,2350,2200,1170,1130,0360,0340,0360,0340,0350,0340,0430,0425,0340,0600,0250,+50,+70,0000,0000,0000< //corriente de carga
+
+>VSIP0,0.0.0.0.4096.4097<   				// puertos pagina
+>VSDN0,FULLCONTROLCLOUD.DDNS.NET<			// DNS PARA SWITCHEAR
+
+>VSIP1,0.0.0.0.26.45<  					// IP1 
+>VSDN1,FULLCONTROL3.DDNS.NET<				// dns1
+
+>VSIP2,0.0.0.0.26.27<  					// IP2 
+>VSDN2,FULLCONTROL.DDNS.NET<				// dns2
+
+>VSIP3,0.0.0.0.26.1133<					// IP3 
+>VSDN3,FULLCONTROL2.DDNS.NET<				// dns3
+
+>SMA0 "+5492995804746" FULLCONTROL<    					// numero de cel  configuracion
+>SMA1 "+5492994667595" JUANP<						// numero de cel  configuracion
+
+Tabla de eventos asociada al software
+
+>SED01 TD01++ +- GR3_SL TT<
+>SED09 IN03-- +- MA1 AC {PANICO< 					// Si pone la entrada 3 a masa (cable celeste)manda un SMS. PANICO.
+>SED18 IN06-- +- SGN NN {SSO}<						// al quedarse sin alimentacion graba en memoria
+>SED21 TD01++ IN07-- GF0 TT<						// GSM PARADO
+>SED24 IN07++ +- GF0_HI AX {GIO,1,30}{SSH000}{CTD02}<		// INFORMA LLAVE CERO AL ENCENDER
+
+>SUT00,QAD,44,02,+30,+50<						// SETEA VOLTAJES
+>SED39 UC00++ +- GF0&&&LOG TT<						// SOBRECARGA
+>SED40 IN06++ +- GF0&&&LOG TT<						// Alimentacion principal presente.
+>SED41 IN06-- +- GF0&&&LOG TT<						// Alimentacion principal ausente.
+
+>SED202 TT00++ +- SGN TT {GGFN0,1,2,3}<					// DESCARGA BUFFER A AMBAS IP
+
+>SED100 IN07++ +- V20 AC {>PFL,PRESEN01.MP3,0<				// PRESENTACION AL PONER MARCHA
+>SED158 IN07++ +- V20 AC {>PFL,RECUERDE.MP3,10<				// SAFETY FIRST
+
+------------------------------------------------------------------
+// reportes en curvas E INFRACCION
+------------------------------------------------------------------
+
+>STD000070<
+>STD011500<
+>STD080005<
+>STD140005000300400005<
+>STD150005000300150060<
+
+>SED20 TD00||TD14++||TD15++ IN07++&&SG03--&&SG04-- GF0 TT {CTD00}{CTD14}{CTD15}<
+>SED22 TD08++ SG04++||SG03++ GF0 TT<						
+>SED25 IN07-- +- GF0 TT {CTD01}{SSH030}{SSH040}{SSH060}{SSH070}{SSXP01}{CIO}<
+
+------------------------------------------------------------------
+// PROCESO DE ACTUALIZACION
+------------------------------------------------------------------
+
+>SSH130<						//bandera de actualizacion
+>SSH140<                                        	//bandera de actualizacion FINALIZADA
+
+>SED16 SG13++ +- GF0 TT<				// cuando comienza a actualizar avisa
+>SED66 SG14++ +- GF0 TT<				// cuando termina de actualizar avisa
+
+>SED193 SG13++ IN07++ V20 AC {>PFL,UPGINI.MP3,5<
+>SED194 IN07++ SG13++ V20 AC {>PFL,UPGINI.MP3,5<
+>SED203 SG14++ IN07++ V20 AC {>PFL,upgrafin.MP3,5<
+>SED205 IN07++ SG14++ V20 AC {>PFL,upgrafin.MP3,5<
+>SED204 SG14++ IN07++ LOG TT {SSH140}<
+>SED206 IN07++ SG14++ LOG TT {SSH140}<
+
+
+------------------------------------------------------------------
+// IDENTIFICACION DE CHOFER CON LLAVE INTERNA
+------------------------------------------------------------------
+
+>SIO_INT01<							// activa la lectura de llave interna 
+>STD030015<							// VERIFICADOR (15SEG)
+>SED08 IO03++ IN07++ GF0 TT {SSH081}<  			
+>SED10 IN07++ +- GF0 TT {SSH080}{CTD03}{SSH000}{SSXP01}{CTD02}<        
+>SED11 IO03++ UC03-- GF0 AX {SSXP00}{GIO,1,30 QGP,4,12}<		// AGREGA FECHA Y HORA AL NUMERO DE LA LLAVE
+>SED12 IN07-- +- GF0 TT {CIO}{SSXP01}< 				// borra llave al sacar contacto
+
+>SED106 IO03++ IN07++ V20 AC {>PFL,GRACIAS.MP3,0<		// GRACIAS
+>SED108 TD03++ IN07++&&SG08-- V20 AC {>PFL,IDENTIFI.MP3,0< 	// LOOP
+>STP01 LLAVE_INTERNA<
+
+
+------------------------------------------------------------------
+// AVISA CHOFER NO IDENTIFICADO
+------------------------------------------------------------------
+
+>STD02000100000500999H<
+>SED84 TD02++ IN07++&&SG00--&&SG08-- GF0 TT {SSH001}<
+>STP05 AVISA_CHOFER_NO_IDENTIFICADO<
+
+
+------------------------------------------------------------------
+// NO ZONA (BANDERA 12) 
+------------------------------------------------------------------
+
+>SED140 RR00-- RR01--&&RR02--&&RR05--&&RR08--&&RR06--&&RR04-- LOG TT {SSH121}< 		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+
+>SED141 RR01-- RR02--&&RR05--&&RR08--&&RR00--&&RR06--&&RR04-- LOG TT {SSH121}{SSH110}<	// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED98 IN07++ SG12++&&RR01-- LOG TT {SSH110}<
+
+>SED142 RR02-- RR05--&&RR08--&&RR00--&&RR01--&&RR06--&&RR04-- LOG TT {SSH121}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED126 RR05-- RR08--&&RR00--&&RR01--&&RR02--&&RR06--&&RR04-- LOG TT {SSH121}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED127 RR08-- RR00--&&RR01--&&RR02--&&RR05--&&RR06--&&RR04-- LOG TT {SSH121}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED135 RR06-- RR00--&&RR01--&&RR02--&&RR05--&&RR08--&&RR04-- LOG TT {SSH121}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED70 RR04-- RR00--&&RR01--&&RR02--&&RR05--&&RR06--&&RR08-- LOG TT {SSH121}<		// sale de autopista y verifica
+
+>SED146 SG12++ +- SGN NN {SCC12 02}{SSH110}{SSH250}<
+>SED17 CC12++ IN07++&&SG12++ GF0 TT<					// INGRESANDO EN ZONA DE 80	
+>SED31 CC12++ SG03++ GF0 TT {SSH030}<					// FIN DE INFRACCION EN ZONA DE 60
+>SED183 CC12++ IN07++&&SG03++ V20 AC {>PFL,VELRES02.MP3,0<		// FIN DE INFRACCION EN ZONA DE 60
+
+
+------------------------------------------------------------------
+// INDICACION DE VELOCIDAD PERMITIDA 
+------------------------------------------------------------------
+
+>SED128 IN07++ RR00++ LOG TT {SSH120}{SSH110}<				// BAJA BADERA 12 A LA FUERZA
+>SED147 CC12++ IN07++&&SG12++ V20 AC {>PFL,ZONA8002.MP3,0<		// INGRESANDO EN ZONA DE 110
+>SED148 IN07++ SG12++ V20 AC {>PFL,80.MP3,5<				// SE ENCUENTRA EN ZONA 80
+>SED149 IN07++ RR00++ V20 AC {>PFL,40.MP3,5<				// SE ENCUENTRA EN ZONA 40
+>SED150 IN07++ SG11++&&RR00-- V20 AC {>PFL,60.MP3,5<			// SE ENCUENTRA EN ZONA 60
+>SED151 IN07++ RR02++ V20 AC {>PFL,80.MP3,5<				// SE ENCUENTRA EN ZONA 80
+>SED152 IN07++ RR04++ V20 AC {>PFL,80.MP3,5<				// SE ENCUENTRA EN ZONA 80
+>SED153 IN07++ RR05++ V20 AC {>PFL,80.MP3,5<				// SE ENCUENTRA EN ZONA 80
+>SED154 IN07++ RR08++ V20 AC {>PFL,20.MP3,5<				// SE ENCUENTRA EN ZONA 20
+>SED137 IN07++ RR06++ V20 AC {>PFL,50.MP3,5<				// SE ENCUENTRA EN ZONA 50
+
+
+------------------------------------------------------------------
+// VELOCIDAD "NO ZONA" [80] 
+------------------------------------------------------------------
+
+>SGS08000130<
+>SGS00000083<								// Rango de velocidad 
+>STD090010<								// TIMER 10 SEG
+
+>SED38 CC00++ IN07++&&VX20++&&GS08++&&GS00--&&SG12++&&RR04-- GF0 TT {SSH041}<			
+>SED35 SG04-- SG12++&&IN07++ GF0 TT<					// FIN DE EXCESO DE VELOCIDAD 
+>SED36 TT00++ GS00++&&SG12++&&RR04-- SGN NN {SCC00 40}{SSH040}<		// 
+>SED131 SG04++ GS00--&&SG12++&&RR04-- LOG TT {CTD09}<
+
+>SED160 SG12++ IN07++&&GS00-- V20 AC {>PFL,LIMITE3.MP3,4<			// PREAVISO
+
+>SED156 SG04-- IN07++&&SG12++&&RR04-- V20 AC {>PFL,VELRES02.MP3,0<			// FIN DE EXCESO
+>SED37 GS00-- IN07++&&SG12++&&RR04-- V20 AC {>PFL,LIMITE3.MP3,0<			// PREAVISO
+>SED59 SG04++ IN07++&&GS00--&&SG12++&&RR04-- V20 AC {>PFL,EXCE8001.MP3,0,9<		// EXCESO
+>SED155 TD09++ IN07++&&SG04++&&SG12++&&RR04-- V20 AC {>PFL,EXCE8001.MP3,0,10<		// LOOP 
+
+------------------------------------------------------------------
+// AUTOCHEQUEO ZONA 60 (BANDERA 11) PARA INDICACION DE VELOCIDAD PERMITIDA 
+------------------------------------------------------------------
+
+>SED163 RR00-- RR01++&&RR02--&&RR05--&&RR08--&&RR06--&&RR04-- LOG TT {SSH111}< 		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED164 RR02-- RR05--&&RR08--&&RR00--&&RR01++&&RR06--&&RR04-- LOG TT {SSH111}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED172 RR05-- RR08--&&RR00--&&RR01++&&RR02--&&RR06--&&RR04-- LOG TT {SSH111}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED165 RR08-- RR00--&&RR01++&&RR02--&&RR05--&&RR06--&&RR04-- LOG TT {SSH111}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED138 RR06-- RR00--&&RR01++&&RR02--&&RR05--&&RR08--&&RR04-- LOG TT {SSH111}<		// NO ESTA NI EN REGION 0, 1,2,5 U 8 SE SETEA LA BANDERA 12 EN 1
+>SED85 RR04-- RR00--&&RR01++&&RR02--&&RR05--&&RR06--&&RR08-- LOG TT {SSH111}<		// SALIENDO DE AUTOPISTA
+>SED195 SG12-- RR00--&&RR01++&&RR02--&&RR05--&&RR08--&&RR06-- LOG TT {SSH251}<		// complementaria con la regla 170
+//SED170 SG25++ SG12--&&RR04-- LOG TT {SSH111}
+>SED170 SG25++ SG12--&&RR04--&&RR05--&&RR00-- LOG TT {SSH111}<
+
+>SED62 SG11++ IN07++ GF0 TT {SCC11 02}<					// SE ENCUENTRA EN ZONA 60
+>SED171 CC11++ IN07++&&SG11++ V20 AC {>PFL,ZONA6002.MP3,0<		// INGRESANDO EN ZONA DE 60
+									
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [20KM/H]
+------------------------------------------------------------------
+
+>SGS06000023<                                      			// rango velocidad en region
+>STD080005<								// TIMER 5 SEG
+
+>SED79 RR08++ IN07++ GF0 TT {SSH120}{SSH110}<				// Ingreso a la regi�n
+>SED196 RR00++ IN07++&&GS01-- GF0 TT {SCC01 20}				// INGRESA A ZONA 40 YA EXCEDIDO, REINICIA CONTADOR E INFORMA A WEB
+
+>SED184 TT00++ GS06++&&RR08++ SGN NN {SCC05 15}{SSH030}<		// Verifica velocidad 
+>SED86 CC05++ IN07++&&VX20++&&GS08++&&GS06--&&RR08++ GF0 TT {SSH031}<	// ENVIA EXCESO A LA WEB
+>SED186 SG03++ GS06--&&RR08++ LOG TT {CTD08}<				// TIMER
+>SED87 SG03-- RR08++&&IN07++ GF0 TT<					// ENVIA A LA PAGINA FIN DE EXCESO DE VELOCIDAD EN REGION DE 20KM/H
+
+>SED188 RR08++ IN07++ V20 AC {>PFL,ZONA20.MP3,0<			// INGRESO A ZONA
+>SED167 RR00++ IN07++&&GS01-- V20 AC {>PFL,LIMITE3.MP3,0<			// INGRESA A ZONA 40 YA EXCEDIDO, REPRODUCE PREAVISO
+>SED189 SG03-- IN07++&&RR08++ V20 AC {>PFL,VELRES02.MP3,0<			// velocidad correGIDA
+>SED190 SG03++ IN07++&&GS06--&&RR08++ V20 AC {>PFL,EXCE20.MP3,0,9<		// EXCESO
+>SED191 TD08++ IN07++&&SG03++&&RR08++ V20 AC {>PFL,EXCE20.MP3,0,10<		// LOOP
+>SED192 GS06-- IN07++&&RR08++ V20 AC {>PFL,LIMITE3.MP3,0<			// PREAVISO
+
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [40KM/H]
+------------------------------------------------------------------
+
+>SGS01000043<                                   			// rango velocidad en region
+>STD040010<								// TIMER 10 SEG
+
+>SED30 RR00++ IN07++ GF0 TT {SSH120}{SSH110}< 				// Ingreso a la regi�n 
+
+>SED32 TT00++ GS01++&&RR00++ SGN NN {SCC01 20}{SSH030}<			//  
+>SED34 CC01++ IN07++&&VX20++&&GS08++&&GS01--&&RR00++ GF0 TT {SSH031}<	// ENVIA EXCESO A LA WEB
+>SED113 SG03++ GS01--&&RR00++ LOG TT {CTD04}<				// 
+>SED47 SG03-- RR00++&&IN07++ GF0 TT<					// ENVIA A LA PAGINA FIN DE EXCESO DE VELOCIDAD EN REGION DE 40KM/H
+
+>SED109 RR00++ IN07++ V20 AC {>PFL,ZONA4002.MP3,0<			// iNGRESO A REGION
+>SED110 SG03-- IN07++&&RR00++ V20 AC {>PFL,VELRES02.MP3,0<			// velocidad correGIDA
+>SED111 GS01-- IN07++&&RR00++ V20 AC {>PFL,LIMITE3.MP3,0<			// PREAVISO
+>SED112 SG03++ IN07++&&GS01--&&RR00++ V20 AC {>PFL,EXCE4001.MP3,0,9<		// EXCESO
+>SED114 TD04++ IN07++&&SG03++&&RR00++ V20 AC {>PFL,EXCE4001.MP3,0,10<		// LOOP
+
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [50KM/H]
+------------------------------------------------------------------
+
+>SGS07000053<                                   			// rango velocidad en region
+>STD040010<								// TIMER 10 SEG
+
+>SED23 RR06++ IN07++ GF0 TT {SSH120}{SSH110}< 			
+>SED197 RR06++ IN07++&&GS07-- GF0 TT {SCC01 20}				// INGRESA A ZONA 50 YA EXCEDIDO, REINICIA CONTADOR E INFORMA A WEB
+
+>SED28 CC01++ IN07++&&VX20++&&GS08++&&GS07--&&RR06++ GF0 TT {SSH031}<	
+>SED33 SG03-- RR06++&&IN07++ GF0 TT<					// ENVIA A LA PAGINA FIN DE EXCESO DE VELOCIDAD EN REGION DE 40KM/H
+>SED103 TT00++ GS07++&&RR06++ SGN NN {SCC01 20}{SSH030}<		
+>SED104 SG03++ GS07--&&RR06++ LOG TT {CTD04}<				// CUANDO BANDERA 10 SE HACE POSITIVO COMIENZA TIMER DE 10 SEGUNDOS
+
+>SED125 RR06++ IN07++ V20 AC {>PFL,ZONA50.MP3,0<			// iNGRESO A REGION
+>SED168 RR06++ IN07++&&GS07-- V20 AC {>PFL,LIMITE3.MP3,0<			// INGRESA A ZONA 50 YA EXCEDIDO, REPRODUCE PREAVISO
+>SED130 SG03-- IN07++&&RR06++ V20 AC {>PFL,VELRES02.MP3,0<		// 
+>SED132 GS07-- IN07++&&RR06++ V20 AC {>PFL,LIMITE3.MP3,0<		// ACTIVA PREAVISO DE EXCESO DE VELOCIDAD 1 VEZ
+>SED133 SG03++ IN07++&&GS07--&&RR06++ V20 AC {>PFL,EXCE50.MP3,0,9<	// CUANDO BANDER 10 SE HACE POSITIVO EJECUTA 1 VEZ EL MPS DE EXCESO
+>SED134 TD04++ IN07++&&SG03++&&RR06++ V20 AC {>PFL,EXCE50.MP3,0,10<	
+
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [60KM/H]
+------------------------------------------------------------------
+
+>SGS02000063<                                      			// rango velocidad en region
+>STD050010<								// TIMER 10 SEG
+
+>SED61 RR01++ IN07++&&SG11--&&RR00--&&RR02--&&RR05--&&RR06-- GF0 TT {SSH120}{SSH110}<	
+
+>SED63 TT00++ GS02++&&SG11++ SGN NN {SCC02 25}{SSH030}<			// 
+>SED157 RR05++ IN07++&&GS05-- GF0 TT {SCC04 40}				// INGRESA A ZONA 80 YA EXCEDIDO, REINICIA CONTADOR E INFORMA A WEB
+>SED68 CC02++ IN07++&&VX20++&&GS08++&&GS02--&&SG11++ GF0 TT {SSH031}<	// ENVIA EXCESO A LA WEB
+>SED46 SG03-- SG11++&&IN07++ GF0 TT< 					// ENVIA A LA PAGINA FIN DE EXCESO DE VELOCIDAD EN REGION DE 60KM/H
+>SED60 SG03++ GS02--&&SG11++ LOG TT {CTD05}<				// CUANDO BANDERA 10 SE HACE POSITIVO COMIENZA TIMER DE 10 SEGUNDOS
+
+>SED115 CC11++ IN07++&&SG11++&&GS02-- V20 AC {>PFL,LIMITE3.MP3,4<		// PREAVISO
+>SED116 SG03-- IN07++&&SG11++ V20 AC {>PFL,VELRES02.MP3,0<			// FIN DE EXCESO
+>SED117 SG03++ IN07++&&GS02--&&SG11++ V20 AC {>PFL,EXCE6001.MP3,0,9<		// EXCESO
+>SED169 RR05++ IN07++&&GS05-- V20 AC {>PFL,LIMITE3.MP3,0<			// INGRESA A ZONA 80 YA EXCEDIDO, REPRODUCE PREAVISO
+>SED118 TD05++ IN07++&&SG03++&&SG11++ V20 AC {>PFL,EXCE6001.MP3,0,10<		// LOOP
+>SED119 GS02-- IN07++&&SG11++ V20 AC {>PFL,LIMITE3.MP3,0<			// PREAVISO 
+
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [80KM/H]
+------------------------------------------------------------------
+	
+>SGS05000083<                                      			// rango velocidad en region
+>STD060008<								// TIMER 10 SEG
+
+>SED64 SG16++ IN07++ GF0 TT<						// Ingreso a la regi�n 01
+
+>SED101 RR05++ IN07++ LOG TT {SSH161}{SSH120}{SSH110}<
+>SED102 RR05-- IN07++ LOG TT {SSH160}<					// SALIDA DE ZONA 80
+>SED78 SG03-- RR05++&&IN07++ GF0 TT<					// 
+>SED77 CC04++ IN07++&&VX20++&&GS08++&&GS05--&&RR05++ GF0 TT {SSH031}<	// REPORTA Exceso de velocidad 
+>SED173 TT00++ GS05++&&RR05++ SGN NN {SCC04 40}{SSH030}<		// Verifica si esta en velocidad correcta, si es asi, mantiene el contador 
+>SED175 SG03++ GS05--&&RR05++ LOG TT {CTD06}<				// CUANDO BANDERA 10 SE HACE POSITIVO COMIENZA TIMER DE 10 SEGUNDOS
+
+>SED177 RR05++ IN07++ V20 AC {>PFL,ZONA8002.MP3,0<			// INGRESO A ZONA
+>SED178 SG03-- IN07++&&RR05++ V20 AC {>PFL,VELRES02.MP3,0<			// velocidad correGIDA
+>SED179 SG03++ IN07++&&GS05--&&RR05++ V20 AC {>PFL,EXCE8001.MP3,0,9<		// EXCESO
+>SED180 TD06++ IN07++&&SG03++&&RR05++ V20 AC {>PFL,EXCE8001.MP3,0,10<		// LOOP
+>SED181 GS05-- IN07++&&RR05++ V20 AC {>PFL,LIMITE3.MP3,0<			// PREAVISO
+
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [100KM/H] Ahora 80
+------------------------------------------------------------------
+
+>SGS03000083<                                      			// rango velocidad en region
+
+>SED69 RR02++ IN07++ LOG TT {SSH161}{SSH120}{SSH110}<			// Ingreso a la regi�n
+>SED159 RR02++ IN07++&&GS03-- GF0 TT {SCC03 40}				// INGRESA A ESTA ZONA YA EXCEDIDO, REINICIA CONTADOR E INFORMA A WEB
+>SED107 RR02-- IN07++ LOG TT {SSH160}<
+
+>SED71 TT00++ GS03++&&RR02++ SGN NN {SCC03 40}{SSH030}<			// 
+>SED13 CC03++ IN07++&&VX20++&&GS08++&&GS03--&&RR02++ GF0 TT {SSH031}<	// REPORTA Exceso de velocidad
+>SED14 SG03-- RR02++&&IN07++ GF0 TT<						// ENVIA A LA PAGINA FIN DE EXCESO DE VELOCIDAD
+>SED73 SG03++ GS03--&&RR02++ LOG TT {CTD06}<				// TIMER DE 10 SEGUNDOS
+
+>SED120 RR02++ IN07++ V20 AC {>PFL,ZONA8002.MP3,0<
+>SED174 RR02++ IN07++&&GS03-- V20 AC {>PFL,LIMITE3.MP3,0<			// INGRESA A ESTA ZONA YA EXCEDIDO, REPRODUCE PREAVISO
+>SED121 SG03-- IN07++&&RR02++ V20 AC {>PFL,VELRES02.MP3,0<			// 
+>SED122 SG03++ IN07++&&GS03--&&RR02++ V20 AC {>PFL,EXCE8001.MP3,0,9<		// CUANDO BANDER 10 SE HACE POSITIVO EJECUTA 1 VEZ EL MPS DE EXCESO
+>SED123 TD06++ IN07++&&SG03++&&RR02++ V20 AC {>PFL,EXCE8001.MP3,0,10<		// CUANDO TRANSCURREN 10 SEGUNDOS SUENA EL MPS Y SE REINICIA EL CONTADOR
+>SED124 GS03-- IN07++&&RR02++ V20 AC {>PFL,LIMITE3.MP3,0<			// ACTIVA PREAVISO DE EXCESO DE VELOCIDAD 1 VEZ
+
+
+------------------------------------------------------------------
+// VELOCIDAD EN ZONA [130KM/H] ahora 80
+------------------------------------------------------------------
+
+>SGS04000083<		                             			// rango velocidad en region
+
+>SED65 RR04++ IN07++ GF0 TT {SSH030}{SSH040}{SSH120}{SSH110}< 		// Ingreso a la regi�n
+>SED187 RR04++ IN07++&&GS04-- GF0 TT {SCC08 20}				// INGRESA A ESTA ZONA YA EXCEDIDO, REINICIA CONTADOR E INFORMA A WEB
+
+>SED67 TT00++ GS04++&&RR04++ SGN NN {SCC08 20}{SSH050}{SSH110}<   		//
+>SED74 CC08++ IN07++&&VX20++&&GS08++&&GS04--&&RR04++ GF0 TT {SSH051}<   //
+>SED75 SG05-- RR04++&&IN07++ GF0 TT<					 	//
+>SED76 SG05++ GS04--&&RR04++ LOG TT {CTD06}<				//
+
+>SED88 RR04++ IN07++ V20 AC {>PFL,ZONA8002.MP3,0<			// 
+>SED176 RR04++ IN07++&&GS04-- V20 AC {>PFL,LIMITE3.MP3,0<			// INGRESA A ESTA ZONA YA EXCEDIDO, REPRODUCE PREAVISO
+>SED198 SG05-- IN07++&&RR04++ V20 AC {>PFL,VELRES02.MP3,0<			// 
+>SED199 SG05++ IN07++&&GS04--&&RR04++ V20 AC {>PFL,EXCE8001.MP3,0,9<		// 
+>SED161 TD06++ IN07++&&SG05++&&RR04++ V20 AC {>PFL,EXCE8001.MP3,0,10<		// 
+>SED162 GS04-- IN07++&&RR04++ V20 AC {>PFL,LIMITE3.MP3,0<
+
+
+------------------------------------------------------------------
+// MOVIMIENTO NOCTURNO
+------------------------------------------------------------------
+
+>SUT01,QGP,10,02,+0,+7<          			//horario (21-4 am)
+>STD02000100000500999H<                 		//500 mts
+>SED80 IN07++ UC01++ LOG GP {SSH010}{SSH090}{CTD02}< 	   	//
+>SED81 TD02++ UC01++&&IN07++&&SG01-- GF0 TT {SSH011}{SSH091}< 	// 
+>SED105 SG09++ IN07++&&UC01-- V20 AC {>PFL,HORA0001.MP3,0<
+>STP02 REPORTE_NOCTURNO_21PM_A_4AM<
+
+
+------------------------------------------------------------------
+// 			[VERIFICADOR A SERVER FULLCONTROL]
+------------------------------------------------------------------
+
+>SED207 RR01++ IN07++ GF1 AX {VQRM01,30,99 QGP,4,12}<		
+>SED209 CC12++ IN07++&&SG12++ GF1 AX {VQRM01,30,99 QGP,4,12}<
+>SED211 SG11++ +- GF1 AX {VQRM01,30,99 QGP,4,12}<
+>STP06 VERIFICADOR_DE_POLIGONOS<
+
+>STP00 [80km]_Programa_OPS_[ABRIL_2017]_[MOV_EN_INFRACCION]<
+
+------------------------------------------------------------------
+// POCISION SEGUNDO A SEGUNDO EN LOG2
+------------------------------------------------------------------
+
+>SED99 TT00++ IN07++ LG2 GP<
+>STP13 LOG2_ACTIVADO< 
+
+// TEMPORIZADORES
+
+>STD000070<
+>STD011500<
+>SSXP0100020<
+>SED58U<
+

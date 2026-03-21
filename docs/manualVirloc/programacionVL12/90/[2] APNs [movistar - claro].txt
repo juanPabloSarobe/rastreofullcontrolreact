@@ -1,0 +1,24 @@
+	[SETEAR VIA XVM_TERMINAL]
+
+Lineas claro de claro
+SCF0000,MX2,APN igprs.claro.com.ar,SUP2 clarogprs clarogprs999		// APN CLARO
+
+Lineas smart movistar
+SCF0000,MX2,APN gm2m.movistar,SUP2 movistar movistar		   	// APN SMART Movistar
+
+Lineas multicarrier
+SCF0000,MX2,APN vf.m2mdataglobal.com
+
+Lineas claro de M2M data global
+SCF0000,MX2,APN m2mdataglobal.claro.com.ar
+
+APN CHIP MULTICARRIER Cristian Picco
+SCF0000,MX2,APN postm2m.lu
+
+VOLTAJE DE CARGA
+VSPK,2350,2200,1170,1130,0340,0320,0340,0320,0350,0340,0430,0425,0340,0600,0250,+50,+70,0000,0000,0000
+
+STP03 SIM_XXX_MOVISTAR
+STP03 SMART_XXX_MOVISTAR
+
+STP03 SIM_XXX_CLARO

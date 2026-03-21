@@ -1,0 +1,4 @@
+>SED42 GM51++ +- GF0&&&LOG TT<					// Antena de GPS desconectada
+>SED43 GM51-- +- GF0&&&LOG TT<					// Antena de GPS conectada.
+
+>STP08 VL12_CON_ANTENAS_EXTERNAS<
